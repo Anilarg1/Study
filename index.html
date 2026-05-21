@@ -11,25 +11,49 @@
 </head>
 <body>
 
-  <div class="app">
+  <section class="landing" id="landingPage">
+    <div class="landing-inner">
+      <div class="landing-copy">
+        <div class="landing-mark">studydesk</div>
+        <h1>studydesk</h1>
+        <p>focus sessions, subjects, stats, and timetable sync in one quiet study space.</p>
+        <div class="landing-preview" aria-hidden="true">
+          <div class="preview-timer">
+            <span>25:00</span>
+          </div>
+          <div class="preview-stack">
+            <div class="preview-row"><span></span><strong>pomodoro</strong><em>ready</em></div>
+            <div class="preview-row"><span></span><strong>subjects</strong><em>synced</em></div>
+            <div class="preview-row"><span></span><strong>timetable</strong><em>planned</em></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-card-title">sign in</div>
+        <div class="sync-status" id="syncStatus">offline save</div>
+        <div class="sync-controls" id="syncControls">
+          <input type="email" id="syncEmail" placeholder="email">
+          <input type="password" id="syncPassword" placeholder="password">
+          <div class="auth-actions">
+            <button class="sync-btn" onclick="signInToCloud()">sign in</button>
+            <button class="sync-btn secondary" onclick="createCloudAccount()">create account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="app" id="appShell" hidden>
     <div class="header">
       <div class="header-left">
         <h1>studydesk</h1>
         <p id="dateDisplay">loading...</p>
       </div>
       <div class="header-right">
-        <div class="sync-panel">
-          <div class="sync-status" id="syncStatus">offline save</div>
-          <div class="sync-controls" id="syncControls">
-            <input type="email" id="syncEmail" placeholder="email">
-            <input type="password" id="syncPassword" placeholder="password">
-            <button class="sync-btn" onclick="signInToCloud()">sign in</button>
-            <button class="sync-btn secondary" onclick="createCloudAccount()">create</button>
-          </div>
-          <div class="sync-user" id="syncUser" hidden>
-            <span id="syncUserEmail"></span>
-            <button class="sync-btn secondary" onclick="signOutCloud()">sign out</button>
-          </div>
+        <div class="sync-user" id="syncUser" hidden>
+          <span id="syncUserEmail"></span>
+          <button class="sync-btn secondary" onclick="signOutCloud()">sign out</button>
         </div>
         <div class="live-clock" id="liveClock">--:--:--</div>
       </div>
@@ -239,7 +263,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=music-cleanup"></script>
+  <script type="module" src="script.js?v=landing-auth"></script>
 
 </body>
 </html>

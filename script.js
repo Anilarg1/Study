@@ -140,10 +140,14 @@ function setSyncStatus(message, type = '') {
 }
 
 function updateSyncUI() {
+  const landing = document.getElementById('landingPage');
+  const appShell = document.getElementById('appShell');
   const controls = document.getElementById('syncControls');
   const userPanel = document.getElementById('syncUser');
   const email = document.getElementById('syncUserEmail');
   if (!controls || !userPanel || !email) return;
+  if (landing) landing.hidden = !!cloudUser;
+  if (appShell) appShell.hidden = !cloudUser;
   controls.hidden = !!cloudUser;
   userPanel.hidden = !cloudUser;
   email.textContent = cloudUser ? cloudUser.email : '';
