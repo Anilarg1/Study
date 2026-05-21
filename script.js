@@ -182,7 +182,7 @@ function renderApp() {
   updateTodayDisplay();
   updateToggleUI('autoBreak');
   updateToggleUI('soundOn');
-  if (document.getElementById('tab-stats').classList.contains('active')) renderStats();
+  renderStats();
   if (document.getElementById('tab-timetable').classList.contains('active')) buildTimetable();
 }
 
@@ -433,6 +433,7 @@ function logSession(subjectId, mins) {
   renderLog();
   renderSubjects();
   updateTodayDisplay();
+  renderStats();
 }
 
 function updateStreak(date) {
@@ -475,6 +476,7 @@ function addSubject() {
   saveState();
   renderSubjects();
   renderSubjectSelects();
+  renderStats();
 }
 
 function deleteSubject(id) {
@@ -482,6 +484,7 @@ function deleteSubject(id) {
   saveState();
   renderSubjects();
   renderSubjectSelects();
+  renderStats();
 }
 
 function renderSubjects() {
@@ -517,6 +520,7 @@ function renderSubjectSelects() {
 }
 
 function renderStats() {
+  if (!document.getElementById('statTotalHours')) return;
   const totalMins = state.sessions.reduce((a, b) => a + b.mins, 0);
   document.getElementById('statTotalHours').textContent = (totalMins / 60).toFixed(1);
   document.getElementById('statSessions').textContent = state.sessions.length;
@@ -552,6 +556,7 @@ function calcStreak() {
 
 function renderWeekChart() {
   const el = document.getElementById('weekChart');
+  if (!el) return;
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -573,8 +578,13 @@ function renderWeekChart() {
 
 function renderDonut() {
   const canvas = document.getElementById('donutCanvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 120, 120);
+  const size = canvas.width;
+  const center = size / 2;
+  const outerRadius = size * 0.38;
+  const innerRadius = size * 0.24;
+  ctx.clearRect(0, 0, size, size);
   const legend = document.getElementById('donutLegend');
 
   const data = state.subjects.map(s => ({ name: s.name, mins: s.totalMins || 0, color: s.color }))
@@ -582,9 +592,9 @@ function renderDonut() {
 
   if (!data.length) {
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 12;
     ctx.beginPath();
-    ctx.arc(60, 60, 45, 0, Math.PI * 2);
+    ctx.arc(center, center, outerRadius, 0, Math.PI * 2);
     ctx.stroke();
     legend.innerHTML = '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">no data yet</div>';
     return;
@@ -596,8 +606,8 @@ function renderDonut() {
   data.forEach(d => {
     const slice = (d.mins / total) * Math.PI * 2;
     ctx.beginPath();
-    ctx.moveTo(60, 60);
-    ctx.arc(60, 60, 45, startAngle, startAngle + slice);
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, outerRadius, startAngle, startAngle + slice);
     ctx.closePath();
     ctx.fillStyle = d.color;
     ctx.fill();
@@ -605,8 +615,8 @@ function renderDonut() {
   });
 
   ctx.beginPath();
-  ctx.arc(60, 60, 28, 0, Math.PI * 2);
-  ctx.fillStyle = '#161616';
+  ctx.arc(center, center, innerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#12171d';
   ctx.fill();
 
   legend.innerHTML = data.map(d => {
@@ -621,6 +631,7 @@ function renderDonut() {
 
 function renderStreakGrid() {
   const el = document.getElementById('streakGrid');
+  if (!el) return;
   const today = new Date().toISOString().split('T')[0];
   const cells = [];
   for (let i = 29; i >= 0; i--) {
@@ -748,9 +759,9 @@ function switchTab(id) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
   document.getElementById('nav-' + id).classList.add('active');
-  if (id === 'stats') renderStats();
   if (id === 'timetable') buildTimetable();
   if (id === 'subjects') renderSubjects();
+  if (id === 'pomo') renderStats();
 }
 
 /* === CLOCK === */

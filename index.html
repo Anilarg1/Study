@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   
-  <link rel="stylesheet" href="style.css?v=landing-auth">
+  <link rel="stylesheet" href="style.css?v=dashboard-redesign">
 </head>
 <body>
 
@@ -65,9 +65,6 @@
       </button>
       <button class="nav-btn" onclick="switchTab('subjects')" id="nav-subjects">
         <i class="ti ti-books" aria-hidden="true"></i> subjects
-      </button>
-      <button class="nav-btn" onclick="switchTab('stats')" id="nav-stats">
-        <i class="ti ti-chart-bar" aria-hidden="true"></i> stats
       </button>
       <button class="nav-btn" onclick="switchTab('timetable')" id="nav-timetable">
         <i class="ti ti-calendar" aria-hidden="true"></i> timetable
@@ -166,6 +163,57 @@
           <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="todaySessionsDisplay">0 completed sessions</div>
         </div>
       </div>
+
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">focus dashboard</div>
+            <div class="section-title">your study rhythm</div>
+          </div>
+        </div>
+
+        <div class="stats-top">
+          <div class="stat-card accent-card">
+            <div class="stat-label">total hours</div>
+            <div class="stat-value" id="statTotalHours">0.0</div>
+            <div class="stat-sub">all time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">sessions</div>
+            <div class="stat-value" id="statSessions">0</div>
+            <div class="stat-sub">completed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">streak</div>
+            <div class="stat-value" id="statStreak">0 <span>days</span></div>
+            <div class="stat-sub">current run</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">today</div>
+            <div class="stat-value" id="statToday">0</div>
+            <div class="stat-sub">minutes focused</div>
+          </div>
+        </div>
+
+        <div class="stats-charts">
+          <div class="chart-card week-card">
+            <div class="chart-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> this week</div>
+            <div class="bar-chart" id="weekChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><i class="ti ti-chart-donut" aria-hidden="true"></i> by subject</div>
+            <div class="donut-wrap">
+              <canvas id="donutCanvas" width="150" height="150"></canvas>
+              <div class="donut-legend" id="donutLegend"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title"><i class="ti ti-flame" aria-hidden="true"></i> 30-day study streak</div>
+          <div class="streak-display" id="streakGrid"></div>
+        </div>
+      </div>
     </div>
 
     <div class="tab" id="tab-subjects">
@@ -183,53 +231,6 @@
           <input type="color" id="newSubjectColor" value="#d4a853" title="pick color">
           <button class="btn-primary" onclick="addSubject()">add subject</button>
         </div>
-      </div>
-    </div>
-
-    <div class="tab" id="tab-stats">
-      <div class="section-header">
-        <div class="section-title">statistics</div>
-      </div>
-      <div class="stats-top">
-        <div class="stat-card">
-          <div class="stat-label">total hours</div>
-          <div class="stat-value" id="statTotalHours">0.0</div>
-          <div class="stat-sub">all time</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">sessions done</div>
-          <div class="stat-value" id="statSessions">0</div>
-          <div class="stat-sub">completed</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">streak</div>
-          <div class="stat-value" id="statStreak">0 <span style="font-size:14px;color:var(--text3)">days</span></div>
-          <div class="stat-sub">keep it up!</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">today</div>
-          <div class="stat-value" id="statToday">0</div>
-          <div class="stat-sub">minutes focused</div>
-        </div>
-      </div>
-
-      <div class="stats-charts">
-        <div class="chart-card">
-          <div class="chart-title"><i class="ti ti-chart-bar" aria-hidden="true" style="font-size:16px;"></i> hours this week</div>
-          <div class="bar-chart" id="weekChart"></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:16px;"></i> time by subject</div>
-          <div class="donut-wrap">
-            <canvas id="donutCanvas" width="120" height="120"></canvas>
-            <div class="donut-legend" id="donutLegend"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-title"><i class="ti ti-flame" aria-hidden="true" style="font-size:16px;"></i> 30-day study streak</div>
-        <div class="streak-display" id="streakGrid"></div>
       </div>
     </div>
 
@@ -263,7 +264,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=landing-auth"></script>
+  <script type="module" src="script.js?v=dashboard-redesign"></script>
 
 </body>
 </html>
