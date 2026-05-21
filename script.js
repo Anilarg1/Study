@@ -1097,6 +1097,7 @@ Object.assign(window, {
   createCloudAccount,
   deleteSubject,
   nextTrack,
+  openTTModal,
   playTrack,
   previousTrack,
   removeTrack,
