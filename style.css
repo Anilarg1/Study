@@ -1540,7 +1540,7 @@ body {
 }
 
 .pomo-layout {
-  grid-template-columns: minmax(360px, 0.78fr) minmax(260px, 0.42fr);
+  grid-template-columns: minmax(360px, 720px);
   gap: 28px;
   align-items: start;
 }
@@ -1566,7 +1566,12 @@ body {
 }
 
 .pomo-settings {
+  width: min(100%, 420px);
+  margin-top: 18px;
   border-radius: 22px;
+  background: #111620;
+  border-color: #2d3850;
+  align-self: center;
 }
 
 .settings-summary {
@@ -1642,6 +1647,9 @@ body {
   background: #111620;
   color: #fff;
   font-weight: 800;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
 }
 
 .log-item {

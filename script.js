@@ -513,9 +513,16 @@ function renderSubjects() {
 }
 
 function renderSubjectSelects() {
+  const pomoSelect = document.getElementById('pomoSubjectSelect');
+  const currentSubject = pomoSelect ? pomoSelect.value : '';
   const opts = state.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   const placeholder = '<option value="">— select subject —</option>';
-  document.getElementById('pomoSubjectSelect').innerHTML = placeholder + opts;
+  if (pomoSelect) {
+    pomoSelect.innerHTML = placeholder + opts;
+    if (state.subjects.some(s => s.id === currentSubject)) {
+      pomoSelect.value = currentSubject;
+    }
+  }
   document.getElementById('modalSubject').innerHTML = opts || '<option value="">no subjects yet</option>';
 }
 

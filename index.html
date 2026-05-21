@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   
-  <link rel="stylesheet" href="style.css?v=athenify-style">
+  <link rel="stylesheet" href="style.css?v=timer-settings-fix">
 </head>
 <body>
 
@@ -107,64 +107,64 @@
             <div class="pomo-log-title">recent sessions</div>
             <div id="logList"></div>
           </div>
+
+          <details class="pomo-settings" id="timerSettingsPanel">
+            <summary class="settings-summary">
+              <span>timer settings</span>
+              <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+            </summary>
+
+            <div class="setting-row">
+              <label>focus duration <span id="focusVal">25 min</span></label>
+              <input type="range" id="focusDur" min="5" max="90" step="5" value="25" oninput="updateTimerSettings()">
+            </div>
+
+            <div class="setting-row">
+              <label>short break <span id="shortVal">5 min</span></label>
+              <input type="range" id="shortBreak" min="1" max="30" step="1" value="5" oninput="updateTimerSettings()">
+            </div>
+
+            <div class="setting-row">
+              <label>long break <span id="longVal">15 min</span></label>
+              <input type="range" id="longBreak" min="5" max="60" step="5" value="15" oninput="updateTimerSettings()">
+            </div>
+
+            <div class="setting-row">
+              <label>sessions before long break <span id="sessionsVal">4</span></label>
+              <input type="range" id="sessionsBeforeLong" min="2" max="8" step="1" value="4" oninput="updateTimerSettings()">
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="toggle-row">
+              <span style="font-size:13px;color:var(--text2);">auto-start breaks</span>
+              <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
+                <input type="checkbox" id="autoBreak" style="opacity:0;width:0;height:0" onchange="toggleCheck('autoBreak')">
+                <span id="toggleAutoBreak" style="position:absolute;inset:0;border-radius:20px;background:var(--bg4);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
+                  <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--text3);transition:all 0.2s;" id="toggleKnobBreak"></span>
+                </span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <span style="font-size:13px;color:var(--text2);">sound alerts</span>
+              <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
+                <input type="checkbox" id="soundOn" checked style="opacity:0;width:0;height:0" onchange="toggleCheck('soundOn')">
+                <span id="toggleSoundOn" style="position:absolute;inset:0;border-radius:20px;background:var(--accent);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
+                  <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#0f0f0f;transition:all 0.2s;transform:translateX(16px);" id="toggleKnobSound"></span>
+                </span>
+              </label>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="settings-focus-label">today's focus</div>
+            <div class="settings-focus-value" id="todayFocusDisplay">0h 0m</div>
+            <div class="settings-focus-sub" id="todaySessionsDisplay">0 completed sessions</div>
+          </details>
         </div>
 
         </div>
-
-        <details class="pomo-settings" id="timerSettingsPanel">
-          <summary class="settings-summary">
-            <span>timer settings</span>
-            <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
-          </summary>
-
-          <div class="setting-row">
-            <label>focus duration <span id="focusVal">25 min</span></label>
-            <input type="range" id="focusDur" min="5" max="90" step="5" value="25" oninput="updateTimerSettings()">
-          </div>
-
-          <div class="setting-row">
-            <label>short break <span id="shortVal">5 min</span></label>
-            <input type="range" id="shortBreak" min="1" max="30" step="1" value="5" oninput="updateTimerSettings()">
-          </div>
-
-          <div class="setting-row">
-            <label>long break <span id="longVal">15 min</span></label>
-            <input type="range" id="longBreak" min="5" max="60" step="5" value="15" oninput="updateTimerSettings()">
-          </div>
-
-          <div class="setting-row">
-            <label>sessions before long break <span id="sessionsVal">4</span></label>
-            <input type="range" id="sessionsBeforeLong" min="2" max="8" step="1" value="4" oninput="updateTimerSettings()">
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="toggle-row">
-            <span style="font-size:13px;color:var(--text2);">auto-start breaks</span>
-            <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
-              <input type="checkbox" id="autoBreak" style="opacity:0;width:0;height:0" onchange="toggleCheck('autoBreak')">
-              <span id="toggleAutoBreak" style="position:absolute;inset:0;border-radius:20px;background:var(--bg4);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
-                <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--text3);transition:all 0.2s;" id="toggleKnobBreak"></span>
-              </span>
-            </label>
-          </div>
-
-          <div class="toggle-row">
-            <span style="font-size:13px;color:var(--text2);">sound alerts</span>
-            <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
-              <input type="checkbox" id="soundOn" checked style="opacity:0;width:0;height:0" onchange="toggleCheck('soundOn')">
-              <span id="toggleSoundOn" style="position:absolute;inset:0;border-radius:20px;background:var(--accent);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
-                <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#0f0f0f;transition:all 0.2s;transform:translateX(16px);" id="toggleKnobSound"></span>
-              </span>
-            </label>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="settings-focus-label">today's focus</div>
-          <div class="settings-focus-value" id="todayFocusDisplay">0h 0m</div>
-          <div class="settings-focus-sub" id="todaySessionsDisplay">0 completed sessions</div>
-        </details>
       </div>
 
       <div class="dashboard-section">
@@ -267,7 +267,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=athenify-style"></script>
+  <script type="module" src="script.js?v=timer-settings-fix"></script>
 
 </body>
 </html>
