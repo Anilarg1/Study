@@ -88,52 +88,6 @@
           </div>
         </div>
 
-          <!-- Music Player -->
-          <div class="music-player-card">
-            <div class="player-title">
-              <i class="ti ti-music" aria-hidden="true"></i> study music
-            </div>
-            
-            <div class="player-display">
-              <div class="now-playing" id="nowPlaying">no track selected</div>
-              <div class="player-time">
-                <span id="playerTime">0:00</span> / <span id="playerDuration">0:00</span>
-              </div>
-            </div>
-
-            <div class="player-progress">
-              <div class="progress-bar" id="progressBar">
-                <div class="progress-fill" id="progressFill"></div>
-                <div class="progress-thumb" id="progressThumb"></div>
-              </div>
-            </div>
-
-            <div class="player-controls">
-              <button class="btn-circle" id="playerPrev" onclick="previousTrack()" title="Previous"><i class="ti ti-player-skip-back" aria-hidden="true"></i></button>
-              <button class="btn-circle primary" id="playerPlayPause" onclick="toggleMusicPlayer()" title="Play"><i class="ti ti-player-play" aria-hidden="true"></i></button>
-              <button class="btn-circle" id="playerNext" onclick="nextTrack()" title="Next"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
-              <button class="btn-circle" onclick="toggleRepeat()" id="repeatBtn" title="Repeat"><i class="ti ti-repeat" aria-hidden="true"></i></button>
-            </div>
-
-            <div class="player-volume">
-              <i class="ti ti-volume" aria-hidden="true"></i>
-              <input type="range" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)" class="volume-slider">
-            </div>
-
-            <div class="playlist-section">
-              <div class="playlist-header">
-                <span>playlist <span id="playlistCount">(0)</span></span>
-                <button class="icon-btn" onclick="document.getElementById('audioFileInput').click()" title="Add tracks">
-                  <i class="ti ti-plus" aria-hidden="true"></i>
-                </button>
-              </div>
-              <input type="file" id="audioFileInput" multiple accept="audio/*" style="display:none" onchange="addTracksToPlaylist(event)">
-              <div class="playlist" id="playlist">
-                <div class="empty-playlist">add music to get started</div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         <div class="pomo-settings">
@@ -285,7 +239,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=da4bd24"></script>
+  <script type="module" src="script.js?v=music-cleanup"></script>
 
 </body>
 </html>
