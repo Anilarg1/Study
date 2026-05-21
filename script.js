@@ -1,6 +1,38 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import {
+  doc,
+  getDoc,
+  getFirestore,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const HOURS = Array.from({length: 16}, (_,i) => `${(i+7).toString().padStart(2,'0')}:00`);
 const COLORS = ['#d4a853','#5b9cf6','#4caf7d','#e05c5c','#9b72cf','#e08c5c','#5ce0d0','#e05cab'];
+const LOCAL_STATE_KEY = 'studydesk_v2';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCoywhnVdRzvf4lBljDvgX0j_e_LDswabI",
+  authDomain: "studydesk-tracker.firebaseapp.com",
+  projectId: "studydesk-tracker",
+  storageBucket: "studydesk-tracker.firebasestorage.app",
+  messagingSenderId: "535728777961",
+  appId: "1:535728777961:web:53be76e15cc22bc08c9e78",
+  measurementId: "G-4J3CQWHKCB"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 let state = {
   subjects: [],
@@ -18,20 +50,240 @@ let timer = {
   total: 0,
 };
 
+let cloudUser = null;
+let cloudUnsubscribe = null;
+let cloudSaveTimer = null;
+let applyingCloudState = false;
+
+function normalizeState(data) {
+  const next = data && typeof data === 'object' ? data : {};
+  return {
+    subjects: Array.isArray(next.subjects) ? next.subjects : [],
+    sessions: Array.isArray(next.sessions) ? next.sessions : [],
+    timetable: next.timetable && typeof next.timetable === 'object' ? next.timetable : {},
+    streak: Array.isArray(next.streak) ? next.streak : [],
+  };
+}
+
+function recalculateSubjectStats(nextState) {
+  const subjects = nextState.subjects.map(subject => ({
+    ...subject,
+    totalMins: 0,
+    sessions: 0,
+  }));
+  nextState.sessions.forEach(session => {
+    if (!session.subjectId) return;
+    const subject = subjects.find(item => item.id === session.subjectId);
+    if (!subject) return;
+    subject.totalMins += session.mins || 0;
+    subject.sessions += 1;
+  });
+  return { ...nextState, subjects };
+}
+
+function mergeStates(remoteData, localData) {
+  const remote = normalizeState(remoteData);
+  const local = normalizeState(localData);
+  const subjects = [...remote.subjects];
+  local.subjects.forEach(subject => {
+    const index = subjects.findIndex(item => item.id === subject.id);
+    if (index >= 0) subjects[index] = { ...subjects[index], ...subject };
+    else subjects.push(subject);
+  });
+
+  const sessionMap = new Map();
+  [...remote.sessions, ...local.sessions].forEach(session => {
+    if (session && session.id) sessionMap.set(String(session.id), session);
+  });
+
+  const merged = {
+    subjects,
+    sessions: [...sessionMap.values()].sort((a, b) => String(a.id).localeCompare(String(b.id))),
+    timetable: { ...remote.timetable, ...local.timetable },
+    streak: [...new Set([...remote.streak, ...local.streak])].sort(),
+  };
+
+  return recalculateSubjectStats(merged);
+}
+
 function loadState() {
   try {
-    const s = localStorage.getItem('studydesk_v2');
-    if (s) state = JSON.parse(s);
-    if (!state.subjects) state.subjects = [];
-    if (!state.sessions) state.sessions = [];
-    if (!state.timetable) state.timetable = {};
-    if (!state.streak) state.streak = [];
+    const s = localStorage.getItem(LOCAL_STATE_KEY);
+    if (s) state = normalizeState(JSON.parse(s));
   } catch(e) {}
+  state = normalizeState(state);
 }
 
 function saveState() {
-  localStorage.setItem('studydesk_v2', JSON.stringify(state));
+  localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
+  queueCloudSave();
 }
+
+function emptyState() {
+  return {
+    subjects: [],
+    sessions: [],
+    timetable: {},
+    streak: [],
+  };
+}
+
+function getUserDocRef(user = cloudUser) {
+  return user ? doc(db, 'users', user.uid) : null;
+}
+
+function setSyncStatus(message, type = '') {
+  const status = document.getElementById('syncStatus');
+  if (!status) return;
+  status.textContent = message;
+  status.className = `sync-status ${type}`.trim();
+}
+
+function updateSyncUI() {
+  const controls = document.getElementById('syncControls');
+  const userPanel = document.getElementById('syncUser');
+  const email = document.getElementById('syncUserEmail');
+  if (!controls || !userPanel || !email) return;
+  controls.hidden = !!cloudUser;
+  userPanel.hidden = !cloudUser;
+  email.textContent = cloudUser ? cloudUser.email : '';
+}
+
+function queueCloudSave() {
+  if (!cloudUser || applyingCloudState) return;
+  clearTimeout(cloudSaveTimer);
+  setSyncStatus('saving to cloud...', 'busy');
+  cloudSaveTimer = setTimeout(pushCloudState, 700);
+}
+
+async function pushCloudState() {
+  if (!cloudUser) return;
+  try {
+    await setDoc(getUserDocRef(), {
+      state: normalizeState(state),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    setSyncStatus('cloud saved', 'online');
+  } catch (error) {
+    setSyncStatus(error.message || 'cloud save failed', 'error');
+  }
+}
+
+function renderApp() {
+  renderSubjects();
+  renderSubjectSelects();
+  renderLog();
+  updateTimerDisplay();
+  updateTimerSettings();
+  updateTodayDisplay();
+  updateToggleUI('autoBreak');
+  updateToggleUI('soundOn');
+  if (document.getElementById('tab-stats').classList.contains('active')) renderStats();
+  if (document.getElementById('tab-timetable').classList.contains('active')) buildTimetable();
+}
+
+function clearLocalStudyView() {
+  applyingCloudState = true;
+  state = emptyState();
+  localStorage.removeItem(LOCAL_STATE_KEY);
+  renderApp();
+  applyingCloudState = false;
+}
+
+async function createCloudAccount() {
+  const email = document.getElementById('syncEmail').value.trim();
+  const password = document.getElementById('syncPassword').value;
+  if (!email || !password) {
+    setSyncStatus('enter email and password', 'error');
+    return;
+  }
+  setSyncStatus('creating account...', 'busy');
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    document.getElementById('syncPassword').value = '';
+  } catch (error) {
+    setSyncStatus(error.message || 'account failed', 'error');
+  }
+}
+
+async function signInToCloud() {
+  const email = document.getElementById('syncEmail').value.trim();
+  const password = document.getElementById('syncPassword').value;
+  if (!email || !password) {
+    setSyncStatus('enter email and password', 'error');
+    return;
+  }
+  setSyncStatus('signing in...', 'busy');
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    document.getElementById('syncPassword').value = '';
+  } catch (error) {
+    setSyncStatus(error.message || 'sign in failed', 'error');
+  }
+}
+
+async function signOutCloud() {
+  setSyncStatus('signing out...', 'busy');
+  try {
+    await signOut(auth);
+    clearLocalStudyView();
+    setSyncStatus('signed out');
+  } catch (error) {
+    setSyncStatus(error.message || 'sign out failed', 'error');
+  }
+}
+
+function subscribeToCloud(user) {
+  if (cloudUnsubscribe) cloudUnsubscribe();
+  cloudUnsubscribe = onSnapshot(getUserDocRef(user), (snapshot) => {
+    if (!snapshot.exists()) return;
+    const remoteState = snapshot.data().state;
+    if (!remoteState) return;
+    applyingCloudState = true;
+    state = normalizeState(remoteState);
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
+    renderApp();
+    applyingCloudState = false;
+    setSyncStatus('cloud synced', 'online');
+  }, (error) => {
+    setSyncStatus(error.message || 'cloud sync failed', 'error');
+  });
+}
+
+onAuthStateChanged(auth, async (user) => {
+  cloudUser = user;
+  updateSyncUI();
+
+  if (!user) {
+    if (cloudUnsubscribe) cloudUnsubscribe();
+    cloudUnsubscribe = null;
+    setSyncStatus('offline save');
+    return;
+  }
+
+  setSyncStatus('loading cloud...', 'busy');
+  try {
+    const snapshot = await getDoc(getUserDocRef(user));
+    if (snapshot.exists() && snapshot.data().state) {
+      const localState = normalizeState(state);
+      const cloudState = normalizeState(snapshot.data().state);
+      const mergedState = mergeStates(cloudState, localState);
+      const needsCloudUpdate = JSON.stringify(mergedState) !== JSON.stringify(cloudState);
+      applyingCloudState = true;
+      state = mergedState;
+      localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
+      renderApp();
+      applyingCloudState = false;
+      if (needsCloudUpdate) await pushCloudState();
+    } else {
+      await pushCloudState();
+    }
+    subscribeToCloud(user);
+    setSyncStatus('cloud synced', 'online');
+  } catch (error) {
+    setSyncStatus(error.message || 'cloud load failed', 'error');
+  }
+});
 
 function getFocusMins() { return parseInt(document.getElementById('focusDur').value); }
 function getShortBreak() { return parseInt(document.getElementById('shortBreak').value); }
@@ -230,10 +482,8 @@ function deleteSubject(id) {
 
 function renderSubjects() {
   const grid = document.getElementById('subjectsGrid');
-  const empty = document.getElementById('subjectsEmpty');
   if (!state.subjects.length) {
-    grid.innerHTML = '';
-    grid.appendChild(empty);
+    grid.innerHTML = '<div class="empty-state" id="subjectsEmpty">no subjects yet — add one below</div>';
     document.getElementById('subjectCount').textContent = '0 subjects';
     return;
   }
@@ -508,14 +758,8 @@ function updateClock() {
 
 /* === INIT === */
 loadState();
-renderSubjects();
-renderSubjectSelects();
-renderLog();
-updateTimerDisplay();
-updateTimerSettings();
-updateTodayDisplay();
-updateToggleUI('autoBreak');
-updateToggleUI('soundOn');
+renderApp();
+updateSyncUI();
 updateClock();
 setInterval(updateClock, 1000);
 
@@ -527,7 +771,75 @@ let musicPlayer = {
   isPlaying: false,
   repeat: 'none', // 'none', 'all', 'one'
   updateInterval: null,
+  objectUrls: new Set(),
 };
+
+const MUSIC_DB_NAME = 'studydesk_audio';
+const MUSIC_DB_VERSION = 1;
+const MUSIC_STORE_NAME = 'tracks';
+
+function openMusicDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(MUSIC_DB_NAME, MUSIC_DB_VERSION);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(MUSIC_STORE_NAME)) {
+        db.createObjectStore(MUSIC_STORE_NAME);
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function saveTrackBlob(id, blob) {
+  return openMusicDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(MUSIC_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(MUSIC_STORE_NAME);
+    const req = store.put(blob, id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function getTrackBlob(id) {
+  return openMusicDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(MUSIC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(MUSIC_STORE_NAME);
+    const req = store.get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function deleteTrackBlob(id) {
+  return openMusicDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(MUSIC_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(MUSIC_STORE_NAME);
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function restoreTrackUrls() {
+  const promises = musicPlayer.playlist.map(track => {
+    if (track.url) return Promise.resolve();
+    return getTrackBlob(track.id).then(blob => {
+      if (blob) {
+        if (track.url && track.url.startsWith('blob:')) {
+          URL.revokeObjectURL(track.url);
+          musicPlayer.objectUrls.delete(track.url);
+        }
+        track.url = URL.createObjectURL(blob);
+        musicPlayer.objectUrls.add(track.url);
+      }
+    }).catch(() => {});
+  });
+  return Promise.all(promises);
+}
 
 function initMusicPlayer() {
   musicPlayer.audio.addEventListener('ended', onTrackEnd);
@@ -544,34 +856,49 @@ function loadMusicState() {
       const data = JSON.parse(saved);
       musicPlayer.playlist = data.playlist || [];
       musicPlayer.repeat = data.repeat || 'none';
+      restoreTrackUrls();
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('Failed to load music state', e);
+  }
 }
 
 function saveMusicState() {
-  localStorage.setItem('studydesk_music', JSON.stringify({
-    playlist: musicPlayer.playlist,
-    repeat: musicPlayer.repeat,
-  }));
+  try {
+    localStorage.setItem('studydesk_music', JSON.stringify({
+      playlist: musicPlayer.playlist.map(track => ({
+        id: track.id,
+        name: track.name,
+      })),
+      repeat: musicPlayer.repeat,
+    }));
+  } catch(e) {
+    console.warn('Unable to save music metadata to localStorage', e);
+  }
 }
 
 function addTracksToPlaylist(event) {
   const files = Array.from(event.target.files);
   files.forEach((file, idx) => {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      musicPlayer.playlist.push({
-        id: Date.now() + Math.random() + idx,
-        name: file.name.replace(/\.[^/.]+$/, ''),
-        url: e.target.result,
-        duration: 0,
-      });
+    const id = 'track_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2);
+    const objectUrl = URL.createObjectURL(file);
+    const track = {
+      id,
+      name: file.name.replace(/\.[^/.]+$/, ''),
+      url: objectUrl,
+      duration: 0,
+    };
+
+    musicPlayer.playlist.push(track);
+    musicPlayer.objectUrls.add(objectUrl);
+    saveTrackBlob(track.id, file).catch(err => {
+      console.warn('Failed to save track blob', err);
+    }).finally(() => {
       if (idx === files.length - 1) {
         saveMusicState();
         renderPlaylist();
       }
-    };
-    reader.readAsDataURL(file);
+    });
   });
   event.target.value = '';
 }
@@ -598,17 +925,35 @@ function renderPlaylist() {
 
 function playTrack(index) {
   if (index < 0 || index >= musicPlayer.playlist.length) return;
-  
+
   musicPlayer.currentIndex = index;
   const track = musicPlayer.playlist[index];
-  
-  musicPlayer.audio.src = track.url;
-  musicPlayer.audio.play();
-  musicPlayer.isPlaying = true;
-  
-  document.getElementById('playerPlayPause').innerHTML = '<i class="ti ti-player-pause" aria-hidden="true"></i>';
-  document.getElementById('nowPlaying').textContent = track.name;
-  renderPlaylist();
+
+  if (track.url) {
+    musicPlayer.audio.src = track.url;
+    musicPlayer.audio.play();
+    musicPlayer.isPlaying = true;
+    document.getElementById('playerPlayPause').innerHTML = '<i class="ti ti-player-pause" aria-hidden="true"></i>';
+    document.getElementById('nowPlaying').textContent = track.name;
+    renderPlaylist();
+    return;
+  }
+
+  getTrackBlob(track.id).then(blob => {
+    if (!blob) throw new Error('Track blob missing');
+    const objectUrl = URL.createObjectURL(blob);
+    track.url = objectUrl;
+    musicPlayer.objectUrls.add(objectUrl);
+    musicPlayer.audio.src = track.url;
+    musicPlayer.audio.play();
+    musicPlayer.isPlaying = true;
+    document.getElementById('playerPlayPause').innerHTML = '<i class="ti ti-player-pause" aria-hidden="true"></i>';
+    document.getElementById('nowPlaying').textContent = track.name;
+    renderPlaylist();
+  }).catch(() => {
+    alert('Unable to play this track. The audio file may no longer be available.');
+    removeTrack(index, { stopPropagation: () => {} });
+  });
 }
 
 function toggleMusicPlayer() {
@@ -695,8 +1040,17 @@ function updatePlayerDisplay() {
 
 function removeTrack(index, event) {
   event.stopPropagation();
+  const track = musicPlayer.playlist[index];
+  if (!track) return;
+
+  if (track.url && track.url.startsWith('blob:')) {
+    URL.revokeObjectURL(track.url);
+    musicPlayer.objectUrls.delete(track.url);
+  }
+
+  deleteTrackBlob(track.id).catch(() => {});
   musicPlayer.playlist.splice(index, 1);
-  
+
   if (index === musicPlayer.currentIndex) {
     if (musicPlayer.isPlaying) {
       musicPlayer.audio.pause();
@@ -711,7 +1065,7 @@ function removeTrack(index, event) {
   } else if (index < musicPlayer.currentIndex) {
     musicPlayer.currentIndex--;
   }
-  
+
   saveMusicState();
   renderPlaylist();
 }
@@ -733,4 +1087,31 @@ window.addEventListener('load', () => {
   initMusicPlayer();
   setupProgressBarClick();
   setVolume(70);
+});
+
+Object.assign(window, {
+  addSubject,
+  addTracksToPlaylist,
+  clearTimetable,
+  closeTTModal,
+  createCloudAccount,
+  deleteSubject,
+  nextTrack,
+  playTrack,
+  previousTrack,
+  removeTrack,
+  removeTTEntry,
+  resetTimer,
+  saveState,
+  saveTTEntry,
+  setVolume,
+  signInToCloud,
+  signOutCloud,
+  skipPhase,
+  switchTab,
+  toggleCheck,
+  toggleMusicPlayer,
+  toggleRepeat,
+  toggleTimer,
+  updateTimerSettings,
 });

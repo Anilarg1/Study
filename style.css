@@ -43,6 +43,13 @@ body {
   border-bottom: 0.5px solid var(--border2);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 .header-left h1 {
   font-family: 'Playfair Display', serif;
   font-size: 26px;
@@ -66,6 +73,79 @@ body {
   border: 0.5px solid var(--border);
   border-radius: 8px;
   padding: 8px 14px;
+}
+
+.sync-panel {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 310px;
+}
+
+.sync-status {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sync-status.online { color: var(--green); }
+.sync-status.busy { color: var(--blue); }
+.sync-status.error { color: var(--red); }
+
+.sync-controls,
+.sync-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-controls input {
+  min-width: 0;
+  width: 88px;
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 7px 8px;
+  outline: none;
+}
+
+.sync-controls input:focus {
+  border-color: var(--accent);
+}
+
+.sync-btn {
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #0f0f0f;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 7px 9px;
+  white-space: nowrap;
+}
+
+.sync-btn.secondary {
+  background: var(--bg3);
+  color: var(--text2);
+  border: 0.5px solid var(--border2);
+}
+
+.sync-user span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text2);
+  font-size: 12px;
 }
 
 .nav {
@@ -1097,6 +1177,36 @@ body {
 }
 
 @media (max-width: 768px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .header-right {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sync-panel {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sync-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto auto;
+  }
+
+  .sync-controls input {
+    width: 100%;
+  }
+
+  .live-clock {
+    width: fit-content;
+  }
+
   .pomo-layout {
     grid-template-columns: 1fr;
   }

@@ -17,7 +17,22 @@
         <h1>studydesk</h1>
         <p id="dateDisplay">loading...</p>
       </div>
-      <div class="live-clock" id="liveClock">--:--:--</div>
+      <div class="header-right">
+        <div class="sync-panel">
+          <div class="sync-status" id="syncStatus">offline save</div>
+          <div class="sync-controls" id="syncControls">
+            <input type="email" id="syncEmail" placeholder="email">
+            <input type="password" id="syncPassword" placeholder="password">
+            <button class="sync-btn" onclick="signInToCloud()">sign in</button>
+            <button class="sync-btn secondary" onclick="createCloudAccount()">create</button>
+          </div>
+          <div class="sync-user" id="syncUser" hidden>
+            <span id="syncUserEmail"></span>
+            <button class="sync-btn secondary" onclick="signOutCloud()">sign out</button>
+          </div>
+        </div>
+        <div class="live-clock" id="liveClock">--:--:--</div>
+      </div>
     </div>
 
     <div class="nav">
@@ -270,7 +285,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 
 </body>
 </html>
