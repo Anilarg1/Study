@@ -1,23 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Nunito+Sans:wght@400;600;700;800;900&display=swap');
 
 :root {
-  --bg: #0b0d10;
-  --bg2: #12171d;
-  --bg3: #182029;
-  --bg4: #202a35;
-  --border: rgba(222,232,242,0.08);
-  --border2: rgba(222,232,242,0.16);
-  --text: #edf5f7;
-  --text2: #aab8c4;
-  --text3: #6f7d89;
-  --accent: #8ee6c8;
-  --accent2: #61c9af;
-  --green: #8ee6c8;
+  --bg: #121722;
+  --bg2: #202637;
+  --bg3: #111620;
+  --bg4: #2b3448;
+  --border: rgba(143,162,194,0.20);
+  --border2: rgba(143,162,194,0.32);
+  --text: #f7f9ff;
+  --text2: #a9b8d2;
+  --text3: #7688a8;
+  --accent: #1688ff;
+  --accent2: #0f73dc;
+  --green: #1fb25b;
   --red: #ff6b7a;
   --blue: #7aa7ff;
   --purple: #c084fc;
   --orange: #ffb86b;
-  --font: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
 }
 
@@ -1389,6 +1389,455 @@ body * {
 .timetable-hint,
 .modal-field label {
   font-family: var(--mono);
+}
+
+/* === ATHENIFY-STYLE DASHBOARD PASS === */
+body {
+  background: var(--bg);
+  font-weight: 700;
+}
+
+.app {
+  max-width: none;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  padding: 0;
+}
+
+.header {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 144px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 14px;
+  background: #202638;
+  border: 0;
+}
+
+.header-left h1 {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.header-left p {
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.header-right {
+  width: 100%;
+  flex-direction: column-reverse;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.header .sync-user,
+.live-clock {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: #111620;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.live-clock {
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 900;
+}
+
+.sync-user span {
+  color: var(--text2);
+  font-family: var(--font);
+  font-weight: 800;
+}
+
+.sync-btn {
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sync-btn.secondary {
+  background: #2d3850;
+  color: var(--text);
+  border: 0;
+}
+
+.nav {
+  grid-column: 1;
+  grid-row: 2;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  width: 100%;
+  min-width: 0;
+  height: calc(100vh - 144px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 0;
+  background: #202638;
+}
+
+.nav-btn {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  gap: 12px;
+  color: var(--text);
+  border-radius: 14px;
+  padding: 13px 16px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.nav-btn i {
+  font-size: 22px;
+  color: #fff;
+}
+
+.nav-btn.active {
+  background: #111620;
+  color: #fff;
+}
+
+.tab {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-width: 0;
+  padding: 28px 34px 52px;
+}
+
+.tab.active {
+  display: block;
+}
+
+#tab-pomo::before {
+  content: 'Dashboard';
+  display: block;
+  margin-bottom: 18px;
+  color: #fff;
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.pomo-layout {
+  grid-template-columns: minmax(360px, 0.78fr) minmax(260px, 0.42fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.pomo-card,
+.pomo-settings,
+.stat-card,
+.chart-card,
+.subject-card,
+.add-subject-form,
+.tt-grid,
+.tt-modal-inner {
+  background: #202638;
+  border: 1px solid #344058;
+  border-radius: 34px;
+  box-shadow: none;
+}
+
+.pomo-card {
+  min-height: 350px;
+  padding: 28px;
+  background: #202638;
+}
+
+.pomo-settings {
+  border-radius: 22px;
+}
+
+.settings-summary {
+  padding: 18px 22px;
+}
+
+.settings-summary span {
+  color: #fff;
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.timer-ring-wrap {
+  width: 238px;
+  height: 238px;
+}
+
+.timer-ring-wrap svg {
+  width: 238px;
+  height: 238px;
+}
+
+.timer-display .time {
+  color: #fff;
+  font-size: 50px;
+  font-weight: 900;
+}
+
+.pomo-phase,
+.timer-display .session-num,
+.pomo-log-title,
+.subject-selector-wrap label,
+.stat-label,
+.stat-sub,
+.chart-title,
+.legend-label,
+.bar-val,
+.bar-lbl,
+.streak-day {
+  font-family: var(--font);
+  letter-spacing: 0;
+}
+
+.pomo-phase,
+.pomo-log-title,
+.subject-selector-wrap label {
+  color: var(--text2);
+  font-weight: 900;
+  text-transform: none;
+  font-size: 15px;
+}
+
+.btn-circle {
+  border: 0;
+  border-radius: 999px;
+  background: #111620;
+  color: #fff;
+}
+
+.btn-circle.primary {
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: none;
+}
+
+.subject-selector-wrap select {
+  border: 0;
+  border-radius: 13px;
+  background: #111620;
+  color: #fff;
+  font-weight: 800;
+}
+
+.log-item {
+  border-radius: 13px;
+  background: #111620;
+}
+
+.dashboard-section {
+  margin-top: 28px;
+}
+
+.section-kicker {
+  color: var(--text2);
+  font-family: var(--font);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 15px;
+}
+
+.section-title {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.stats-top {
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  min-height: 126px;
+  padding: 22px;
+  background: #202638;
+}
+
+.stat-card::after {
+  display: none;
+}
+
+.stat-card.accent-card {
+  background: #202638;
+}
+
+.stat-label {
+  color: var(--text2);
+  font-size: 17px;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.stat-value {
+  color: #fff;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.stat-sub {
+  color: var(--text2);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.stats-charts {
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+.chart-card {
+  min-height: 270px;
+  padding: 28px 32px;
+}
+
+.chart-title {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.chart-title i {
+  color: #86bdff;
+}
+
+.line-chart {
+  position: relative;
+  height: 198px;
+  margin: 8px -32px -28px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(22,136,255,0.24), rgba(22,136,255,0.04));
+}
+
+.line-chart svg {
+  width: 100%;
+  height: 168px;
+  display: block;
+}
+
+.line-labels {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 12px;
+  height: 18px;
+}
+
+.line-labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.donut-wrap {
+  min-height: 182px;
+}
+
+.legend-row {
+  border: 0;
+  border-radius: 13px;
+  background: #111620;
+  padding: 10px 12px;
+}
+
+.legend-label,
+.legend-val {
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.streak-display {
+  gap: 10px;
+}
+
+.streak-day {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: #111620;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.streak-day.done {
+  background: rgba(31,178,91,0.22);
+  color: #7dffaa;
+}
+
+.subjects-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.tt-grid {
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  .app {
+    display: block;
+  }
+
+  .header,
+  .nav {
+    position: static;
+    height: auto;
+  }
+
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .nav-btn {
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .tab {
+    padding: 22px 16px 42px;
+  }
+
+  .pomo-layout,
+  .stats-charts,
+  .stats-top {
+    grid-template-columns: 1fr;
+  }
+
+  #tab-pomo::before {
+    font-size: 38px;
+  }
 }
 
 /* === TIMETABLE === */

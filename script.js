@@ -565,15 +565,31 @@ function renderWeekChart() {
   }
   const vals = days.map(d => state.sessions.filter(s => s.date === d).reduce((a,b) => a+b.mins, 0));
   const max = Math.max(...vals, 1);
-  el.innerHTML = days.map((d, i) => {
-    const pct = (vals[i] / max) * 100;
-    const lbl = new Date(d).toLocaleDateString('en-GB', {weekday:'short'}).slice(0,2);
-    return `<div class="bar-col">
-      <div class="bar-val">${vals[i] ? Math.round(vals[i]) : ''}</div>
-      <div class="bar-fill" style="height:${pct}%;background:var(--accent);opacity:${0.4 + 0.6*(pct/100)}"></div>
-      <div class="bar-lbl">${lbl}</div>
-    </div>`;
+  const points = vals.map((value, index) => {
+    const x = 18 + index * 44;
+    const y = 124 - ((value / max) * 92);
+    return `${x},${y}`;
+  }).join(' ');
+  const areaPoints = `18,136 ${points} 282,136`;
+  const labels = days.map((d, i) => {
+    const x = 18 + i * 44;
+    const lbl = new Date(d).toLocaleDateString('en-GB', {weekday:'short'}).slice(0,3);
+    return `<span style="left:${(x / 300) * 100}%">${lbl}</span>`;
   }).join('');
+  el.innerHTML = `
+    <div class="line-chart">
+      <svg viewBox="0 0 300 150" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="weekArea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(22,136,255,0.46)" />
+            <stop offset="100%" stop-color="rgba(22,136,255,0)" />
+          </linearGradient>
+        </defs>
+        <polygon points="${areaPoints}" fill="url(#weekArea)"></polygon>
+        <polyline points="${points}" fill="none" stroke="#1688ff" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"></polyline>
+      </svg>
+      <div class="line-labels">${labels}</div>
+    </div>`;
 }
 
 function renderDonut() {
