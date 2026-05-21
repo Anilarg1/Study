@@ -1,1582 +1,276 @@
-
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap');
-
-  :root {
-    --bg: #0f0f0f;
-    --bg2: #161616;
-    --bg3: #1e1e1e;
-    --bg4: #262626;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.15);
-    --text: #f0ede8;
-    --text2: #a09d98;
-    --text3: #6b6864;
-    --accent: #d4a853;
-    --accent2: #b8935f;
-    --green: #4caf7d;
-    --red: #e05c5c;
-    --blue: #5b9cf6;
-    --purple: #9b72cf;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    min-height: 100vh;
-  }
-
-  .app {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 24px 16px;
-  }
-
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-    padding-bottom: 20px;
-    border-bottom: 0.5px solid var(--border2);
-  }
-
-  .header-left h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 26px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -0.3px;
-  }
-
-  .header-left p {
-    font-size: 12px;
-    color: var(--text3);
-    margin-top: 2px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .live-clock {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    color: var(--text2);
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 14px;
-  }
-
-  .nav {
-    display: flex;
-    gap: 4px;
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 24px;
-  }
-
-  .nav-btn {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--text3);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    padding: 8px 12px;
-    border-radius: 7px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .nav-btn.active {
-    background: var(--bg4);
-    color: var(--accent);
-    border: 0.5px solid var(--border2);
-  }
-
-  .nav-btn:hover:not(.active) {
-    color: var(--text2);
-    background: var(--bg3);
-  }
-
-  .tab { display: none; }
-  .tab.active { display: block; }
-
-  /* === POMODORO === */
-  .pomo-layout {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 20px;
-  }
-
-  .pomo-card {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 16px;
-    padding: 36px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .pomo-phase {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 24px;
-  }
-
-  .pomo-phase span {
-    color: var(--accent);
-  }
-
-  .timer-ring-wrap {
-    position: relative;
-    width: 220px;
-    height: 220px;
-    margin-bottom: 32px;
-  }
-
-  .timer-ring-wrap svg {
-    transform: rotate(-90deg);
-  }
-
-  .timer-display {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-  }
-
-  .timer-display .time {
-    font-family: 'DM Mono', monospace;
-    font-size: 42px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1;
-  }
-
-  .timer-display .session-num {
-    font-size: 11px;
-    color: var(--text3);
-    margin-top: 6px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .pomo-controls {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-
-  .btn-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 0.5px solid var(--border2);
-    background: var(--bg3);
-    color: var(--text);
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .btn-circle:hover { background: var(--bg4); border-color: var(--accent); color: var(--accent); }
-
-  .btn-circle.primary {
-    width: 64px;
-    height: 64px;
-    font-size: 20px;
-    background: var(--accent);
-    color: #0f0f0f;
-    border-color: var(--accent);
-  }
-
-  .btn-circle.primary:hover { background: var(--accent2); }
-
-  .subject-selector-wrap {
-    width: 100%;
-  }
-
-  .subject-selector-wrap label {
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 8px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .subject-selector-wrap select {
-    width: 100%;
-    background: var(--bg3);
-    border: 0.5px solid var(--border2);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    padding: 10px 14px;
-    cursor: pointer;
-    appearance: none;
-    outline: none;
-  }
-
-  .pomo-settings {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-  }
-
-  .settings-title {
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-family: 'DM Mono', monospace;
-    margin-bottom: 20px;
-  }
-
-  .setting-row {
-    margin-bottom: 18px;
-  }
-
-  .setting-row label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 8px;
-  }
-
-  .setting-row label span {
-    font-family: 'DM Mono', monospace;
-    color: var(--accent);
-    font-size: 12px;
-  }
-
-  .setting-row input[type=range] {
-    width: 100%;
-    accent-color: var(--accent);
-    height: 3px;
-  }
-
-  .divider {
-    height: 0.5px;
-    background: var(--border);
-    margin: 18px 0;
-  }
-
-  .pomo-log {
-    margin-top: 18px;
-  }
-
-  .pomo-log-title {
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    font-family: 'DM Mono', monospace;
-    margin-bottom: 12px;
-  }
-
-  .log-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 7px;
-    margin-bottom: 4px;
-    background: var(--bg3);
-  }
-
-  .log-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-  }
-
-  .log-dot.break { background: var(--blue); }
-
-  .log-item span {
-    font-size: 12px;
-    color: var(--text2);
-    flex: 1;
-  }
-
-  .log-item .log-time {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--text3);
-  }
-
-  /* === SUBJECTS === */
-  .subjects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .subject-card {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .subject-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--subject-color, var(--accent));
-  }
-
-  .subject-name {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-
-  .subject-time {
-    font-family: 'DM Mono', monospace;
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--subject-color, var(--accent));
-    margin: 10px 0 4px;
-  }
-
-  .subject-sessions {
-    font-size: 11px;
-    color: var(--text3);
-  }
-
-  .subject-bar-wrap {
-    height: 3px;
-    background: var(--bg4);
-    border-radius: 2px;
-    margin-top: 12px;
-    overflow: hidden;
-  }
-
-  .subject-bar {
-    height: 100%;
-    background: var(--subject-color, var(--accent));
-    border-radius: 2px;
-    transition: width 0.6s ease;
-  }
-
-  .subject-actions {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    display: flex;
-    gap: 6px;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .subject-card:hover .subject-actions { opacity: 1; }
-
-  .icon-btn {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    border: 0.5px solid var(--border2);
-    background: var(--bg3);
-    color: var(--text3);
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-  }
-
-  .icon-btn:hover { color: var(--red); border-color: var(--red); background: rgba(224,92,92,0.1); }
-  .icon-btn.edit:hover { color: var(--accent); border-color: var(--accent); background: rgba(212,168,83,0.1); }
-
-  .add-subject-form {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
-
-  .add-subject-form h3 {
-    font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 14px;
-    font-weight: 400;
-  }
-
-  .form-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .form-row input[type=text] {
-    flex: 1;
-    min-width: 160px;
-    background: var(--bg3);
-    border: 0.5px solid var(--border2);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    padding: 9px 14px;
-    outline: none;
-  }
-
-  .form-row input[type=text]:focus {
-    border-color: var(--accent);
-  }
-
-  .form-row input[type=color] {
-    width: 42px;
-    height: 38px;
-    border: 0.5px solid var(--border2);
-    border-radius: 8px;
-    background: var(--bg3);
-    cursor: pointer;
-    padding: 3px;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    border: none;
-    border-radius: 8px;
-    color: #0f0f0f;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 9px 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-primary:hover { background: var(--accent2); }
-
-  .btn-ghost {
-    background: none;
-    border: 0.5px solid var(--border2);
-    border-radius: 8px;
-    color: var(--text2);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    padding: 9px 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
-
-  /* === STATS === */
-  .stats-top {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .stat-card {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-  }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-family: 'DM Mono', monospace;
-    margin-bottom: 8px;
-  }
-
-  .stat-value {
-    font-family: 'DM Mono', monospace;
-    font-size: 26px;
-    font-weight: 500;
-    color: var(--text);
-  }
-
-  .stat-sub {
-    font-size: 11px;
-    color: var(--text3);
-    margin-top: 4px;
-  }
-
-  .stats-charts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-
-  .chart-card {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
-
-  .chart-title {
-    font-size: 12px;
-    color: var(--text2);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .bar-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-    height: 120px;
-  }
-
-  .bar-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    height: 100%;
-    justify-content: flex-end;
-  }
-
-  .bar-fill {
-    width: 100%;
-    border-radius: 3px 3px 0 0;
-    transition: height 0.6s ease;
-    min-height: 2px;
-  }
-
-  .bar-lbl {
-    font-size: 10px;
-    color: var(--text3);
-    font-family: 'DM Mono', monospace;
-  }
-
-  .bar-val {
-    font-size: 10px;
-    color: var(--text2);
-    font-family: 'DM Mono', monospace;
-  }
-
-  .donut-wrap {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-
-  .donut-legend {
-    flex: 1;
-  }
-
-  .legend-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .legend-label { font-size: 12px; color: var(--text2); flex: 1; }
-  .legend-val { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text3); }
-
-  .streak-display {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .streak-day {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 0.5px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    color: var(--text3);
-    background: var(--bg3);
-  }
-
-  .streak-day.done {
-    background: rgba(212,168,83,0.2);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .streak-day.today {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
-  }
-
-  /* === TIMETABLE === */
-  .timetable-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .tt-grid {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .tt-header {
-    display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
-    border-bottom: 0.5px solid var(--border);
-  }
-
-  .tt-header-cell {
-    padding: 10px 8px;
-    text-align: center;
-    font-size: 11px;
-    color: var(--text3);
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.5px;
-    border-right: 0.5px solid var(--border);
-  }
-
-  .tt-header-cell:last-child { border-right: none; }
-
-  .tt-header-cell.today-col {
-    color: var(--accent);
-    background: rgba(212,168,83,0.06);
-  }
-
-  .tt-row {
-    display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
-    border-bottom: 0.5px solid var(--border);
-  }
-
-  .tt-row:last-child { border-bottom: none; }
-
-  .tt-time {
-    padding: 12px 8px;
-    font-size: 10px;
-    color: var(--text3);
-    font-family: 'DM Mono', monospace;
-    border-right: 0.5px solid var(--border);
-    text-align: right;
-    padding-right: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .tt-cell {
-    border-right: 0.5px solid var(--border);
-    padding: 4px;
-    min-height: 48px;
-    cursor: pointer;
-    transition: background 0.15s;
-    position: relative;
-  }
-
-  .tt-cell:last-child { border-right: none; }
-  .tt-cell:hover { background: var(--bg3); }
-  .tt-cell.today-col { background: rgba(212,168,83,0.03); }
-
-  .tt-entry {
-    border-radius: 5px;
-    padding: 4px 6px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    position: relative;
-    line-height: 1.3;
-  }
-
-  .tt-entry .tt-del {
-    position: absolute;
-    top: 2px; right: 4px;
-    font-size: 12px;
-    opacity: 0;
-    transition: opacity 0.15s;
-    cursor: pointer;
-    line-height: 1;
-  }
-
-  .tt-entry:hover .tt-del { opacity: 1; }
-
-  .tt-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .tt-modal.open { display: flex; }
-
-  .tt-modal-inner {
-    background: var(--bg2);
-    border: 0.5px solid var(--border2);
-    border-radius: 16px;
-    padding: 28px;
-    width: 340px;
-    max-width: 90vw;
-  }
-
-  .modal-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    color: var(--text);
-    margin-bottom: 20px;
-  }
-
-  .modal-field {
-    margin-bottom: 14px;
-  }
-
-  .modal-field label {
-    font-size: 11px;
-    color: var(--text3);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-family: 'DM Mono', monospace;
-    display: block;
-    margin-bottom: 6px;
-  }
-
-  .modal-field input, .modal-field select {
-    width: 100%;
-    background: var(--bg3);
-    border: 0.5px solid var(--border2);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    padding: 9px 14px;
-    outline: none;
-  }
-
-  .modal-field input:focus, .modal-field select:focus {
-    border-color: var(--accent);
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 48px;
-    color: var(--text3);
-    font-size: 13px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    color: var(--text);
-  }
-
-  .badge {
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    padding: 3px 8px;
-    border-radius: 20px;
-    background: rgba(212,168,83,0.15);
-    color: var(--accent);
-    border: 0.5px solid rgba(212,168,83,0.3);
-  }
-</style>
-
-<div class="app">
-  <div class="header">
-    <div class="header-left">
-      <h1>studydesk</h1>
-      <p id="dateDisplay">loading...</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>studydesk</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app">
+    <div class="header">
+      <div class="header-left">
+        <h1>studydesk</h1>
+        <p id="dateDisplay">loading...</p>
+      </div>
+      <div class="live-clock" id="liveClock">--:--:--</div>
     </div>
-    <div class="live-clock" id="liveClock">--:--:--</div>
-  </div>
 
-  <div class="nav">
-    <button class="nav-btn active" onclick="switchTab('pomo')" id="nav-pomo">
-      <i class="ti ti-clock" aria-hidden="true"></i> pomodoro
-    </button>
-    <button class="nav-btn" onclick="switchTab('subjects')" id="nav-subjects">
-      <i class="ti ti-books" aria-hidden="true"></i> subjects
-    </button>
-    <button class="nav-btn" onclick="switchTab('stats')" id="nav-stats">
-      <i class="ti ti-chart-bar" aria-hidden="true"></i> stats
-    </button>
-    <button class="nav-btn" onclick="switchTab('timetable')" id="nav-timetable">
-      <i class="ti ti-calendar" aria-hidden="true"></i> timetable
-    </button>
-  </div>
+    <div class="nav">
+      <button class="nav-btn active" onclick="switchTab('pomo')" id="nav-pomo">
+        <i class="ti ti-clock" aria-hidden="true"></i> pomodoro
+      </button>
+      <button class="nav-btn" onclick="switchTab('subjects')" id="nav-subjects">
+        <i class="ti ti-books" aria-hidden="true"></i> subjects
+      </button>
+      <button class="nav-btn" onclick="switchTab('stats')" id="nav-stats">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> stats
+      </button>
+      <button class="nav-btn" onclick="switchTab('timetable')" id="nav-timetable">
+        <i class="ti ti-calendar" aria-hidden="true"></i> timetable
+      </button>
+    </div>
 
-  <!-- POMODORO TAB -->
-  <div class="tab active" id="tab-pomo">
-    <div class="pomo-layout">
-      <div class="pomo-card">
-        <div class="pomo-phase">
-          <span id="phaseLabel">focus</span> · session <span id="sessionNum">1</span>
-        </div>
-        <div class="timer-ring-wrap">
-          <svg width="220" height="220" viewBox="0 0 220 220">
-            <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
-            <circle id="progressRing" cx="110" cy="110" r="96" fill="none" stroke="#d4a853" stroke-width="6"
-              stroke-linecap="round"
-              stroke-dasharray="603.19"
-              stroke-dashoffset="0"
-              style="transition: stroke-dashoffset 1s linear;"/>
-          </svg>
-          <div class="timer-display">
-            <div class="time" id="timerDisplay">25:00</div>
-            <div class="session-num" id="timerSubtext">focus time</div>
+    <div class="tab active" id="tab-pomo">
+      <div class="pomo-layout">
+        <div class="pomo-left">
+          <div class="pomo-card">
+          <div class="pomo-phase">
+            <span id="phaseLabel">focus</span> · session <span id="sessionNum">1</span>
+          </div>
+          <div class="timer-ring-wrap">
+            <svg width="220" height="220" viewBox="0 0 220 220">
+              <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
+              <circle id="progressRing" cx="110" cy="110" r="96" fill="none" stroke="#d4a853" stroke-width="6"
+                stroke-linecap="round"
+                stroke-dasharray="603.19"
+                stroke-dashoffset="0"
+                style="transition: stroke-dashoffset 1s linear;"/>
+            </svg>
+            <div class="timer-display">
+              <div class="time" id="timerDisplay">25:00</div>
+              <div class="session-num" id="timerSubtext">focus time</div>
+            </div>
+          </div>
+          <div class="pomo-controls">
+            <button class="btn-circle" onclick="resetTimer()" title="Reset"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+            <button class="btn-circle primary" id="playPauseBtn" onclick="toggleTimer()"><i class="ti ti-player-play" aria-hidden="true"></i></button>
+            <button class="btn-circle" onclick="skipPhase()" title="Skip"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
+          </div>
+          <div class="subject-selector-wrap">
+            <label>studying</label>
+            <select id="pomoSubjectSelect" onchange="saveState()">
+              <option value="">— select subject —</option>
+            </select>
+          </div>
+          <div id="pomoLog" class="pomo-log" style="width:100%;margin-top:20px;">
+            <div class="pomo-log-title">recent sessions</div>
+            <div id="logList"></div>
           </div>
         </div>
-        <div class="pomo-controls">
-          <button class="btn-circle" onclick="resetTimer()" title="Reset"><i class="ti ti-refresh" aria-hidden="true"></i></button>
-          <button class="btn-circle primary" id="playPauseBtn" onclick="toggleTimer()"><i class="ti ti-player-play" aria-hidden="true"></i></button>
-          <button class="btn-circle" onclick="skipPhase()" title="Skip"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
-        </div>
-        <div class="subject-selector-wrap">
-          <label>studying</label>
-          <select id="pomoSubjectSelect" onchange="saveState()">
-            <option value="">— select subject —</option>
-          </select>
-        </div>
-        <div id="pomoLog" class="pomo-log" style="width:100%;margin-top:20px;">
-          <div class="pomo-log-title">recent sessions</div>
-          <div id="logList"></div>
-        </div>
-      </div>
 
-      <div class="pomo-settings">
-        <div class="settings-title">timer settings</div>
+          <!-- Music Player -->
+          <div class="music-player-card">
+            <div class="player-title">
+              <i class="ti ti-music" aria-hidden="true"></i> study music
+            </div>
+            
+            <div class="player-display">
+              <div class="now-playing" id="nowPlaying">no track selected</div>
+              <div class="player-time">
+                <span id="playerTime">0:00</span> / <span id="playerDuration">0:00</span>
+              </div>
+            </div>
 
-        <div class="setting-row">
-          <label>focus duration <span id="focusVal">25 min</span></label>
-          <input type="range" id="focusDur" min="5" max="90" step="5" value="25" oninput="updateTimerSettings()">
-        </div>
+            <div class="player-progress">
+              <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-thumb" id="progressThumb"></div>
+              </div>
+            </div>
 
-        <div class="setting-row">
-          <label>short break <span id="shortVal">5 min</span></label>
-          <input type="range" id="shortBreak" min="1" max="30" step="1" value="5" oninput="updateTimerSettings()">
-        </div>
+            <div class="player-controls">
+              <button class="btn-circle" id="playerPrev" onclick="previousTrack()" title="Previous"><i class="ti ti-player-skip-back" aria-hidden="true"></i></button>
+              <button class="btn-circle primary" id="playerPlayPause" onclick="toggleMusicPlayer()" title="Play"><i class="ti ti-player-play" aria-hidden="true"></i></button>
+              <button class="btn-circle" id="playerNext" onclick="nextTrack()" title="Next"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
+              <button class="btn-circle" onclick="toggleRepeat()" id="repeatBtn" title="Repeat"><i class="ti ti-repeat" aria-hidden="true"></i></button>
+            </div>
 
-        <div class="setting-row">
-          <label>long break <span id="longVal">15 min</span></label>
-          <input type="range" id="longBreak" min="5" max="60" step="5" value="15" oninput="updateTimerSettings()">
-        </div>
+            <div class="player-volume">
+              <i class="ti ti-volume" aria-hidden="true"></i>
+              <input type="range" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)" class="volume-slider">
+            </div>
 
-        <div class="setting-row">
-          <label>sessions before long break <span id="sessionsVal">4</span></label>
-          <input type="range" id="sessionsBeforeLong" min="2" max="8" step="1" value="4" oninput="updateTimerSettings()">
-        </div>
+            <div class="playlist-section">
+              <div class="playlist-header">
+                <span>playlist <span id="playlistCount">(0)</span></span>
+                <button class="icon-btn" onclick="document.getElementById('audioFileInput').click()" title="Add tracks">
+                  <i class="ti ti-plus" aria-hidden="true"></i>
+                </button>
+              </div>
+              <input type="file" id="audioFileInput" multiple accept="audio/*" style="display:none" onchange="addTracksToPlaylist(event)">
+              <div class="playlist" id="playlist">
+                <div class="empty-playlist">add music to get started</div>
+              </div>
+            </div>
+          </div>
 
-        <div class="divider"></div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:13px;color:var(--text2);">auto-start breaks</span>
-          <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
-            <input type="checkbox" id="autoBreak" style="opacity:0;width:0;height:0" onchange="saveState()">
-            <span id="toggleAutoBreak" onclick="toggleCheck('autoBreak')" style="position:absolute;inset:0;border-radius:20px;background:var(--bg4);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
-              <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--text3);transition:all 0.2s;" id="toggleKnobBreak"></span>
-            </span>
-          </label>
         </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:13px;color:var(--text2);">sound alerts</span>
-          <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
-            <input type="checkbox" id="soundOn" checked style="opacity:0;width:0;height:0" onchange="saveState()">
-            <span id="toggleSoundOn" onclick="toggleCheck('soundOn')" style="position:absolute;inset:0;border-radius:20px;background:var(--accent);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
-              <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#0f0f0f;transition:all 0.2s;transform:translateX(16px);" id="toggleKnobSound"></span>
-            </span>
-          </label>
+        <div class="pomo-settings">
+          <div class="settings-title">timer settings</div>
+
+          <div class="setting-row">
+            <label>focus duration <span id="focusVal">25 min</span></label>
+            <input type="range" id="focusDur" min="5" max="90" step="5" value="25" oninput="updateTimerSettings()">
+          </div>
+
+          <div class="setting-row">
+            <label>short break <span id="shortVal">5 min</span></label>
+            <input type="range" id="shortBreak" min="1" max="30" step="1" value="5" oninput="updateTimerSettings()">
+          </div>
+
+          <div class="setting-row">
+            <label>long break <span id="longVal">15 min</span></label>
+            <input type="range" id="longBreak" min="5" max="60" step="5" value="15" oninput="updateTimerSettings()">
+          </div>
+
+          <div class="setting-row">
+            <label>sessions before long break <span id="sessionsVal">4</span></label>
+            <input type="range" id="sessionsBeforeLong" min="2" max="8" step="1" value="4" oninput="updateTimerSettings()">
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:13px;color:var(--text2);">auto-start breaks</span>
+            <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
+              <input type="checkbox" id="autoBreak" style="opacity:0;width:0;height:0" onchange="toggleCheck('autoBreak')">
+              <span id="toggleAutoBreak" style="position:absolute;inset:0;border-radius:20px;background:var(--bg4);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
+                <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--text3);transition:all 0.2s;" id="toggleKnobBreak"></span>
+              </span>
+            </label>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:13px;color:var(--text2);">sound alerts</span>
+            <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
+              <input type="checkbox" id="soundOn" checked style="opacity:0;width:0;height:0" onchange="toggleCheck('soundOn')">
+              <span id="toggleSoundOn" style="position:absolute;inset:0;border-radius:20px;background:var(--accent);border:0.5px solid var(--border2);transition:background 0.2s;cursor:pointer;">
+                <span style="position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#0f0f0f;transition:all 0.2s;transform:translateX(16px);" id="toggleKnobSound"></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:12px;">today's focus</div>
+          <div style="font-family:'DM Mono',monospace;font-size:28px;color:var(--accent);" id="todayFocusDisplay">0h 0m</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="todaySessionsDisplay">0 completed sessions</div>
         </div>
-
-        <div class="divider"></div>
-
-        <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:12px;">today's focus</div>
-        <div style="font-family:'DM Mono',monospace;font-size:28px;color:var(--accent);" id="todayFocusDisplay">0h 0m</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="todaySessionsDisplay">0 completed sessions</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SUBJECTS TAB -->
-  <div class="tab" id="tab-subjects">
-    <div class="section-header">
-      <div class="section-title">subjects</div>
-      <span class="badge" id="subjectCount">0 subjects</span>
-    </div>
-    <div class="subjects-grid" id="subjectsGrid">
-      <div class="empty-state" id="subjectsEmpty">no subjects yet — add one below</div>
-    </div>
-    <div class="add-subject-form">
-      <h3>add new subject</h3>
-      <div class="form-row">
-        <input type="text" id="newSubjectName" placeholder="subject name..." onkeydown="if(event.key==='Enter')addSubject()">
-        <input type="color" id="newSubjectColor" value="#d4a853" title="pick color">
-        <button class="btn-primary" onclick="addSubject()">add subject</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- STATS TAB -->
-  <div class="tab" id="tab-stats">
-    <div class="section-header">
-      <div class="section-title">statistics</div>
-    </div>
-    <div class="stats-top">
-      <div class="stat-card">
-        <div class="stat-label">total hours</div>
-        <div class="stat-value" id="statTotalHours">0.0</div>
-        <div class="stat-sub">all time</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">sessions done</div>
-        <div class="stat-value" id="statSessions">0</div>
-        <div class="stat-sub">completed</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">streak</div>
-        <div class="stat-value" id="statStreak">0 <span style="font-size:14px;color:var(--text3)">days</span></div>
-        <div class="stat-sub">keep it up!</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">today</div>
-        <div class="stat-value" id="statToday">0</div>
-        <div class="stat-sub">minutes focused</div>
       </div>
     </div>
 
-    <div class="stats-charts">
+    <div class="tab" id="tab-subjects">
+      <div class="section-header">
+        <div class="section-title">subjects</div>
+        <span class="badge" id="subjectCount">0 subjects</span>
+      </div>
+      <div class="subjects-grid" id="subjectsGrid">
+        <div class="empty-state" id="subjectsEmpty">no subjects yet — add one below</div>
+      </div>
+      <div class="add-subject-form">
+        <h3>add new subject</h3>
+        <div class="form-row">
+          <input type="text" id="newSubjectName" placeholder="subject name..." onkeydown="if(event.key==='Enter')addSubject()">
+          <input type="color" id="newSubjectColor" value="#d4a853" title="pick color">
+          <button class="btn-primary" onclick="addSubject()">add subject</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab" id="tab-stats">
+      <div class="section-header">
+        <div class="section-title">statistics</div>
+      </div>
+      <div class="stats-top">
+        <div class="stat-card">
+          <div class="stat-label">total hours</div>
+          <div class="stat-value" id="statTotalHours">0.0</div>
+          <div class="stat-sub">all time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">sessions done</div>
+          <div class="stat-value" id="statSessions">0</div>
+          <div class="stat-sub">completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">streak</div>
+          <div class="stat-value" id="statStreak">0 <span style="font-size:14px;color:var(--text3)">days</span></div>
+          <div class="stat-sub">keep it up!</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">today</div>
+          <div class="stat-value" id="statToday">0</div>
+          <div class="stat-sub">minutes focused</div>
+        </div>
+      </div>
+
+      <div class="stats-charts">
+        <div class="chart-card">
+          <div class="chart-title"><i class="ti ti-chart-bar" aria-hidden="true" style="font-size:16px;"></i> hours this week</div>
+          <div class="bar-chart" id="weekChart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:16px;"></i> time by subject</div>
+          <div class="donut-wrap">
+            <canvas id="donutCanvas" width="120" height="120"></canvas>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="chart-card">
-        <div class="chart-title"><i class="ti ti-chart-bar" aria-hidden="true" style="font-size:16px;"></i> hours this week</div>
-        <div class="bar-chart" id="weekChart"></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title"><i class="ti ti-chart-donut" aria-hidden="true" style="font-size:16px;"></i> time by subject</div>
-        <div class="donut-wrap">
-          <canvas id="donutCanvas" width="120" height="120"></canvas>
-          <div class="donut-legend" id="donutLegend"></div>
-        </div>
+        <div class="chart-title"><i class="ti ti-flame" aria-hidden="true" style="font-size:16px;"></i> 30-day study streak</div>
+        <div class="streak-display" id="streakGrid"></div>
       </div>
     </div>
 
-    <div class="chart-card">
-      <div class="chart-title"><i class="ti ti-flame" aria-hidden="true" style="font-size:16px;"></i> 30-day study streak</div>
-      <div class="streak-display" id="streakGrid"></div>
-    </div>
-  </div>
-
-  <!-- TIMETABLE TAB -->
-  <div class="tab" id="tab-timetable">
-    <div class="section-header">
-      <div class="section-title">timetable</div>
-    </div>
-    <div class="timetable-controls">
-      <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;">click any cell to add a session</div>
-      <button class="btn-ghost" onclick="clearTimetable()" style="margin-left:auto;font-size:12px;padding:6px 14px;">clear all</button>
-    </div>
-    <div class="tt-grid" id="ttGrid"></div>
-  </div>
-</div>
-
-<!-- TIMETABLE MODAL -->
-<div class="tt-modal" id="ttModal">
-  <div class="tt-modal-inner">
-    <div class="modal-title">add to timetable</div>
-    <div class="modal-field">
-      <label>subject</label>
-      <select id="modalSubject"></select>
-    </div>
-    <div class="modal-field">
-      <label>label (optional)</label>
-      <input type="text" id="modalLabel" placeholder="e.g. lecture, revision...">
-    </div>
-    <div class="modal-actions">
-      <button class="btn-primary" onclick="saveTTEntry()">save</button>
-      <button class="btn-ghost" onclick="closeTTModal()">cancel</button>
-    </div>
-  </div>
-</div>
-
-<script>
-const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const HOURS = Array.from({length: 16}, (_,i) => `${(i+7).toString().padStart(2,'0')}:00`);
-const COLORS = ['#d4a853','#5b9cf6','#4caf7d','#e05c5c','#9b72cf','#e08c5c','#5ce0d0','#e05cab'];
-
-let state = {
-  subjects: [],
-  sessions: [],
-  timetable: {},
-  streak: [],
-};
-
-let timer = {
-  running: false,
-  interval: null,
-  phase: 'focus',
-  elapsed: 0,
-  sessionCount: 0,
-  total: 0,
-};
-
-function loadState() {
-  try {
-    const s = localStorage.getItem('studydesk_v2');
-    if (s) state = JSON.parse(s);
-    if (!state.subjects) state.subjects = [];
-    if (!state.sessions) state.sessions = [];
-    if (!state.timetable) state.timetable = {};
-    if (!state.streak) state.streak = [];
-  } catch(e) {}
-}
-
-function saveState() {
-  localStorage.setItem('studydesk_v2', JSON.stringify(state));
-}
-
-function getFocusMins() { return parseInt(document.getElementById('focusDur').value); }
-function getShortBreak() { return parseInt(document.getElementById('shortBreak').value); }
-function getLongBreak() { return parseInt(document.getElementById('longBreak').value); }
-function getSessionsBeforeLong() { return parseInt(document.getElementById('sessionsBeforeLong').value); }
-
-function getCurrentPhaseMins() {
-  if (timer.phase === 'focus') return getFocusMins();
-  if (timer.phase === 'short') return getShortBreak();
-  return getLongBreak();
-}
-
-function formatTime(secs) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-}
-
-function getPhaseTotal() {
-  return getCurrentPhaseMins() * 60;
-}
-
-function updateTimerDisplay() {
-  const total = getPhaseTotal();
-  const remaining = total - timer.elapsed;
-  document.getElementById('timerDisplay').textContent = formatTime(Math.max(0, remaining));
-  const circumference = 603.19;
-  const offset = circumference * (timer.elapsed / total);
-  document.getElementById('progressRing').style.strokeDashoffset = offset;
-  const ringEl = document.getElementById('progressRing');
-  if (timer.phase === 'focus') ringEl.setAttribute('stroke', '#d4a853');
-  else if (timer.phase === 'short') ringEl.setAttribute('stroke', '#5b9cf6');
-  else ringEl.setAttribute('stroke', '#4caf7d');
-  document.getElementById('phaseLabel').textContent = timer.phase === 'focus' ? 'focus' : timer.phase === 'short' ? 'short break' : 'long break';
-  document.getElementById('sessionNum').textContent = timer.sessionCount + 1;
-  document.getElementById('timerSubtext').textContent = timer.phase === 'focus' ? 'focus time' : 'break time';
-}
-
-function updateTimerSettings() {
-  document.getElementById('focusVal').textContent = getFocusMins() + ' min';
-  document.getElementById('shortVal').textContent = getShortBreak() + ' min';
-  document.getElementById('longVal').textContent = getLongBreak() + ' min';
-  document.getElementById('sessionsVal').textContent = getSessionsBeforeLong();
-  if (!timer.running) {
-    timer.elapsed = 0;
-    updateTimerDisplay();
-  }
-}
-
-function toggleTimer() {
-  if (timer.running) {
-    clearInterval(timer.interval);
-    timer.running = false;
-    document.getElementById('playPauseBtn').innerHTML = '<i class="ti ti-player-play"></i>';
-  } else {
-    timer.running = true;
-    document.getElementById('playPauseBtn').innerHTML = '<i class="ti ti-player-pause"></i>';
-    timer.interval = setInterval(() => {
-      timer.elapsed++;
-      if (timer.phase === 'focus') timer.total++;
-      updateTimerDisplay();
-      updateTodayDisplay();
-      if (timer.elapsed >= getPhaseTotal()) {
-        phaseComplete();
-      }
-    }, 1000);
-  }
-}
-
-function phaseComplete() {
-  clearInterval(timer.interval);
-  timer.running = false;
-  document.getElementById('playPauseBtn').innerHTML = '<i class="ti ti-player-play"></i>';
-  if (document.getElementById('soundOn').checked) playBeep();
-
-  if (timer.phase === 'focus') {
-    const subjectId = document.getElementById('pomoSubjectSelect').value;
-    const mins = getFocusMins();
-    logSession(subjectId, mins);
-    timer.sessionCount++;
-    if (timer.sessionCount % getSessionsBeforeLong() === 0) {
-      timer.phase = 'long';
-    } else {
-      timer.phase = 'short';
-    }
-  } else {
-    timer.phase = 'focus';
-  }
-
-  timer.elapsed = 0;
-  updateTimerDisplay();
-
-  if (document.getElementById('autoBreak').checked) {
-    setTimeout(toggleTimer, 500);
-  }
-}
-
-function skipPhase() {
-  if (timer.running) {
-    clearInterval(timer.interval);
-    timer.running = false;
-    document.getElementById('playPauseBtn').innerHTML = '<i class="ti ti-player-play"></i>';
-  }
-  if (timer.phase === 'focus') {
-    timer.phase = timer.sessionCount % getSessionsBeforeLong() === getSessionsBeforeLong()-1 ? 'long' : 'short';
-  } else {
-    timer.phase = 'focus';
-  }
-  timer.elapsed = 0;
-  updateTimerDisplay();
-}
-
-function resetTimer() {
-  if (timer.running) {
-    clearInterval(timer.interval);
-    timer.running = false;
-    document.getElementById('playPauseBtn').innerHTML = '<i class="ti ti-player-play"></i>';
-  }
-  timer.phase = 'focus';
-  timer.elapsed = 0;
-  updateTimerDisplay();
-}
-
-function logSession(subjectId, mins) {
-  const now = new Date();
-  const entry = {
-    id: Date.now(),
-    subjectId,
-    mins,
-    date: now.toISOString().split('T')[0],
-    time: now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}),
-  };
-  state.sessions.push(entry);
-  if (subjectId) {
-    const subj = state.subjects.find(s => s.id === subjectId);
-    if (subj) {
-      subj.totalMins = (subj.totalMins || 0) + mins;
-      subj.sessions = (subj.sessions || 0) + 1;
-    }
-  }
-  updateStreak(entry.date);
-  saveState();
-  renderLog();
-  renderSubjects();
-  updateTodayDisplay();
-}
-
-function updateStreak(date) {
-  if (!state.streak.includes(date)) {
-    state.streak.push(date);
-  }
-}
-
-function updateTodayDisplay() {
-  const today = new Date().toISOString().split('T')[0];
-  const todaySessions = state.sessions.filter(s => s.date === today);
-  const todayMins = todaySessions.reduce((a,b) => a + b.mins, 0) + Math.floor(timer.total / 60);
-  const h = Math.floor(todayMins / 60);
-  const m = todayMins % 60;
-  document.getElementById('todayFocusDisplay').textContent = `${h}h ${m}m`;
-  document.getElementById('todaySessionsDisplay').textContent = `${todaySessions.length} completed sessions`;
-}
-
-function renderLog() {
-  const logs = state.sessions.slice(-5).reverse();
-  const el = document.getElementById('logList');
-  if (!logs.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">no sessions yet</div>'; return; }
-  el.innerHTML = logs.map(l => {
-    const subj = l.subjectId ? state.subjects.find(s => s.id === l.subjectId) : null;
-    return `<div class="log-item">
-      <div class="log-dot"></div>
-      <span>${subj ? subj.name : 'untracked'} · ${l.mins} min</span>
-      <span class="log-time">${l.time}</span>
-    </div>`;
-  }).join('');
-}
-
-function addSubject() {
-  const name = document.getElementById('newSubjectName').value.trim();
-  if (!name) return;
-  const color = document.getElementById('newSubjectColor').value;
-  const subj = { id: 'subj_' + Date.now(), name, color, totalMins: 0, sessions: 0 };
-  state.subjects.push(subj);
-  document.getElementById('newSubjectName').value = '';
-  saveState();
-  renderSubjects();
-  renderSubjectSelects();
-}
-
-function deleteSubject(id) {
-  state.subjects = state.subjects.filter(s => s.id !== id);
-  saveState();
-  renderSubjects();
-  renderSubjectSelects();
-}
-
-function renderSubjects() {
-  const grid = document.getElementById('subjectsGrid');
-  const empty = document.getElementById('subjectsEmpty');
-  if (!state.subjects.length) {
-    grid.innerHTML = '';
-    grid.appendChild(empty);
-    document.getElementById('subjectCount').textContent = '0 subjects';
-    return;
-  }
-  document.getElementById('subjectCount').textContent = state.subjects.length + ' subject' + (state.subjects.length > 1 ? 's' : '');
-  const maxMins = Math.max(...state.subjects.map(s => s.totalMins || 0), 1);
-  grid.innerHTML = state.subjects.map(s => {
-    const h = Math.floor((s.totalMins||0) / 60);
-    const m = (s.totalMins||0) % 60;
-    const pct = Math.round(((s.totalMins||0) / maxMins) * 100);
-    return `<div class="subject-card" style="--subject-color:${s.color}">
-      <div class="subject-actions">
-        <button class="icon-btn" onclick="deleteSubject('${s.id}')" title="delete"><i class="ti ti-trash"></i></button>
+    <div class="tab" id="tab-timetable">
+      <div class="section-header">
+        <div class="section-title">timetable</div>
       </div>
-      <div class="subject-name">${s.name}</div>
-      <div class="subject-time">${h}h ${m}m</div>
-      <div class="subject-sessions">${s.sessions||0} sessions</div>
-      <div class="subject-bar-wrap"><div class="subject-bar" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('');
-}
+      <div class="timetable-controls">
+        <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;">click any cell to add a session</div>
+        <button class="btn-ghost" onclick="clearTimetable()" style="margin-left:auto;font-size:12px;padding:6px 14px;">clear all</button>
+      </div>
+      <div class="tt-grid" id="ttGrid"></div>
+    </div>
+  </div>
 
-function renderSubjectSelects() {
-  const opts = state.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  const placeholder = '<option value="">— select subject —</option>';
-  document.getElementById('pomoSubjectSelect').innerHTML = placeholder + opts;
-  document.getElementById('modalSubject').innerHTML = opts || '<option value="">no subjects yet</option>';
-}
+  <div class="tt-modal" id="ttModal">
+    <div class="tt-modal-inner">
+      <div class="modal-title">add to timetable</div>
+      <div class="modal-field">
+        <label>subject</label>
+        <select id="modalSubject"></select>
+      </div>
+      <div class="modal-field">
+        <label>label (optional)</label>
+        <input type="text" id="modalLabel" placeholder="e.g. lecture, revision...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="saveTTEntry()">save</button>
+        <button class="btn-ghost" onclick="closeTTModal()">cancel</button>
+      </div>
+    </div>
+  </div>
 
-function renderStats() {
-  const totalMins = state.sessions.reduce((a, b) => a + b.mins, 0);
-  document.getElementById('statTotalHours').textContent = (totalMins / 60).toFixed(1);
-  document.getElementById('statSessions').textContent = state.sessions.length;
-  document.getElementById('statToday').textContent = (() => {
-    const today = new Date().toISOString().split('T')[0];
-    return state.sessions.filter(s => s.date === today).reduce((a,b) => a+b.mins, 0);
-  })();
+  <script src="script.js"></script>
 
-  const streak = calcStreak();
-  document.getElementById('statStreak').innerHTML = `${streak} <span style="font-size:14px;color:var(--text3)">days</span>`;
-
-  renderWeekChart();
-  renderDonut();
-  renderStreakGrid();
-}
-
-function calcStreak() {
-  const dates = [...new Set(state.streak)].sort();
-  if (!dates.length) return 0;
-  let streak = 0;
-  const today = new Date().toISOString().split('T')[0];
-  let check = new Date(today);
-  for (let i = dates.length - 1; i >= 0; i--) {
-    const d = check.toISOString().split('T')[0];
-    if (dates[dates.length - 1 - (dates.length - 1 - i)] === d || dates.includes(d)) {
-      if (dates.includes(d)) streak++;
-      else break;
-      check.setDate(check.getDate() - 1);
-    } else break;
-  }
-  return streak;
-}
-
-function renderWeekChart() {
-  const el = document.getElementById('weekChart');
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split('T')[0]);
-  }
-  const vals = days.map(d => state.sessions.filter(s => s.date === d).reduce((a,b) => a+b.mins, 0));
-  const max = Math.max(...vals, 1);
-  el.innerHTML = days.map((d, i) => {
-    const pct = (vals[i] / max) * 100;
-    const lbl = new Date(d).toLocaleDateString('en-GB', {weekday:'short'}).slice(0,2);
-    return `<div class="bar-col">
-      <div class="bar-val">${vals[i] ? Math.round(vals[i]) : ''}</div>
-      <div class="bar-fill" style="height:${pct}%;background:var(--accent);opacity:${0.4 + 0.6*(pct/100)}"></div>
-      <div class="bar-lbl">${lbl}</div>
-    </div>`;
-  }).join('');
-}
-
-function renderDonut() {
-  const canvas = document.getElementById('donutCanvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 120, 120);
-  const legend = document.getElementById('donutLegend');
-
-  const data = state.subjects.map(s => ({ name: s.name, mins: s.totalMins || 0, color: s.color }))
-    .filter(s => s.mins > 0);
-
-  if (!data.length) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 10;
-    ctx.beginPath();
-    ctx.arc(60, 60, 45, 0, Math.PI * 2);
-    ctx.stroke();
-    legend.innerHTML = '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">no data yet</div>';
-    return;
-  }
-
-  const total = data.reduce((a, b) => a + b.mins, 0);
-  let startAngle = -Math.PI / 2;
-
-  data.forEach(d => {
-    const slice = (d.mins / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(60, 60);
-    ctx.arc(60, 60, 45, startAngle, startAngle + slice);
-    ctx.closePath();
-    ctx.fillStyle = d.color;
-    ctx.fill();
-    startAngle += slice;
-  });
-
-  ctx.beginPath();
-  ctx.arc(60, 60, 28, 0, Math.PI * 2);
-  ctx.fillStyle = '#161616';
-  ctx.fill();
-
-  legend.innerHTML = data.map(d => {
-    const pct = Math.round((d.mins / total) * 100);
-    return `<div class="legend-row">
-      <div class="legend-dot" style="background:${d.color}"></div>
-      <span class="legend-label">${d.name}</span>
-      <span class="legend-val">${pct}%</span>
-    </div>`;
-  }).join('');
-}
-
-function renderStreakGrid() {
-  const el = document.getElementById('streakGrid');
-  const today = new Date().toISOString().split('T')[0];
-  const cells = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
-    const done = state.streak.includes(ds);
-    const isToday = ds === today;
-    const lbl = d.getDate();
-    cells.push(`<div class="streak-day ${done ? 'done' : ''} ${isToday ? 'today' : ''}" title="${ds}">${lbl}</div>`);
-  }
-  el.innerHTML = cells.join('');
-}
-
-/* === TIMETABLE === */
-let ttPendingCell = null;
-
-function buildTimetable() {
-  const grid = document.getElementById('ttGrid');
-  const todayIdx = (new Date().getDay() + 6) % 7;
-
-  let html = `<div class="tt-header">
-    <div class="tt-header-cell"></div>
-    ${DAYS.map((d,i) => `<div class="tt-header-cell ${i===todayIdx?'today-col':''}">${d}</div>`).join('')}
-  </div>`;
-
-  HOURS.forEach((h, hi) => {
-    html += `<div class="tt-row"><div class="tt-time">${h}</div>`;
-    DAYS.forEach((d, di) => {
-      const key = `${di}_${hi}`;
-      const entry = state.timetable[key];
-      const subj = entry && state.subjects.find(s => s.id === entry.subjectId);
-      const isToday = di === todayIdx;
-      let inner = '';
-      if (entry && subj) {
-        inner = `<div class="tt-entry" style="background:${subj.color}20;color:${subj.color};border-left:2px solid ${subj.color}">
-          ${subj.name}${entry.label ? '<br><span style="font-size:10px;opacity:0.7">'+entry.label+'</span>' : ''}
-          <span class="tt-del" onclick="removeTTEntry('${key}',event)">×</span>
-        </div>`;
-      }
-      html += `<div class="tt-cell ${isToday?'today-col':''}" onclick="openTTModal('${key}')">${inner}</div>`;
-    });
-    html += `</div>`;
-  });
-
-  grid.innerHTML = html;
-}
-
-function openTTModal(key) {
-  if (!state.subjects.length) { alert('Add a subject first!'); return; }
-  ttPendingCell = key;
-  renderSubjectSelects();
-  document.getElementById('modalLabel').value = '';
-  document.getElementById('ttModal').classList.add('open');
-}
-
-function closeTTModal() {
-  document.getElementById('ttModal').classList.remove('open');
-  ttPendingCell = null;
-}
-
-function saveTTEntry() {
-  if (!ttPendingCell) return;
-  const subjectId = document.getElementById('modalSubject').value;
-  const label = document.getElementById('modalLabel').value.trim();
-  if (!subjectId) return;
-  state.timetable[ttPendingCell] = { subjectId, label };
-  saveState();
-  closeTTModal();
-  buildTimetable();
-}
-
-function removeTTEntry(key, e) {
-  e.stopPropagation();
-  delete state.timetable[key];
-  saveState();
-  buildTimetable();
-}
-
-function clearTimetable() {
-  if (confirm('Clear all timetable entries?')) {
-    state.timetable = {};
-    saveState();
-    buildTimetable();
-  }
-}
-
-/* === TOGGLES === */
-function toggleCheck(id) {
-  const el = document.getElementById(id);
-  el.checked = !el.checked;
-  updateToggleUI(id);
-  saveState();
-}
-
-function updateToggleUI(id) {
-  const el = document.getElementById(id);
-  const isOn = el.checked;
-  const name = id === 'autoBreak' ? 'Break' : 'Sound';
-  const toggle = document.getElementById(`toggle${name === 'Break' ? 'AutoBreak' : 'SoundOn'}`);
-  const knob = document.getElementById(`toggleKnob${name}`);
-  toggle.style.background = isOn ? 'var(--accent)' : 'var(--bg4)';
-  knob.style.transform = isOn ? 'translateX(16px)' : 'translateX(0)';
-  knob.style.background = isOn ? '#0f0f0f' : 'var(--text3)';
-}
-
-/* === SOUND === */
-function playBeep() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 660;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.8);
-  } catch(e) {}
-}
-
-/* === NAV === */
-function switchTab(id) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  document.getElementById('nav-' + id).classList.add('active');
-  if (id === 'stats') renderStats();
-  if (id === 'timetable') buildTimetable();
-  if (id === 'subjects') renderSubjects();
-}
-
-/* === CLOCK === */
-function updateClock() {
-  const now = new Date();
-  document.getElementById('liveClock').textContent = now.toLocaleTimeString('en-GB');
-  document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'}).toLowerCase();
-}
-
-/* === INIT === */
-loadState();
-renderSubjects();
-renderSubjectSelects();
-renderLog();
-updateTimerDisplay();
-updateTimerSettings();
-updateTodayDisplay();
-updateToggleUI('autoBreak');
-updateToggleUI('soundOn');
-updateClock();
-setInterval(updateClock, 1000);
-</script>
+</body>
+</html>
