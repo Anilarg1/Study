@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   
-  <link rel="stylesheet" href="style.css?v=dashboard-redesign">
+  <link rel="stylesheet" href="style.css?v=sharp-dashboard">
 </head>
 <body>
 
@@ -111,8 +111,11 @@
 
         </div>
 
-        <div class="pomo-settings">
-          <div class="settings-title">timer settings</div>
+        <details class="pomo-settings" id="timerSettingsPanel">
+          <summary class="settings-summary">
+            <span>timer settings</span>
+            <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+          </summary>
 
           <div class="setting-row">
             <label>focus duration <span id="focusVal">25 min</span></label>
@@ -136,7 +139,7 @@
 
           <div class="divider"></div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="toggle-row">
             <span style="font-size:13px;color:var(--text2);">auto-start breaks</span>
             <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
               <input type="checkbox" id="autoBreak" style="opacity:0;width:0;height:0" onchange="toggleCheck('autoBreak')">
@@ -146,7 +149,7 @@
             </label>
           </div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="toggle-row">
             <span style="font-size:13px;color:var(--text2);">sound alerts</span>
             <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
               <input type="checkbox" id="soundOn" checked style="opacity:0;width:0;height:0" onchange="toggleCheck('soundOn')">
@@ -158,10 +161,10 @@
 
           <div class="divider"></div>
 
-          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:12px;">today's focus</div>
-          <div style="font-family:'DM Mono',monospace;font-size:28px;color:var(--accent);" id="todayFocusDisplay">0h 0m</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="todaySessionsDisplay">0 completed sessions</div>
-        </div>
+          <div class="settings-focus-label">today's focus</div>
+          <div class="settings-focus-value" id="todayFocusDisplay">0h 0m</div>
+          <div class="settings-focus-sub" id="todaySessionsDisplay">0 completed sessions</div>
+        </details>
       </div>
 
       <div class="dashboard-section">
@@ -239,8 +242,8 @@
         <div class="section-title">timetable</div>
       </div>
       <div class="timetable-controls">
-        <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;">click any cell to add a session</div>
-        <button class="btn-ghost" onclick="clearTimetable()" style="margin-left:auto;font-size:12px;padding:6px 14px;">clear all</button>
+        <div class="timetable-hint">click any cell to add a session</div>
+        <button class="btn-ghost timetable-clear" onclick="clearTimetable()">clear all</button>
       </div>
       <div class="tt-grid" id="ttGrid"></div>
     </div>
@@ -264,7 +267,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=dashboard-redesign"></script>
+  <script type="module" src="script.js?v=sharp-dashboard"></script>
 
 </body>
 </html>
