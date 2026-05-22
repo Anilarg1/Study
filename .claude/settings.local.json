@@ -5,7 +5,11 @@
       "Bash(npm run *)",
       "Bash(git add *)",
       "Bash(git commit -m 'Step 4: Subjects feature — subjects table, SubjectPicker, session tagging *)",
-      "Bash(git commit -m 'fixup! Step 4: remove unused useSubjectStore import in PomodoroTimer *)"
+      "Bash(git commit -m 'fixup! Step 4: remove unused useSubjectStore import in PomodoroTimer *)",
+      "Bash(npx --yes playwright install chromium)",
+      "Bash(npx playwright *)",
+      "Bash(node verify-ui.mjs)",
+      "Bash(npm install *)"
     ]
   }
 }
