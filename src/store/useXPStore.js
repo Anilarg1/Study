@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { xpToLevel, xpProgress, xpToNextLevel, XP_REWARDS } from '../utils/xp'
+import { supabase, insertSession, upsertUserXP } from '../lib/supabase'
 
 const useXPStore = create(
   persist(
@@ -10,12 +11,12 @@ const useXPStore = create(
 
       /** Award XP for completing a session type */
       awardXP(sessionType) {
-        const xp          = XP_REWARDS[sessionType] ?? 0
-        const prevXP      = get().totalXP
-        const prevLevel   = xpToLevel(prevXP)
-        const newXP       = prevXP + xp
-        const newLevel    = xpToLevel(newXP)
-        const leveledUp   = newLevel > prevLevel
+        const xp        = XP_REWARDS[sessionType] ?? 0
+        const prevXP    = get().totalXP
+        const prevLevel = xpToLevel(prevXP)
+        const newXP     = prevXP + xp
+        const newLevel  = xpToLevel(newXP)
+        const leveledUp = newLevel > prevLevel
 
         const entry = {
           id:          crypto.randomUUID(),
@@ -29,7 +30,29 @@ const useXPStore = create(
           sessions: [...state.sessions, entry],
         }))
 
+        // Fire-and-forget: sync to Supabase if the user is signed in
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          const userId = session?.user?.id
+          if (userId) {
+            insertSession(userId, entry).catch(console.error)
+            upsertUserXP(userId, newXP).catch(console.error)
+          }
+        })
+
         return { xp, leveledUp, newLevel }
+      },
+
+      /**
+       * Called by useAuthStore after sign-in.
+       * Overwrites local XP with the value from Supabase (source of truth).
+       */
+      _importFromSupabase(xp) {
+        set({ totalXP: xp })
+      },
+
+      /** Called by useAuthStore on sign-out. */
+      _reset() {
+        set({ totalXP: 0, sessions: [] })
       },
 
       // Derived getters (computed on read, no stored redundancy)

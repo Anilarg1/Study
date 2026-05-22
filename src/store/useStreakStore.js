@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { supabase, upsertDailyLogin } from '../lib/supabase'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -56,19 +57,47 @@ function calcLongestStreak(dates) {
 const useStreakStore = create(
   persist(
     (set, get) => ({
-      /** ['YYYY-MM-DD', …] — mirrors future Supabase daily_logins rows */
+      /** ['YYYY-MM-DD', …] — mirrors Supabase daily_logins rows */
       loginDates:    [],
       longestStreak: 0,
 
-      /** Call once on app mount. No-ops if today is already logged. */
+      /**
+       * Call once after sign-in sync is complete.
+       * No-ops if today is already logged. Syncs to Supabase if signed in.
+       */
       clockIn() {
         const today = toLocalDateStr()
         const { loginDates } = get()
-        if (loginDates.includes(today)) return   // already clocked in today
+        if (loginDates.includes(today)) return   // already clocked in
 
         const next    = [...loginDates, today]
         const longest = Math.max(get().longestStreak, calcLongestStreak(next))
         set({ loginDates: next, longestStreak: longest })
+
+        // Fire-and-forget: sync to Supabase if signed in
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          const userId = session?.user?.id
+          if (userId) {
+            upsertDailyLogin(userId, today).catch(console.error)
+          }
+        })
+      },
+
+      /**
+       * Called by useAuthStore after sign-in.
+       * Overwrites local login dates with the Supabase source of truth.
+       */
+      _importFromSupabase(dates) {
+        const longest = calcLongestStreak(dates)
+        set({
+          loginDates:    dates,
+          longestStreak: Math.max(get().longestStreak, longest),
+        })
+      },
+
+      /** Called by useAuthStore on sign-out. */
+      _reset() {
+        set({ loginDates: [], longestStreak: 0 })
       },
 
       // ── derived (computed on read, not persisted) ──
