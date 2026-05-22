@@ -14,6 +14,21 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module">
+      const isGitHubPages =
+        location.hostname.endsWith('github.io') &&
+        location.pathname.startsWith('/Study/')
+
+      if (isGitHubPages) {
+        const styles = document.createElement('link')
+        styles.rel = 'stylesheet'
+        styles.href = '/Study/assets/index.css'
+        document.head.appendChild(styles)
+
+        new Function('path', 'return import(path)')('/Study/assets/main.js')
+      } else {
+        import('/src/main.jsx')
+      }
+    </script>
   </body>
 </html>
