@@ -117,8 +117,8 @@ export default function PomodoroTimer() {
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto py-8 px-4">
 
-      {/* ── mode tabs + gear icon ── */}
-      <div className="flex items-center gap-2 w-full">
+      {/* ── mode tabs + gear icon (relative so settings panel can float below) ── */}
+      <div className="relative flex items-center gap-2 w-full">
         <div className="flex gap-1 bg-card rounded-lg p-1 flex-1">
           {(['work', 'shortBreak', 'longBreak']).map(m => (
             <button
@@ -150,53 +150,53 @@ export default function PomodoroTimer() {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-      </div>
 
-      {/* ── settings panel ── */}
-      {showSettings && (
-        <div className="w-full bg-card rounded-xl p-4 flex flex-col gap-3 border border-border">
-          <p className="text-[11px] text-dim tracking-widest uppercase">Duration (minutes)</p>
-          {(['work', 'shortBreak', 'longBreak']).map(m => (
-            <div key={m} className="flex items-center justify-between gap-3">
-              <span className={clsx('text-xs', MODE_COLORS[m])}>{DURATION_LABELS[m]}</span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => {
-                    const next = Math.max(1, draftMins[m] - 1)
-                    setDraftMins(d => ({ ...d, [m]: next }))
-                    setDuration(m, next)
-                  }}
-                  className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
-                >−</button>
-                <input
-                  type="number"
-                  min="1"
-                  max="180"
-                  value={draftMins[m]}
-                  onChange={e => {
-                    const val = e.target.value === '' ? '' : Number(e.target.value)
-                    setDraftMins(d => ({ ...d, [m]: val }))
-                  }}
-                  onBlur={e => {
-                    const mins = Math.max(1, Math.min(180, Number(e.target.value) || 1))
-                    setDraftMins(d => ({ ...d, [m]: mins }))
-                    setDuration(m, mins)
-                  }}
-                  className="w-12 bg-surface text-center text-sm text-bright rounded-md py-0.5 border border-border focus:outline-none focus:border-accent tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-                <button
-                  onClick={() => {
-                    const next = Math.min(180, draftMins[m] + 1)
-                    setDraftMins(d => ({ ...d, [m]: next }))
-                    setDuration(m, next)
-                  }}
-                  className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
-                >+</button>
+        {/* ── settings panel — floats below the row, doesn't shift layout ── */}
+        {showSettings && (
+          <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-card rounded-xl p-4 flex flex-col gap-3 border border-border shadow-2xl">
+            <p className="text-[11px] text-dim tracking-widest uppercase">Duration (minutes)</p>
+            {(['work', 'shortBreak', 'longBreak']).map(m => (
+              <div key={m} className="flex items-center justify-between gap-3">
+                <span className={clsx('text-xs', MODE_COLORS[m])}>{DURATION_LABELS[m]}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      const next = Math.max(1, draftMins[m] - 1)
+                      setDraftMins(d => ({ ...d, [m]: next }))
+                      setDuration(m, next)
+                    }}
+                    className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
+                  >−</button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={draftMins[m]}
+                    onChange={e => {
+                      const val = e.target.value === '' ? '' : Number(e.target.value)
+                      setDraftMins(d => ({ ...d, [m]: val }))
+                    }}
+                    onBlur={e => {
+                      const mins = Math.max(1, Math.min(180, Number(e.target.value) || 1))
+                      setDraftMins(d => ({ ...d, [m]: mins }))
+                      setDuration(m, mins)
+                    }}
+                    className="w-12 bg-surface text-center text-sm text-bright rounded-md py-0.5 border border-border focus:outline-none focus:border-accent tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    onClick={() => {
+                      const next = Math.min(180, draftMins[m] + 1)
+                      setDraftMins(d => ({ ...d, [m]: next }))
+                      setDuration(m, next)
+                    }}
+                    className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
+                  >+</button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── SVG ring clock ── */}
       <div className="relative">
