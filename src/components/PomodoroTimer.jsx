@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import useTimerStore from '../store/useTimerStore'
 import useXPStore from '../store/useXPStore'
+import useSubjectStore from '../store/useSubjectStore'
 import XPBar from './XPBar'
+import SubjectPicker from './SubjectPicker'
 import clsx from 'clsx'
 
 // ─── tiny helpers ────────────────────────────────────────────────────────────
@@ -45,11 +47,12 @@ const DURATION_LABELS = {
 
 export default function PomodoroTimer() {
   const {
-    mode, remaining, running, completedWork, subject, customDurations,
-    start, pause, reset, setMode, setSubject, setDuration, tick,
+    mode, remaining, running, completedWork, subjectId, customDurations,
+    start, pause, reset, setMode, setDuration, tick,
   } = useTimerStore()
 
-  const awardXP    = useXPStore(s => s.awardXP)
+  const awardXP   = useXPStore(s => s.awardXP)
+  const setActiveId = useSubjectStore(s => s.setActiveId)
 
   // Flash state for XP bar + level-up toast
   const [xpFlash,      setXpFlash]      = useState(false)
@@ -76,7 +79,7 @@ export default function PomodoroTimer() {
   const handleTick = useCallback(() => {
     const finished = tick()
     if (finished) {
-      const result = awardXP(mode)       // mode is the one that just ended
+      const result = awardXP(mode, subjectId)   // mode + subject that just finished
       setXpFlash(true)
       setTimeout(() => setXpFlash(false), 800)
 
@@ -87,7 +90,7 @@ export default function PomodoroTimer() {
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
     }
-  }, [tick, awardXP, mode])
+  }, [tick, awardXP, mode, subjectId])
 
   useEffect(() => {
     if (running) {
@@ -257,17 +260,9 @@ export default function PomodoroTimer() {
         ))}
       </div>
 
-      {/* ── subject label ── */}
-      <input
-        type="text"
-        value={subject}
-        onChange={e => setSubject(e.target.value)}
-        placeholder="What are you studying?"
-        maxLength={60}
-        className={clsx(
-          'w-full bg-transparent border-b border-border text-center text-sm text-soft',
-          'placeholder:text-muted focus:outline-none focus:border-accent transition-colors py-1'
-        )}
+      {/* ── subject picker ── */}
+      <SubjectPicker
+        onSubjectChange={id => useTimerStore.getState().setSubjectId(id)}
       />
 
       {/* ── controls ── */}

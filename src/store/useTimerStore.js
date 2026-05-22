@@ -22,7 +22,7 @@ const defaultState = {
   // Timestamp trick: store when the timer "would" expire so we survive
   // tab closes / re-mounts without a separate setInterval in storage.
   expiresAt:       null,         // ISO string — set when running
-  subject:         '',           // optional subject label
+  subjectId:       null,         // uuid of selected subject (from useSubjectStore)
   customDurations: { ...DEFAULT_DURATIONS },
 }
 
@@ -58,8 +58,8 @@ const useTimerStore = create(
         set({ mode, running: false, remaining: customDurations[mode], expiresAt: null })
       },
 
-      setSubject(subject) {
-        set({ subject })
+      setSubjectId(id) {
+        set({ subjectId: id })
       },
 
       /**
@@ -133,7 +133,7 @@ const useTimerStore = create(
     }),
     {
       name:    'notebook-timer',
-      version: 1,
+      version: 2,   // v2: subject text → subjectId (uuid)
       // Only persist the raw state we need to survive a reload
       partialize: state => ({
         mode:            state.mode,
@@ -141,7 +141,7 @@ const useTimerStore = create(
         running:         state.running,
         completedWork:   state.completedWork,
         expiresAt:       state.expiresAt,
-        subject:         state.subject,
+        subjectId:       state.subjectId,
         customDurations: state.customDurations,
       }),
     }

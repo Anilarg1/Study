@@ -5,7 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// ─── DB helpers ───────────────────────────────────────────────────────────────
+// ─── User / XP helpers ────────────────────────────────────────────────────────
 
 /** Fetch the user's current XP from the users table. */
 export async function fetchUserXP(userId) {
@@ -38,7 +38,7 @@ export async function insertSession(userId, session) {
     type:         session.type,
     completed_at: session.completedAt,
     xp:           session.xp,
-    subject:      session.subject || null,
+    subject_id:   session.subjectId ?? null,
   })
   return error
 }
@@ -60,5 +60,45 @@ export async function upsertDailyLogin(userId, date) {
   const { error } = await supabase
     .from('daily_logins')
     .upsert({ user_id: userId, date }, { onConflict: 'user_id,date' })
+  return error
+}
+
+// ─── Subjects helpers ─────────────────────────────────────────────────────────
+
+/** Fetch all subjects for a user, ordered by creation time. */
+export async function fetchSubjects(userId) {
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('id, name, color, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+  return { data: data ?? [], error }
+}
+
+/** Insert a new subject. Returns the created row. */
+export async function createSubject(userId, { name, color }) {
+  const { data, error } = await supabase
+    .from('subjects')
+    .insert({ user_id: userId, name, color })
+    .select()
+    .single()
+  return { data, error }
+}
+
+/** Update an existing subject's name and/or color. */
+export async function patchSubject(subjectId, updates) {
+  const { error } = await supabase
+    .from('subjects')
+    .update(updates)
+    .eq('id', subjectId)
+  return error
+}
+
+/** Delete a subject by id. */
+export async function removeSubject(subjectId) {
+  const { error } = await supabase
+    .from('subjects')
+    .delete()
+    .eq('id', subjectId)
   return error
 }

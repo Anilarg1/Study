@@ -9,8 +9,8 @@ const useXPStore = create(
       totalXP:   0,
       sessions:  [],    // lightweight log: { id, type, completedAt, xp }
 
-      /** Award XP for completing a session type */
-      awardXP(sessionType) {
+      /** Award XP for completing a session type. Pass subjectId (uuid) to tag the session. */
+      awardXP(sessionType, subjectId = null) {
         const xp        = XP_REWARDS[sessionType] ?? 0
         const prevXP    = get().totalXP
         const prevLevel = xpToLevel(prevXP)
@@ -23,6 +23,7 @@ const useXPStore = create(
           type:        sessionType,
           completedAt: new Date().toISOString(),
           xp,
+          subjectId:   subjectId ?? null,
         }
 
         set(state => ({

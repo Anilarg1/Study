@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import { supabase, fetchUserXP, fetchLoginDates } from '../lib/supabase'
+import { supabase, fetchUserXP, fetchLoginDates, fetchSubjects } from '../lib/supabase'
 import useXPStore      from './useXPStore'
 import useStreakStore  from './useStreakStore'
+import useSubjectStore from './useSubjectStore'
 
 const useAuthStore = create((set, get) => ({
   user:    null,
@@ -38,6 +39,7 @@ const useAuthStore = create((set, get) => ({
         set({ user: null })
         useXPStore.getState()._reset()
         useStreakStore.getState()._reset()
+        useSubjectStore.getState()._reset()
       }
     })
   },
@@ -63,9 +65,10 @@ const useAuthStore = create((set, get) => ({
    * Called right after a session is established.
    */
   async _syncFromSupabase(userId) {
-    const [xpResult, datesResult] = await Promise.all([
+    const [xpResult, datesResult, subjectsResult] = await Promise.all([
       fetchUserXP(userId),
       fetchLoginDates(userId),
+      fetchSubjects(userId),
     ])
 
     if (xpResult.data) {
@@ -73,6 +76,9 @@ const useAuthStore = create((set, get) => ({
     }
     if (datesResult.data) {
       useStreakStore.getState()._importFromSupabase(datesResult.data)
+    }
+    if (subjectsResult.data) {
+      useSubjectStore.getState()._importFromSupabase(subjectsResult.data)
     }
   },
 }))
