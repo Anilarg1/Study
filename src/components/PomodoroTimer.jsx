@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import useTimerStore from '../store/useTimerStore'
 import useXPStore from '../store/useXPStore'
-import useSubjectStore from '../store/useSubjectStore'
 import XPBar from './XPBar'
 import SubjectPicker from './SubjectPicker'
 import clsx from 'clsx'
@@ -51,8 +50,7 @@ export default function PomodoroTimer() {
     start, pause, reset, setMode, setDuration, tick,
   } = useTimerStore()
 
-  const awardXP   = useXPStore(s => s.awardXP)
-  const setActiveId = useSubjectStore(s => s.setActiveId)
+  const awardXP = useXPStore(s => s.awardXP)
 
   // Flash state for XP bar + level-up toast
   const [xpFlash,      setXpFlash]      = useState(false)
