@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import useTimerStore from '../store/useTimerStore'
-import useXPStore from '../store/useXPStore'
-import XPBar from './XPBar'
-import SubjectPicker from './SubjectPicker'
-import clsx from 'clsx'
+import useTimerStore    from '../store/useTimerStore'
+import useXPStore       from '../store/useXPStore'
+import useSubjectStore  from '../store/useSubjectStore'
+import XPBar            from './XPBar'
+import SubjectPicker    from './SubjectPicker'
+import clsx             from 'clsx'
 
 // ─── tiny helpers ────────────────────────────────────────────────────────────
 
@@ -19,16 +20,18 @@ const MODE_LABELS = {
   longBreak:  'Long Break',
 }
 
+// Tailwind classes — still used for the settings panel labels
 const MODE_COLORS = {
   work:       'text-accent',
   shortBreak: 'text-green',
   longBreak:  'text-amber',
 }
 
-const MODE_RING = {
-  work:       'stroke-[#7c6af0]',
-  shortBreak: 'stroke-[#4ade80]',
-  longBreak:  'stroke-[#fbbf24]',
+// Hex fallbacks for when no subject is selected
+const MODE_HEX = {
+  work:       '#7c6af0',
+  shortBreak: '#4ade80',
+  longBreak:  '#fbbf24',
 }
 
 // SVG ring constants
@@ -51,6 +54,12 @@ export default function PomodoroTimer() {
   } = useTimerStore()
 
   const awardXP = useXPStore(s => s.awardXP)
+
+  // Active subject color → drives ring, glow, text, dots
+  const subjects        = useSubjectStore(s => s.subjects)
+  const activeSubjectId = useSubjectStore(s => s.activeId)
+  const activeSubject   = subjects.find(s => s.id === activeSubjectId) ?? null
+  const ringColor       = activeSubject?.color ?? MODE_HEX[mode]
 
   // Flash state for XP bar + level-up toast
   const [xpFlash,      setXpFlash]      = useState(false)
@@ -202,11 +211,10 @@ export default function PomodoroTimer() {
       <div className="relative">
         {/* glow pulse behind ring when running */}
         {running && (
-          <div className={clsx(
-            'absolute inset-0 rounded-full animate-pulse-ring',
-            mode === 'work'       ? 'bg-accent/10' :
-            mode === 'shortBreak' ? 'bg-green/10'  : 'bg-amber/10'
-          )} />
+          <div
+            className="absolute inset-0 rounded-full animate-pulse-ring"
+            style={{ backgroundColor: ringColor }}
+          />
         )}
 
         <svg width="200" height="200" className="-rotate-90">
@@ -225,7 +233,8 @@ export default function PomodoroTimer() {
             strokeLinecap="round"
             strokeDasharray={CIRC}
             strokeDashoffset={dashOffset}
-            className={clsx('transition-all duration-1000 ease-linear', MODE_RING[mode])}
+            className="transition-all duration-1000 ease-linear"
+            style={{ stroke: ringColor }}
           />
         </svg>
 
@@ -234,12 +243,16 @@ export default function PomodoroTimer() {
           <span
             className={clsx(
               'text-4xl font-semibold tabular-nums tracking-tight',
-              running ? MODE_COLORS[mode] : 'text-bright'
+              !running && 'text-bright'
             )}
+            style={running ? { color: ringColor } : undefined}
           >
             {fmt(remaining)}
           </span>
-          <span className={clsx('text-[11px] tracking-widest mt-1 uppercase', MODE_COLORS[mode])}>
+          <span
+            className="text-[11px] tracking-widest mt-1 uppercase"
+            style={{ color: ringColor }}
+          >
             {MODE_LABELS[mode]}
           </span>
         </div>
@@ -250,10 +263,8 @@ export default function PomodoroTimer() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={clsx(
-              'w-2 h-2 rounded-full transition-colors duration-300',
-              i < dotsFilled ? 'bg-accent' : 'bg-muted'
-            )}
+            className={clsx('w-2 h-2 rounded-full transition-all duration-300', i >= dotsFilled && 'bg-muted')}
+            style={i < dotsFilled ? { backgroundColor: ringColor } : undefined}
           />
         ))}
       </div>
