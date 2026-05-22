@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   
-  <link rel="stylesheet" href="style.css?v=timer-settings-fix">
+  <link rel="stylesheet" href="style.css?v=ui-overhaul">
 </head>
 <body>
 
@@ -16,7 +16,7 @@
       <div class="landing-copy">
         <div class="landing-mark">studydesk</div>
         <h1>studydesk</h1>
-        <p>focus sessions, subjects, stats, and timetable sync in one quiet study space.</p>
+        <p>Plan subjects, run focus sessions, and keep your timetable in one calm study desk.</p>
         <div class="landing-preview" aria-hidden="true">
           <div class="preview-timer">
             <span>25:00</span>
@@ -76,12 +76,12 @@
         <div class="pomo-left">
           <div class="pomo-card">
           <div class="pomo-phase">
-            <span id="phaseLabel">focus</span> · session <span id="sessionNum">1</span>
+            <span id="phaseLabel">focus</span> / session <span id="sessionNum">1</span>
           </div>
           <div class="timer-ring-wrap">
             <svg width="220" height="220" viewBox="0 0 220 220">
               <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
-              <circle id="progressRing" cx="110" cy="110" r="96" fill="none" stroke="#d4a853" stroke-width="6"
+              <circle id="progressRing" cx="110" cy="110" r="96" fill="none" stroke="#00d4aa" stroke-width="6"
                 stroke-linecap="round"
                 stroke-dasharray="603.19"
                 stroke-dashoffset="0"
@@ -100,7 +100,7 @@
           <div class="subject-selector-wrap">
             <label>studying</label>
             <select id="pomoSubjectSelect" onchange="saveState()">
-              <option value="">— select subject —</option>
+              <option value="">select subject</option>
             </select>
           </div>
           <div id="pomoLog" class="pomo-log" style="width:100%;margin-top:20px;">
@@ -170,8 +170,7 @@
       <div class="dashboard-section">
         <div class="section-header">
           <div>
-            <div class="section-kicker">focus dashboard</div>
-            <div class="section-title">your study rhythm</div>
+            <div class="section-title">study rhythm</div>
           </div>
         </div>
 
@@ -200,15 +199,12 @@
 
         <div class="stats-charts">
           <div class="chart-card week-card">
-            <div class="chart-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> this week</div>
+            <div class="chart-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> week activity</div>
             <div class="bar-chart" id="weekChart"></div>
           </div>
           <div class="chart-card">
-            <div class="chart-title"><i class="ti ti-chart-donut" aria-hidden="true"></i> by subject</div>
-            <div class="donut-wrap">
-              <canvas id="donutCanvas" width="150" height="150"></canvas>
-              <div class="donut-legend" id="donutLegend"></div>
-            </div>
+            <div class="chart-title"><i class="ti ti-chart-pie" aria-hidden="true"></i> subject split</div>
+            <div class="subject-chart" id="donutLegend"></div>
           </div>
         </div>
 
@@ -225,13 +221,13 @@
         <span class="badge" id="subjectCount">0 subjects</span>
       </div>
       <div class="subjects-grid" id="subjectsGrid">
-        <div class="empty-state" id="subjectsEmpty">no subjects yet — add one below</div>
+        <div class="empty-state" id="subjectsEmpty">no subjects yet. add one below.</div>
       </div>
       <div class="add-subject-form">
         <h3>add new subject</h3>
         <div class="form-row">
           <input type="text" id="newSubjectName" placeholder="subject name..." onkeydown="if(event.key==='Enter')addSubject()">
-          <input type="color" id="newSubjectColor" value="#d4a853" title="pick color">
+          <input type="color" id="newSubjectColor" value="#00d4aa" title="pick color">
           <button class="btn-primary" onclick="addSubject()">add subject</button>
         </div>
       </div>
@@ -267,7 +263,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js?v=timer-settings-fix"></script>
+  <script type="module" src="script.js?v=ui-overhaul"></script>
 
 </body>
 </html>

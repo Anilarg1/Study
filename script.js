@@ -17,7 +17,7 @@ import {
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const HOURS = Array.from({length: 16}, (_,i) => `${(i+7).toString().padStart(2,'0')}:00`);
-const COLORS = ['#d4a853','#5b9cf6','#4caf7d','#e05c5c','#9b72cf','#e08c5c','#5ce0d0','#e05cab'];
+const COLORS = ['#00d4aa','#c18cff','#ffb86b','#ff6b9d','#8aa0ff','#6ee7a8','#f472b6','#facc15'];
 const LOCAL_STATE_KEY = 'studydesk_v2';
 
 const firebaseConfig = {
@@ -318,9 +318,9 @@ function updateTimerDisplay() {
   const offset = circumference * (timer.elapsed / total);
   document.getElementById('progressRing').style.strokeDashoffset = offset;
   const ringEl = document.getElementById('progressRing');
-  if (timer.phase === 'focus') ringEl.setAttribute('stroke', '#d4a853');
-  else if (timer.phase === 'short') ringEl.setAttribute('stroke', '#5b9cf6');
-  else ringEl.setAttribute('stroke', '#4caf7d');
+  if (timer.phase === 'focus') ringEl.setAttribute('stroke', '#00d4aa');
+  else if (timer.phase === 'short') ringEl.setAttribute('stroke', '#8aa0ff');
+  else ringEl.setAttribute('stroke', '#6ee7a8');
   document.getElementById('phaseLabel').textContent = timer.phase === 'focus' ? 'focus' : timer.phase === 'short' ? 'short break' : 'long break';
   document.getElementById('sessionNum').textContent = timer.sessionCount + 1;
   document.getElementById('timerSubtext').textContent = timer.phase === 'focus' ? 'focus time' : 'break time';
@@ -455,12 +455,12 @@ function updateTodayDisplay() {
 function renderLog() {
   const logs = state.sessions.slice(-5).reverse();
   const el = document.getElementById('logList');
-  if (!logs.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">no sessions yet</div>'; return; }
+  if (!logs.length) { el.innerHTML = '<div class="empty-inline">no sessions yet</div>'; return; }
   el.innerHTML = logs.map(l => {
     const subj = l.subjectId ? state.subjects.find(s => s.id === l.subjectId) : null;
     return `<div class="log-item">
       <div class="log-dot"></div>
-      <span>${subj ? subj.name : 'untracked'} · ${l.mins} min</span>
+      <span>${subj ? subj.name : 'untracked'} / ${l.mins} min</span>
       <span class="log-time">${l.time}</span>
     </div>`;
   }).join('');
@@ -490,7 +490,7 @@ function deleteSubject(id) {
 function renderSubjects() {
   const grid = document.getElementById('subjectsGrid');
   if (!state.subjects.length) {
-    grid.innerHTML = '<div class="empty-state" id="subjectsEmpty">no subjects yet — add one below</div>';
+    grid.innerHTML = '<div class="empty-state" id="subjectsEmpty">no subjects yet. add one below.</div>';
     document.getElementById('subjectCount').textContent = '0 subjects';
     return;
   }
@@ -516,7 +516,7 @@ function renderSubjectSelects() {
   const pomoSelect = document.getElementById('pomoSubjectSelect');
   const currentSubject = pomoSelect ? pomoSelect.value : '';
   const opts = state.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  const placeholder = '<option value="">— select subject —</option>';
+  const placeholder = '<option value="">select subject</option>';
   if (pomoSelect) {
     pomoSelect.innerHTML = placeholder + opts;
     if (state.subjects.some(s => s.id === currentSubject)) {
@@ -572,82 +572,40 @@ function renderWeekChart() {
   }
   const vals = days.map(d => state.sessions.filter(s => s.date === d).reduce((a,b) => a+b.mins, 0));
   const max = Math.max(...vals, 1);
-  const points = vals.map((value, index) => {
-    const x = 18 + index * 44;
-    const y = 124 - ((value / max) * 92);
-    return `${x},${y}`;
-  }).join(' ');
-  const areaPoints = `18,136 ${points} 282,136`;
-  const labels = days.map((d, i) => {
-    const x = 18 + i * 44;
+  el.innerHTML = days.map((d, i) => {
     const lbl = new Date(d).toLocaleDateString('en-GB', {weekday:'short'}).slice(0,3);
-    return `<span style="left:${(x / 300) * 100}%">${lbl}</span>`;
-  }).join('');
-  el.innerHTML = `
-    <div class="line-chart">
-      <svg viewBox="0 0 300 150" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="weekArea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(22,136,255,0.46)" />
-            <stop offset="100%" stop-color="rgba(22,136,255,0)" />
-          </linearGradient>
-        </defs>
-        <polygon points="${areaPoints}" fill="url(#weekArea)"></polygon>
-        <polyline points="${points}" fill="none" stroke="#1688ff" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"></polyline>
-      </svg>
-      <div class="line-labels">${labels}</div>
+    const height = Math.max(3, Math.round((vals[i] / max) * 100));
+    const display = vals[i] ? `${vals[i]}m` : '';
+    return `<div class="bar-col">
+      <div class="bar-value">${display}</div>
+      <div class="bar-track"><div class="bar-fill" style="height:${height}%"></div></div>
+      <div class="bar-lbl">${lbl}</div>
     </div>`;
+  }).join('');
 }
 
 function renderDonut() {
-  const canvas = document.getElementById('donutCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const size = canvas.width;
-  const center = size / 2;
-  const outerRadius = size * 0.38;
-  const innerRadius = size * 0.24;
-  ctx.clearRect(0, 0, size, size);
   const legend = document.getElementById('donutLegend');
+  if (!legend) return;
 
   const data = state.subjects.map(s => ({ name: s.name, mins: s.totalMins || 0, color: s.color }))
     .filter(s => s.mins > 0);
 
   if (!data.length) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 12;
-    ctx.beginPath();
-    ctx.arc(center, center, outerRadius, 0, Math.PI * 2);
-    ctx.stroke();
-    legend.innerHTML = '<div style="font-size:11px;color:var(--text3);font-family:DM Mono,monospace">no data yet</div>';
+    legend.innerHTML = '<div class="empty-inline">no subject data yet</div>';
     return;
   }
 
   const total = data.reduce((a, b) => a + b.mins, 0);
-  let startAngle = -Math.PI / 2;
-
-  data.forEach(d => {
-    const slice = (d.mins / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(center, center);
-    ctx.arc(center, center, outerRadius, startAngle, startAngle + slice);
-    ctx.closePath();
-    ctx.fillStyle = d.color;
-    ctx.fill();
-    startAngle += slice;
-  });
-
-  ctx.beginPath();
-  ctx.arc(center, center, innerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#12171d';
-  ctx.fill();
-
-  legend.innerHTML = data.map(d => {
+  legend.innerHTML = data
+    .sort((a, b) => b.mins - a.mins)
+    .map(d => {
     const pct = Math.round((d.mins / total) * 100);
-    return `<div class="legend-row">
+    return `<div class="legend-row" style="--subject-color:${d.color};--pct:${pct}%">
       <div class="legend-dot" style="background:${d.color}"></div>
       <span class="legend-label">${d.name}</span>
       <span class="legend-val">${pct}%</span>
+      <div class="legend-bar"><div class="legend-fill"></div></div>
     </div>`;
   }).join('');
 }
