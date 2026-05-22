@@ -1,25 +1,29 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-// Durations in seconds
-export const DURATIONS = {
+// Default durations in seconds
+export const DEFAULT_DURATIONS = {
   work:       25 * 60,
   shortBreak:  5 * 60,
   longBreak:  15 * 60,
 }
 
+// Keep exporting DURATIONS as an alias so existing imports don't break
+export const DURATIONS = DEFAULT_DURATIONS
+
 // After this many work sessions, take a long break
 const LONG_BREAK_INTERVAL = 4
 
 const defaultState = {
-  mode:          'work',       // 'work' | 'shortBreak' | 'longBreak'
-  remaining:     DURATIONS.work,
-  running:       false,
-  completedWork: 0,            // total completed work sessions in this streak
+  mode:            'work',       // 'work' | 'shortBreak' | 'longBreak'
+  remaining:       DEFAULT_DURATIONS.work,
+  running:         false,
+  completedWork:   0,            // total completed work sessions in this streak
   // Timestamp trick: store when the timer "would" expire so we survive
   // tab closes / re-mounts without a separate setInterval in storage.
-  expiresAt:     null,         // ISO string — set when running
-  subject:       '',           // optional subject label
+  expiresAt:       null,         // ISO string — set when running
+  subject:         '',           // optional subject label
+  customDurations: { ...DEFAULT_DURATIONS },
 }
 
 const useTimerStore = create(
@@ -44,17 +48,35 @@ const useTimerStore = create(
 
       /** Reset to the beginning of the current mode */
       reset() {
-        const { mode } = get()
-        set({ running: false, remaining: DURATIONS[mode], expiresAt: null })
+        const { mode, customDurations } = get()
+        set({ running: false, remaining: customDurations[mode], expiresAt: null })
       },
 
       /** Switch mode manually (also resets) */
       setMode(mode) {
-        set({ mode, running: false, remaining: DURATIONS[mode], expiresAt: null })
+        const { customDurations } = get()
+        set({ mode, running: false, remaining: customDurations[mode], expiresAt: null })
       },
 
       setSubject(subject) {
         set({ subject })
+      },
+
+      /**
+       * Update the duration for a given mode (in minutes).
+       * If the timer is not running and this is the current mode,
+       * the display resets to the new duration immediately.
+       */
+      setDuration(mode, minutes) {
+        const secs = Math.max(1, Math.round(minutes)) * 60
+        const { mode: currentMode, running, customDurations } = get()
+        const newDurations = { ...customDurations, [mode]: secs }
+        const updates = { customDurations: newDurations }
+        if (mode === currentMode && !running) {
+          updates.remaining = secs
+          updates.expiresAt = null
+        }
+        set(updates)
       },
 
       /**
@@ -82,7 +104,7 @@ const useTimerStore = create(
 
       /** Internal: move to the next session */
       _advance() {
-        const { mode, completedWork } = get()
+        const { mode, completedWork, customDurations } = get()
         let nextMode, newCompleted
 
         if (mode === 'work') {
@@ -97,7 +119,7 @@ const useTimerStore = create(
 
         set({
           mode:          nextMode,
-          remaining:     DURATIONS[nextMode],
+          remaining:     customDurations[nextMode],
           running:       false,
           expiresAt:     null,
           completedWork: newCompleted,
@@ -114,12 +136,13 @@ const useTimerStore = create(
       version: 1,
       // Only persist the raw state we need to survive a reload
       partialize: state => ({
-        mode:          state.mode,
-        remaining:     state.running ? state._calcRemaining() : state.remaining,
-        running:       state.running,
-        completedWork: state.completedWork,
-        expiresAt:     state.expiresAt,
-        subject:       state.subject,
+        mode:            state.mode,
+        remaining:       state.running ? state._calcRemaining() : state.remaining,
+        running:         state.running,
+        completedWork:   state.completedWork,
+        expiresAt:       state.expiresAt,
+        subject:         state.subject,
+        customDurations: state.customDurations,
       }),
     }
   )

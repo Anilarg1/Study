@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import useTimerStore, { DURATIONS } from '../store/useTimerStore'
+import useTimerStore from '../store/useTimerStore'
 import useXPStore from '../store/useXPStore'
 import XPBar from './XPBar'
 import clsx from 'clsx'
@@ -37,18 +37,40 @@ const CIRC = 2 * Math.PI * R   // ≈ 552.9
 
 // ─── component ───────────────────────────────────────────────────────────────
 
+const DURATION_LABELS = {
+  work:       'Focus',
+  shortBreak: 'Short Break',
+  longBreak:  'Long Break',
+}
+
 export default function PomodoroTimer() {
   const {
-    mode, remaining, running, completedWork, subject,
-    start, pause, reset, setMode, setSubject, tick,
+    mode, remaining, running, completedWork, subject, customDurations,
+    start, pause, reset, setMode, setSubject, setDuration, tick,
   } = useTimerStore()
 
   const awardXP    = useXPStore(s => s.awardXP)
 
   // Flash state for XP bar + level-up toast
-  const [xpFlash,  setXpFlash]  = useState(false)
-  const [toast,    setToast]     = useState(null)   // { msg, key }
-  const tickRef                  = useRef(null)
+  const [xpFlash,      setXpFlash]      = useState(false)
+  const [toast,        setToast]        = useState(null)   // { msg, key }
+  const [showSettings, setShowSettings] = useState(false)
+  // Local draft values for the settings inputs (in minutes)
+  const [draftMins,    setDraftMins]    = useState({
+    work:       customDurations.work       / 60,
+    shortBreak: customDurations.shortBreak / 60,
+    longBreak:  customDurations.longBreak  / 60,
+  })
+  const tickRef = useRef(null)
+
+  // Keep drafts in sync when the store changes externally
+  useEffect(() => {
+    setDraftMins({
+      work:       customDurations.work       / 60,
+      shortBreak: customDurations.shortBreak / 60,
+      longBreak:  customDurations.longBreak  / 60,
+    })
+  }, [customDurations.work, customDurations.shortBreak, customDurations.longBreak])
 
   // ── ticker ──────────────────────────────────────────────────────────────────
   const handleTick = useCallback(() => {
@@ -84,8 +106,8 @@ export default function PomodoroTimer() {
   }, [running, remaining, mode])
 
   // ── ring progress ───────────────────────────────────────────────────────────
-  const total     = DURATIONS[mode]
-  const progress  = remaining / total                    // 1 → 0
+  const total      = customDurations[mode]
+  const progress   = remaining / total                   // 1 → 0
   const dashOffset = CIRC * (1 - progress)
 
   // ── dots: completed work sessions in current long-break cycle ───────────────
@@ -94,23 +116,86 @@ export default function PomodoroTimer() {
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto py-8 px-4">
 
-      {/* ── mode tabs ── */}
-      <div className="flex gap-1 bg-card rounded-lg p-1 w-full">
-        {(['work', 'shortBreak', 'longBreak'] ).map(m => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={clsx(
-              'flex-1 text-[11px] tracking-wide py-1.5 rounded-md transition-all duration-200',
-              mode === m
-                ? 'bg-surface text-bright shadow-sm'
-                : 'text-dim hover:text-soft'
-            )}
-          >
-            {MODE_LABELS[m]}
-          </button>
-        ))}
+      {/* ── mode tabs + gear icon ── */}
+      <div className="flex items-center gap-2 w-full">
+        <div className="flex gap-1 bg-card rounded-lg p-1 flex-1">
+          {(['work', 'shortBreak', 'longBreak']).map(m => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={clsx(
+                'flex-1 text-[11px] tracking-wide py-1.5 rounded-md transition-all duration-200',
+                mode === m
+                  ? 'bg-surface text-bright shadow-sm'
+                  : 'text-dim hover:text-soft'
+              )}
+            >
+              {MODE_LABELS[m]}
+            </button>
+          ))}
+        </div>
+
+        {/* Settings gear */}
+        <button
+          onClick={() => setShowSettings(s => !s)}
+          aria-label="Timer settings"
+          className={clsx(
+            'p-1.5 rounded-md transition-colors shrink-0',
+            showSettings ? 'text-accent bg-surface' : 'text-dim hover:text-soft'
+          )}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
       </div>
+
+      {/* ── settings panel ── */}
+      {showSettings && (
+        <div className="w-full bg-card rounded-xl p-4 flex flex-col gap-3 border border-border">
+          <p className="text-[11px] text-dim tracking-widest uppercase">Duration (minutes)</p>
+          {(['work', 'shortBreak', 'longBreak']).map(m => (
+            <div key={m} className="flex items-center justify-between gap-3">
+              <span className={clsx('text-xs', MODE_COLORS[m])}>{DURATION_LABELS[m]}</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    const next = Math.max(1, draftMins[m] - 1)
+                    setDraftMins(d => ({ ...d, [m]: next }))
+                    setDuration(m, next)
+                  }}
+                  className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
+                >−</button>
+                <input
+                  type="number"
+                  min="1"
+                  max="180"
+                  value={draftMins[m]}
+                  onChange={e => {
+                    const val = e.target.value === '' ? '' : Number(e.target.value)
+                    setDraftMins(d => ({ ...d, [m]: val }))
+                  }}
+                  onBlur={e => {
+                    const mins = Math.max(1, Math.min(180, Number(e.target.value) || 1))
+                    setDraftMins(d => ({ ...d, [m]: mins }))
+                    setDuration(m, mins)
+                  }}
+                  className="w-12 bg-surface text-center text-sm text-bright rounded-md py-0.5 border border-border focus:outline-none focus:border-accent tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  onClick={() => {
+                    const next = Math.min(180, draftMins[m] + 1)
+                    setDraftMins(d => ({ ...d, [m]: next }))
+                    setDuration(m, next)
+                  }}
+                  className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
+                >+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── SVG ring clock ── */}
       <div className="relative">
