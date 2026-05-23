@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase, fetchUserXP, fetchLoginDates, fetchSubjects } from '../lib/supabase'
+import { setCurrentUserId } from '../lib/currentUser'
 import useXPStore      from './useXPStore'
 import useStreakStore  from './useStreakStore'
 import useSubjectStore from './useSubjectStore'
@@ -19,6 +20,7 @@ const useAuthStore = create((set, get) => ({
 
       if (session?.user) {
         set({ user: session.user })
+        setCurrentUserId(session.user.id)
         await get()._syncFromSupabase(session.user.id)
         // Clock in *after* Supabase dates are loaded so we don't overwrite them
         useStreakStore.getState().clockIn()
@@ -36,6 +38,7 @@ const useAuthStore = create((set, get) => ({
 
       if (event === 'SIGNED_IN') {
         set({ user })
+        setCurrentUserId(user.id)
         await get()._syncFromSupabase(user.id)
         useStreakStore.getState().clockIn()
       }
@@ -66,6 +69,7 @@ const useAuthStore = create((set, get) => ({
   async signOut() {
     // Reset local stores *before* signing out so the SIGNED_OUT event
     // fired by onAuthStateChange doesn't try to reset them a second time.
+    setCurrentUserId(null)
     useXPStore.getState()._reset()
     useStreakStore.getState()._reset()
     useSubjectStore.getState()._reset()

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase, upsertDailyLogin } from '../lib/supabase'
+import { upsertDailyLogin } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/currentUser'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -15,8 +16,11 @@ export function toLocalDateStr(date = new Date()) {
 /**
  * Consecutive-day streak ending on today (if clocked in) or yesterday
  * (so the streak stays visible until midnight if today isn't logged yet).
+ *
+ * Exported so components can compute this reactively from loginDates without
+ * relying on Zustand getters (which lose reactivity after the first Object.assign).
  */
-function calcCurrentStreak(dateSet) {
+export function calcCurrentStreak(dateSet) {
   const today     = toLocalDateStr()
   const yesterday = toLocalDateStr(new Date(Date.now() - 86_400_000))
 
@@ -74,13 +78,12 @@ const useStreakStore = create(
         const longest = Math.max(get().longestStreak, calcLongestStreak(next))
         set({ loginDates: next, longestStreak: longest })
 
-        // Fire-and-forget: sync to Supabase if signed in
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          const userId = session?.user?.id
-          if (userId) {
-            upsertDailyLogin(userId, today).catch(console.error)
-          }
-        })
+        // Fire-and-forget: getCurrentUserId() reads from in-memory cache — no
+        // async getSession() call needed.
+        const userId = getCurrentUserId()
+        if (userId) {
+          upsertDailyLogin(userId, today).catch(console.error)
+        }
       },
 
       /**
@@ -100,9 +103,13 @@ const useStreakStore = create(
         set({ loginDates: [], longestStreak: 0 })
       },
 
-      // ── derived (computed on read, not persisted) ──
-      get currentStreak() { return calcCurrentStreak(new Set(get().loginDates)) },
-      get clockedInToday() { return get().loginDates.includes(toLocalDateStr()) },
+      // NOTE: currentStreak and clockedInToday are intentionally NOT stored as
+      // Zustand getters. Zustand uses Object.assign for state merges, which
+      // evaluates and freezes getter values — they stop updating after the first
+      // set() call. Compute these values in components instead:
+      //
+      //   const loginDates    = useStreakStore(s => s.loginDates)
+      //   const currentStreak = useMemo(() => calcCurrentStreak(new Set(loginDates)), [loginDates])
     }),
     {
       name:    'notebook-streak',

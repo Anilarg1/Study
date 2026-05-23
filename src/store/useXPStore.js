@@ -1,16 +1,24 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { xpToLevel, xpProgress, xpToNextLevel, XP_REWARDS } from '../utils/xp'
-import { supabase, insertSession, upsertUserXP } from '../lib/supabase'
+import { insertSession, upsertUserXP } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/currentUser'
+
+const MAX_LOCAL_SESSIONS = 200
 
 const useXPStore = create(
   persist(
     (set, get) => ({
-      totalXP:   0,
-      sessions:  [],    // lightweight log: { id, type, completedAt, xp }
+      totalXP:  0,
+      sessions: [],  // lightweight log: { id, type, completedAt, xp, subjectId, durationSecs }
 
-      /** Award XP for completing a session type. Pass subjectId (uuid) to tag the session. */
-      awardXP(sessionType, subjectId = null) {
+      /**
+       * Award XP for completing a session type.
+       * @param {string} sessionType  — 'work' | 'shortBreak' | 'longBreak'
+       * @param {string|null} subjectId   — uuid of the active subject
+       * @param {number|null} durationSecs — actual timer duration in seconds
+       */
+      awardXP(sessionType, subjectId = null, durationSecs = null) {
         const xp        = XP_REWARDS[sessionType] ?? 0
         const prevXP    = get().totalXP
         const prevLevel = xpToLevel(prevXP)
@@ -19,26 +27,29 @@ const useXPStore = create(
         const leveledUp = newLevel > prevLevel
 
         const entry = {
-          id:          crypto.randomUUID(),
-          type:        sessionType,
-          completedAt: new Date().toISOString(),
+          id:           crypto.randomUUID(),
+          type:         sessionType,
+          completedAt:  new Date().toISOString(),
           xp,
-          subjectId:   subjectId ?? null,
+          subjectId:    subjectId   ?? null,
+          durationSecs: durationSecs ?? null,
         }
 
         set(state => ({
           totalXP:  newXP,
-          sessions: [...state.sessions, entry],
+          // Keep the local log capped so localStorage doesn't balloon over time.
+          // Stats that need full history will query Supabase directly.
+          sessions: [...state.sessions, entry].slice(-MAX_LOCAL_SESSIONS),
         }))
 
-        // Fire-and-forget: sync to Supabase if the user is signed in
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          const userId = session?.user?.id
-          if (userId) {
-            insertSession(userId, entry).catch(console.error)
-            upsertUserXP(userId, newXP).catch(console.error)
-          }
-        })
+        // Fire-and-forget: sync to Supabase if the user is signed in.
+        // getCurrentUserId() reads from an in-memory cache set by useAuthStore —
+        // no async getSession() call needed here.
+        const userId = getCurrentUserId()
+        if (userId) {
+          insertSession(userId, entry).catch(console.error)
+          upsertUserXP(userId, newXP).catch(console.error)
+        }
 
         return { xp, leveledUp, newLevel }
       },
@@ -56,11 +67,6 @@ const useXPStore = create(
       _reset() {
         set({ totalXP: 0, sessions: [] })
       },
-
-      // Derived getters (computed on read, no stored redundancy)
-      get level()       { return xpToLevel(get().totalXP) },
-      get progress()    { return xpProgress(get().totalXP) },
-      get toNextLevel() { return xpToNextLevel(get().totalXP) },
     }),
     {
       name:    'notebook-xp',

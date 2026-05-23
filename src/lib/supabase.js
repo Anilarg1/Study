@@ -33,12 +33,13 @@ export async function upsertUserXP(userId, xp) {
  */
 export async function insertSession(userId, session) {
   const { error } = await supabase.from('sessions').insert({
-    id:           session.id,
-    user_id:      userId,
-    type:         session.type,
-    completed_at: session.completedAt,
-    xp:           session.xp,
-    subject_id:   session.subjectId ?? null,
+    id:            session.id,
+    user_id:       userId,
+    type:          session.type,
+    completed_at:  session.completedAt,
+    xp:            session.xp,
+    subject_id:    session.subjectId   ?? null,
+    duration_secs: session.durationSecs ?? null,
   })
   return error
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import useAuthStore    from '../store/useAuthStore'
-import useStreakStore  from '../store/useStreakStore'
+import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import { supabase }   from '../lib/supabase'
 
 // ── Interactive dot-grid canvas ────────────────────────────────────────────────
@@ -136,7 +136,8 @@ export default function LoginPage() {
   const glowRafRef = useRef(null)
 
   const { signIn, signUp } = useAuthStore()
-  const streak = useStreakStore(s => s.currentStreak)
+  const loginDates = useStreakStore(s => s.loginDates)
+  const streak     = calcCurrentStreak(new Set(loginDates))
 
   // Dot-grid canvas
   useDotCanvas(canvasRef)

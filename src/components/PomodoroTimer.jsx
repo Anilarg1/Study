@@ -11,9 +11,6 @@ const CIRC = 2 * Math.PI * R   // ≈ 578.05
 const MODE_LABELS = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
 const MODE_KEYS   = { work: '1', shortBreak: '2', longBreak: '3' }
 
-// Pomodoro skip order
-const SKIP_ORDER = ['work', 'shortBreak', 'work', 'shortBreak', 'work', 'shortBreak', 'work', 'longBreak']
-
 function fmt(seconds) {
   const m = String(Math.floor(seconds / 60)).padStart(2, '0')
   const s = String(seconds % 60).padStart(2, '0')
@@ -224,7 +221,7 @@ function SettingsPanel({ customDurations, setDuration }) {
 export default function PomodoroTimer() {
   const {
     mode, remaining, running, completedWork, subjectId, customDurations,
-    start, pause, reset, setMode, setDuration, tick, setSubjectId,
+    start, pause, reset, setMode, setDuration, tick, setSubjectId, skip,
   } = useTimerStore()
 
   const awardXP = useXPStore(s => s.awardXP)
@@ -258,14 +255,17 @@ export default function PomodoroTimer() {
   const handleTick = useCallback(() => {
     const finished = tick()
     if (finished) {
-      const result = awardXP(mode, subjectId)
+      // Pass the actual timer duration so it's recorded accurately in Supabase.
+      // customDurations[mode] is the completed mode's duration (mode hasn't
+      // advanced yet in the closure — _advance() runs inside tick()).
+      const result = awardXP(mode, subjectId, customDurations[mode])
       const msg = result.leveledUp
         ? `🎉 Level up! You're now Level ${result.newLevel}`
         : `+${result.xp} XP`
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
     }
-  }, [tick, awardXP, mode, subjectId])
+  }, [tick, awardXP, mode, subjectId, customDurations])
 
   useEffect(() => {
     if (running) {
@@ -294,15 +294,14 @@ export default function PomodoroTimer() {
       } else if (e.key.toLowerCase() === 'r') {
         reset()
       } else if (e.key === 'ArrowRight') {
-        const i = SKIP_ORDER.indexOf(mode)
-        setMode(SKIP_ORDER[(i + 1) % SKIP_ORDER.length])
+        skip()
       } else if (e.key === '1') setMode('work')
       else if (e.key === '2') setMode('shortBreak')
       else if (e.key === '3') setMode('longBreak')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [running, mode, start, pause, reset, setMode])
+  }, [running, start, pause, reset, setMode, skip])
 
   // ── ring ──────────────────────────────────────────────────────────────────
   const total      = customDurations[mode]
@@ -518,10 +517,7 @@ export default function PomodoroTimer() {
           <div className="ctrl-wrap">
             <button
               className="ctrl"
-              onClick={() => {
-                const i = SKIP_ORDER.indexOf(mode)
-                setMode(SKIP_ORDER[(i + 1) % SKIP_ORDER.length])
-              }}
+              onClick={skip}
               aria-label="Skip"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

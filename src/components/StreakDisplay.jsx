@@ -1,4 +1,4 @@
-import useStreakStore, { toLocalDateStr } from '../store/useStreakStore'
+import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -21,11 +21,12 @@ function getLast7() {
 export default function StreakDisplay() {
   const loginDates    = useStreakStore(s => s.loginDates)
   const longestStreak = useStreakStore(s => s.longestStreak)
-  const currentStreak = useStreakStore(s => s.currentStreak)
-  const clockedIn     = useStreakStore(s => s.clockedInToday)
 
-  const dateSet = new Set(loginDates)
-  const last7   = getLast7()
+  const dateSet       = new Set(loginDates)
+  const currentStreak = calcCurrentStreak(dateSet)
+  const clockedIn     = dateSet.has(toLocalDateStr())
+
+  const last7 = getLast7()
 
   return (
     <div className="w-full select-none">

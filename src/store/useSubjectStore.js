@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase } from '../lib/supabase'
 import { fetchSubjects, createSubject, patchSubject, removeSubject } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/currentUser'
 
 const useSubjectStore = create(
   persist(
@@ -19,8 +19,7 @@ const useSubjectStore = create(
        * Returns the new subject object, or null on error.
        */
       async addSubject(name, color) {
-        const { data: { session } } = await supabase.auth.getSession()
-        const userId = session?.user?.id
+        const userId = getCurrentUserId()
         if (!userId) return null
 
         const { data, error } = await createSubject(userId, { name, color })

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import useXPStore      from '../store/useXPStore'
-import useStreakStore, { toLocalDateStr } from '../store/useStreakStore'
+import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 import useSubjectStore from '../store/useSubjectStore'
 import { xpToLevel, xpProgress, xpToNextLevel, levelToXp } from '../utils/xp'
 
@@ -68,7 +68,10 @@ function levelName(lv) { return LEVEL_NAMES[Math.min(lv, LEVEL_NAMES.length - 1)
 function TodayCard({ sessions }) {
   const today    = todayStr()
   const todaySes = sessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === today)
-  const totalMin = todaySes.length * 25   // each focus = 25 min nominal
+  // Use recorded durationSecs when available; fall back to 25 min for older entries.
+  const totalMin = todaySes.reduce((sum, s) =>
+    sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0
+  )
 
   // 24-col bar: bucket by hour
   const hourCounts = Array(24).fill(0)
@@ -134,8 +137,8 @@ function TodayCard({ sessions }) {
 function StreakCard() {
   const loginDates    = useStreakStore(s => s.loginDates)
   const longestStreak = useStreakStore(s => s.longestStreak)
-  const currentStreak = useStreakStore(s => s.currentStreak)
-  const dateSet = new Set(loginDates)
+  const dateSet       = useMemo(() => new Set(loginDates), [loginDates])
+  const currentStreak = useMemo(() => calcCurrentStreak(dateSet), [dateSet])
   const { cells, monthLabel } = getMonthDays()
 
   return (
@@ -278,10 +281,10 @@ function LevelCard() {
 function RecentSessions({ sessions }) {
   const subjects = useSubjectStore(s => s.subjects)
 
-  const recent = [...sessions]
-    .filter(s => s.type === 'work')
-    .reverse()
-    .slice(0, 8)
+  const recent = useMemo(() =>
+    [...sessions].filter(s => s.type === 'work').reverse().slice(0, 8),
+    [sessions]
+  )
 
   if (recent.length === 0) {
     return (
@@ -310,7 +313,7 @@ function RecentSessions({ sessions }) {
               </span>
             </div>
             <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-dim)' }}>
-              25m
+              {entry.durationSecs ? `${Math.round(entry.durationSecs / 60)}m` : '25m'}
             </span>
           </div>
         )

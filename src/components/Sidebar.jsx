@@ -1,4 +1,5 @@
 import useSubjectStore from '../store/useSubjectStore'
+import useStreakStore, { calcCurrentStreak, toLocalDateStr } from '../store/useStreakStore'
 
 // ── icons ─────────────────────────────────────────────────────────────────
 
@@ -82,7 +83,9 @@ function IcSettings() {
 // ── component ─────────────────────────────────────────────────────────────
 
 export default function Sidebar({ user, initials, email, onSignOut, activeView, onSettings }) {
-  const subjects = useSubjectStore(s => s.subjects)
+  const subjects    = useSubjectStore(s => s.subjects)
+  const loginDates  = useStreakStore(s => s.loginDates)
+  const currentStreak = calcCurrentStreak(new Set(loginDates))
 
   return (
     <nav className="v2-nav">
@@ -100,7 +103,7 @@ export default function Sidebar({ user, initials, email, onSignOut, activeView, 
       <button className="nav-item">
         <IcStreak />
         Streak
-        <span className="ni-count">—</span>
+        <span className="ni-count">{currentStreak > 0 ? currentStreak : '—'}</span>
       </button>
       <button className="nav-item">
         <IcToday />
