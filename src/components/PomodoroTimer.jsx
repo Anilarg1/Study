@@ -125,7 +125,18 @@ function AddSubjectPanel({ onAdd, onCancel }) {
 // ── settings panel ────────────────────────────────────────────────────────
 
 const DURATION_LABELS = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
-const DURATION_COLORS = { work: 'var(--focus)', shortBreak: 'var(--short)', longBreak: 'var(--long)' }
+
+const SLIDER_CONFIG = {
+  work:       { min: 5,  max: 120, step: 5,  color: 'var(--focus)' },
+  shortBreak: { min: 1,  max: 30, step: 1,  color: 'var(--short)' },
+  longBreak:  { min: 5,  max: 60, step: 5,  color: 'var(--long)'  },
+}
+
+const PRESETS = [
+  { label: '25 / 5',  work: 25, shortBreak: 5,  longBreak: 15 },
+  { label: '50 / 10', work: 50, shortBreak: 10, longBreak: 15 },
+  { label: '40 / 20', work: 40, shortBreak: 20, longBreak: 15 },
+]
 
 function SettingsPanel({ customDurations, setDuration }) {
   const [drafts, setDrafts] = useState({
@@ -142,49 +153,68 @@ function SettingsPanel({ customDurations, setDuration }) {
     })
   }, [customDurations.work, customDurations.shortBreak, customDurations.longBreak])
 
-  function adjust(m, delta) {
-    const next = Math.max(1, Math.min(180, (drafts[m] || 1) + delta))
-    setDrafts(d => ({ ...d, [m]: next }))
-    setDuration(m, next)
+  function applyPreset(preset) {
+    setDrafts({ work: preset.work, shortBreak: preset.shortBreak, longBreak: preset.longBreak })
+    setDuration('work',       preset.work)
+    setDuration('shortBreak', preset.shortBreak)
+    setDuration('longBreak',  preset.longBreak)
   }
+
+  function handleSlider(m, val) {
+    const v = Number(val)
+    setDrafts(d => ({ ...d, [m]: v }))
+    setDuration(m, v)
+  }
+
+  function fillPct(m) {
+    const { min, max } = SLIDER_CONFIG[m]
+    return ((drafts[m] - min) / (max - min) * 100).toFixed(2) + '%'
+  }
+
+  const activePreset = PRESETS.find(p =>
+    p.work === drafts.work && p.shortBreak === drafts.shortBreak && p.longBreak === drafts.longBreak
+  )?.label ?? null
 
   return (
     <div className="settings-panel" style={{ marginTop: 6 }}>
-      <p style={{ fontSize: '10.5px', color: 'var(--text-mute)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12, margin: '0 0 12px' }}>
-        Duration (minutes)
-      </p>
-      {(['work', 'shortBreak', 'longBreak']).map(m => (
-        <div key={m} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-          <span style={{ fontSize: 12, color: DURATION_COLORS[m] }}>{DURATION_LABELS[m]}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button
-              onClick={() => adjust(m, -1)}
-              style={{ width: 24, height: 24, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', background: 'var(--surface-3)', border: '1px solid var(--hairline)', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}
-            >−</button>
+
+      {/* ── presets ── */}
+      <p className="sp-label">Preset</p>
+      <div className="sp-presets">
+        {PRESETS.map(p => (
+          <button
+            key={p.label}
+            className={`sp-preset-btn${activePreset === p.label ? ' active' : ''}`}
+            onClick={() => applyPreset(p)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── sliders ── */}
+      <p className="sp-label" style={{ marginTop: 14 }}>Duration (min)</p>
+      {(['work', 'shortBreak', 'longBreak']).map(m => {
+        const { min, max, step, color } = SLIDER_CONFIG[m]
+        return (
+          <div key={m} className="sp-slider-row">
+            <div className="sp-slider-meta">
+              <span className="sp-slider-label" style={{ color }}>{DURATION_LABELS[m]}</span>
+              <span className="sp-slider-val">
+                {drafts[m]}<span className="sp-slider-unit">m</span>
+              </span>
+            </div>
             <input
-              type="number" min="1" max="180"
+              type="range"
+              className="pomo-slider"
+              min={min} max={max} step={step}
               value={drafts[m]}
-              onChange={e => setDrafts(d => ({ ...d, [m]: e.target.value === '' ? '' : Number(e.target.value) }))}
-              onBlur={e => {
-                const v = Math.max(1, Math.min(180, Number(e.target.value) || 1))
-                setDrafts(d => ({ ...d, [m]: v }))
-                setDuration(m, v)
-              }}
-              style={{
-                width: 44, textAlign: 'center', fontSize: 13,
-                background: 'var(--surface-3)', color: 'var(--text)',
-                border: '1px solid var(--hairline-2)', borderRadius: 5,
-                padding: '2px 0', outline: 'none', fontFamily: 'Geist Mono, monospace',
-                appearance: 'textfield',
-              }}
+              style={{ '--fill-color': color, '--fill-pct': fillPct(m) }}
+              onChange={e => handleSlider(m, e.target.value)}
             />
-            <button
-              onClick={() => adjust(m, 1)}
-              style={{ width: 24, height: 24, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', background: 'var(--surface-3)', border: '1px solid var(--hairline)', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}
-            >+</button>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -208,8 +238,21 @@ export default function PomodoroTimer() {
   const [toast,       setToast]       = useState(null)
   const [showSettings, setSettings]   = useState(false)
   const [showAddSubj,  setShowAddSubj] = useState(false)
-  const tickRef = useRef(null)
-  const chipsRef = useRef(null)
+  const tickRef      = useRef(null)
+  const chipsRef     = useRef(null)
+  const settingsRef  = useRef(null)
+
+  // ── close settings on outside click ──────────────────────────────────────
+  useEffect(() => {
+    if (!showSettings) return
+    function onOutside(e) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setSettings(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [showSettings])
 
   // ── ticker ────────────────────────────────────────────────────────────────
   const handleTick = useCallback(() => {
@@ -328,7 +371,7 @@ export default function PomodoroTimer() {
       <div className="timer-stage">
 
         {/* mode tabs */}
-        <div className="mode-tabs" style={{ position: 'relative' }}>
+        <div className="mode-tabs" style={{ position: 'relative' }} ref={settingsRef}>
           {(['work', 'shortBreak', 'longBreak']).map(m => (
             <button
               key={m}
