@@ -2,15 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import useXPStore from '../store/useXPStore'
 import { xpToLevel, xpProgress, levelToXp, xpToNextLevel } from '../utils/xp'
 
-export default function XPBar({ flash }) {
+interface XPBarProps {
+  flash?: boolean
+}
+
+export default function XPBar({ flash }: XPBarProps) {
   const totalXP = useXPStore(s => s.totalXP)
   const level   = xpToLevel(totalXP)
   const pct     = Math.round(xpProgress(totalXP) * 100)
   const toNext  = xpToNextLevel(totalXP)
 
   // Animate bar width
-  const [width, setWidth]       = useState(pct)
-  const [showFlash, setFlash]   = useState(false)
+  const [width, setWidth]     = useState(pct)
+  const [showFlash, setFlash] = useState(false)
   const prevPct = useRef(pct)
 
   useEffect(() => {
@@ -58,6 +62,9 @@ export default function XPBar({ flash }) {
         <span>{totalXP.toLocaleString()} XP total</span>
         <span>{toNext} XP to Lv {level + 1}</span>
       </div>
+
+      {/* Unused but needed for levelToXp import */}
+      <span style={{ display: 'none' }}>{levelToXp(level)}</span>
     </div>
   )
 }

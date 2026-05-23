@@ -4,6 +4,7 @@ import useSettingsStore, {
 } from '../store/useSettingsStore'
 import useAuthStore from '../store/useAuthStore'
 import { supabase } from '../lib/supabase'
+import type { Theme, Density, FontScale } from '../types'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -49,8 +50,6 @@ function IcDownload() {
     </svg>
   )
 }
-
-// ── Theme selector icons ───────────────────────────────────────────────────────
 function IcMoon() {
   return (
     <svg className="s-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -80,7 +79,7 @@ function IcMonitor() {
 
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
-const SECTIONS = [
+const SECTIONS: Array<{ id: string; label: string; Icon: React.ComponentType }> = [
   { id: 'account',       label: 'Account & Profile', Icon: IcUser },
   { id: 'interface',     label: 'Interface',          Icon: IcPalette },
   { id: 'notifications', label: 'Notifications',      Icon: IcBell },
@@ -88,7 +87,11 @@ const SECTIONS = [
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
-function Group({ title, children }) {
+interface GroupProps {
+  title?:    string
+  children:  React.ReactNode
+}
+function Group({ title, children }: GroupProps) {
   return (
     <div className="s-group">
       {title && <div className="s-group-title">{title}</div>}
@@ -97,7 +100,14 @@ function Group({ title, children }) {
   )
 }
 
-function Row({ label, description, children, danger, column }) {
+interface RowProps {
+  label:       string
+  description?: string
+  children:    React.ReactNode
+  danger?:     boolean
+  column?:     boolean
+}
+function Row({ label, description, children, danger, column }: RowProps) {
   return (
     <div className={`s-row${danger ? ' s-row-danger' : ''}${column ? ' s-row-col' : ''}`}>
       <div className="s-row-left">
@@ -109,7 +119,11 @@ function Row({ label, description, children, danger, column }) {
   )
 }
 
-function Toggle({ checked, onChange }) {
+interface ToggleProps {
+  checked:  boolean
+  onChange: (value: boolean) => void
+}
+function Toggle({ checked, onChange }: ToggleProps) {
   return (
     <button
       role="switch"
@@ -120,12 +134,21 @@ function Toggle({ checked, onChange }) {
   )
 }
 
-function Segment({ options, value, onChange }) {
+interface SegmentOption {
+  value: string | number
+  label: string
+}
+interface SegmentProps {
+  options:  SegmentOption[]
+  value:    string | number
+  onChange: (value: string | number) => void
+}
+function Segment({ options, value, onChange }: SegmentProps) {
   return (
     <div className="s-segment">
       {options.map(o => (
         <button
-          key={o.value}
+          key={String(o.value)}
           className={`s-seg-btn${value === o.value ? ' active' : ''}`}
           onClick={() => onChange(o.value)}
         >
@@ -138,7 +161,7 @@ function Segment({ options, value, onChange }) {
 
 // ── Avatar colour swatches ────────────────────────────────────────────────────
 
-const AVATAR_COLORS = [
+const AVATAR_COLORS: [string, string][] = [
   ['#c97b5b', '#5d4a82'],
   ['#4cb782', '#2d7a9a'],
   ['#8b85ff', '#e05b8a'],
@@ -150,16 +173,20 @@ const AVATAR_COLORS = [
 // ACCOUNT SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AccountSection({ onToast }) {
-  const { user, signOut } = useAuthStore()
-  const email    = user?.email ?? ''
-  const handle   = email.split('@')[0]
+interface ToastFn {
+  (msg: string, type?: string): void
+}
 
-  const [displayName,       setDisplayName]       = useState(user?.user_metadata?.display_name ?? handle)
-  const [avatarIdx,         setAvatarIdx]          = useState(user?.user_metadata?.avatar_color_idx ?? 0)
-  const [saving,            setSaving]             = useState(false)
-  const [showDeletePrompt,  setShowDeletePrompt]   = useState(false)
-  const [deleteInput,       setDeleteInput]        = useState('')
+function AccountSection({ onToast }: { onToast: ToastFn }) {
+  const { user, signOut } = useAuthStore()
+  const email  = user?.email ?? ''
+  const handle = email.split('@')[0]
+
+  const [displayName,      setDisplayName]      = useState<string>(user?.user_metadata?.display_name ?? handle)
+  const [avatarIdx,        setAvatarIdx]        = useState<number>(user?.user_metadata?.avatar_color_idx ?? 0)
+  const [saving,           setSaving]           = useState(false)
+  const [showDeletePrompt, setShowDeletePrompt] = useState(false)
+  const [deleteInput,      setDeleteInput]      = useState('')
 
   const initials = (displayName || handle).slice(0, 2).toUpperCase()
   const [c1, c2] = AVATAR_COLORS[avatarIdx] ?? AVATAR_COLORS[0]
@@ -174,7 +201,7 @@ function AccountSection({ onToast }) {
       if (error) throw error
       onToast('Profile saved')
     } catch (e) {
-      onToast(e.message, 'error')
+      onToast((e as Error).message, 'error')
     } finally {
       setSaving(false)
     }
@@ -188,7 +215,7 @@ function AccountSection({ onToast }) {
       if (error) throw error
       onToast('Reset link sent to ' + email)
     } catch (e) {
-      onToast(e.message, 'error')
+      onToast((e as Error).message, 'error')
     }
   }
 
@@ -213,19 +240,17 @@ function AccountSection({ onToast }) {
       URL.revokeObjectURL(url)
       onToast('Data exported successfully')
     } catch (e) {
-      onToast(e.message, 'error')
+      onToast((e as Error).message, 'error')
     }
   }
 
   async function handleDeleteAccount() {
     if (deleteInput !== 'delete my account') return
     try {
-      // Requires a Supabase RPC function 'delete_user' — sign out as fallback.
       const { error } = await supabase.rpc('delete_user').maybeSingle()
       if (error) throw error
       await signOut()
     } catch {
-      // RPC not yet deployed — sign out and inform user
       await signOut()
       onToast('Signed out. Contact support to complete deletion.', 'error')
     }
@@ -238,9 +263,7 @@ function AccountSection({ onToast }) {
         <p className="s-subhead">Manage your personal info, security, and data.</p>
       </div>
 
-      {/* ── Profile ── */}
       <Group title="Profile">
-        {/* Avatar */}
         <div className="s-avatar-row">
           <div
             className="s-avatar-preview"
@@ -284,7 +307,6 @@ function AccountSection({ onToast }) {
         </Row>
       </Group>
 
-      {/* ── Plan ── */}
       <Group title="Subscription">
         <Row label="Current plan" description="You're on the free tier">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -302,7 +324,6 @@ function AccountSection({ onToast }) {
         </Row>
       </Group>
 
-      {/* ── Security ── */}
       <Group title="Security">
         <Row label="Password" description="Send a reset link to your email">
           <button className="s-btn" onClick={handlePasswordReset}>Reset password</button>
@@ -315,7 +336,6 @@ function AccountSection({ onToast }) {
         </Row>
       </Group>
 
-      {/* ── Data ── */}
       <Group title="Data &amp; Privacy">
         <Row label="Export all data" description="Download your sessions and subjects as JSON">
           <button className="s-btn" onClick={handleExport}>
@@ -324,7 +344,6 @@ function AccountSection({ onToast }) {
           </button>
         </Row>
 
-        {/* Delete account */}
         <div className={`s-row s-row-danger${showDeletePrompt ? ' s-row-col' : ''}`}>
           <div className="s-row-left">
             <span className="s-row-label">Delete account</span>
@@ -375,22 +394,22 @@ function AccountSection({ onToast }) {
 // INTERFACE SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
-function InterfaceSection() {
+function InterfaceSection({ onToast: _onToast }: { onToast?: ToastFn }) {
   const s = useSettingsStore()
 
-  function setTheme(theme) {
-    s.setField('theme', theme)
-    applyTheme(theme)
+  function setTheme(theme: string | number) {
+    s.setField('theme', theme as Theme)
+    applyTheme(theme as Theme)
   }
-  function setDensity(density) {
-    s.setField('density', density)
-    applyDensity(density)
+  function setDensity(density: string | number) {
+    s.setField('density', density as Density)
+    applyDensity(density as Density)
   }
-  function setFontScale(scale) {
-    s.setField('fontScale', scale)
-    applyFontScale(scale)
+  function setFontScale(scale: string | number) {
+    s.setField('fontScale', scale as FontScale)
+    applyFontScale(scale as FontScale)
   }
-  function setHighContrast(v) {
+  function setHighContrast(v: boolean) {
     s.setField('highContrast', v)
     applyContrast(v)
   }
@@ -402,7 +421,6 @@ function InterfaceSection() {
         <p className="s-subhead">Customise the look, layout, and regional settings of your workspace.</p>
       </div>
 
-      {/* ── Theme ── */}
       <Group title="Theme">
         <div className="s-theme-grid">
           {[
@@ -422,7 +440,6 @@ function InterfaceSection() {
         </div>
       </Group>
 
-      {/* ── Layout density ── */}
       <Group title="Layout Density">
         <Row label="View density" description="Controls spacing throughout the interface">
           <Segment
@@ -436,7 +453,6 @@ function InterfaceSection() {
         </Row>
       </Group>
 
-      {/* ── Localisation ── */}
       <Group title="Localisation &amp; Regional">
         <Row label="Language">
           <select
@@ -459,7 +475,7 @@ function InterfaceSection() {
               { value: '12h', label: '12 h' },
             ]}
             value={s.timeFormat}
-            onChange={v => s.setField('timeFormat', v)}
+            onChange={v => s.setField('timeFormat', v as Theme)}
           />
         </Row>
         <Row label="First day of week">
@@ -469,12 +485,11 @@ function InterfaceSection() {
               { value: 'sunday', label: 'Sunday' },
             ]}
             value={s.weekStart}
-            onChange={v => s.setField('weekStart', v)}
+            onChange={v => s.setField('weekStart', v as Theme)}
           />
         </Row>
       </Group>
 
-      {/* ── Accessibility ── */}
       <Group title="Accessibility">
         <Row label="Font size" description="Scales text throughout the app">
           <Segment
@@ -499,7 +514,7 @@ function InterfaceSection() {
 // NOTIFICATIONS SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
-function NotificationsSection() {
+function NotificationsSection({ onToast: _onToast }: { onToast?: ToastFn }) {
   const s = useSettingsStore()
 
   return (
@@ -509,14 +524,12 @@ function NotificationsSection() {
         <p className="s-subhead">Choose how and when Notebook reaches you.</p>
       </div>
 
-      {/* ── Sound ── */}
       <Group title="Sound">
         <Row label="Sound alerts" description="Play a chime when each timer session completes">
           <Toggle checked={s.soundEnabled} onChange={v => s.setField('soundEnabled', v)} />
         </Row>
       </Group>
 
-      {/* ── Channels ── */}
       <Group title="Channels">
         <Row label="Push notifications" description="Browser and mobile push alerts">
           <Toggle checked={s.pushEnabled} onChange={v => s.setField('pushEnabled', v)} />
@@ -529,7 +542,6 @@ function NotificationsSection() {
         </Row>
       </Group>
 
-      {/* ── Triggers ── */}
       <Group title="Notification Triggers">
         <Row label="Mentions only" description="Alert only when mentioned in a shared session">
           <Toggle checked={s.notifyMentions} onChange={v => s.setField('notifyMentions', v)} />
@@ -542,7 +554,6 @@ function NotificationsSection() {
         </Row>
       </Group>
 
-      {/* ── Do Not Disturb ── */}
       <Group title="Do Not Disturb">
         <Row label="Enable DND" description="Mute all notifications during quiet hours">
           <Toggle checked={s.dndEnabled} onChange={v => s.setField('dndEnabled', v)} />
@@ -576,18 +587,21 @@ function NotificationsSection() {
 // MAIN EXPORT
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function Settings({ onBack }) {
-  const [section, setSection] = useState('account')
-  const [toast,   setToast]   = useState(null)
+interface SettingsProps {
+  onBack: () => void
+}
 
-  function showToast(msg, type = 'ok') {
+export default function Settings({ onBack }: SettingsProps) {
+  const [section, setSection] = useState('account')
+  const [toast,   setToast]   = useState<{ msg: string; type: string } | null>(null)
+
+  function showToast(msg: string, type = 'ok') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3500)
   }
 
-  // Esc key → back
   useEffect(() => {
-    function onKey(e) {
+    function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onBack()
     }
     window.addEventListener('keydown', onKey)
@@ -597,7 +611,6 @@ export default function Settings({ onBack }) {
   return (
     <div className="settings-view">
 
-      {/* ── Left sub-nav ── */}
       <aside className="settings-sidenav">
         <button className="s-back-btn" onClick={onBack}>
           <IcChevLeft />
@@ -616,14 +629,12 @@ export default function Settings({ onBack }) {
         ))}
       </aside>
 
-      {/* ── Content ── */}
       <div className="settings-content">
         {section === 'account'       && <AccountSection       onToast={showToast} />}
         {section === 'interface'     && <InterfaceSection     onToast={showToast} />}
         {section === 'notifications' && <NotificationsSection onToast={showToast} />}
       </div>
 
-      {/* ── Toast ── */}
       {toast && (
         <div className={`v2-toast${toast.type === 'error' ? ' toast-err' : ''}`}>
           {toast.type === 'error' ? '✕  ' : '✓  '}{toast.msg}

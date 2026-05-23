@@ -3,16 +3,16 @@ import useAuthStore from '../store/useAuthStore'
 import clsx from 'clsx'
 
 export default function AuthForm() {
-  const [mode,     setMode]     = useState('signin')   // 'signin' | 'signup'
+  const [mode,     setMode]     = useState<'signin' | 'signup'>('signin')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
-  const [error,    setError]    = useState(null)
+  const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
   const [success,  setSuccess]  = useState(false)
 
   const { signIn, signUp } = useAuthStore()
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
@@ -26,8 +26,6 @@ export default function AuthForm() {
     if (err) {
       setError(err.message)
     } else if (mode === 'signup') {
-      // signIn success fires onAuthStateChange → App re-renders automatically.
-      // signUp (with email confirmation enabled) just shows a success message.
       setSuccess(true)
     }
   }
@@ -54,7 +52,7 @@ export default function AuthForm() {
 
       {/* mode tabs */}
       <div className="flex gap-1 bg-card rounded-lg p-1">
-        {[['signin', 'Sign In'], ['signup', 'Sign Up']].map(([m, label]) => (
+        {([['signin', 'Sign In'], ['signup', 'Sign Up']] as const).map(([m, label]) => (
           <button
             key={m}
             type="button"

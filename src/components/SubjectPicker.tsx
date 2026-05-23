@@ -16,7 +16,11 @@ export const SUBJECT_COLORS = [
 
 // ─── component ───────────────────────────────────────────────────────────────
 
-export default function SubjectPicker({ onSubjectChange }) {
+interface SubjectPickerProps {
+  onSubjectChange?: (id: string | null) => void
+}
+
+export default function SubjectPicker({ onSubjectChange }: SubjectPickerProps) {
   const { subjects, activeId, setActiveId, addSubject, deleteSubject } =
     useSubjectStore()
 
@@ -24,18 +28,18 @@ export default function SubjectPicker({ onSubjectChange }) {
   const [adding,   setAdding]   = useState(false)
   const [newName,  setNewName]  = useState('')
   const [newColor, setNewColor] = useState(SUBJECT_COLORS[0])
-  const [addError, setAddError] = useState(null)
+  const [addError, setAddError] = useState<string | null>(null)
 
-  const dropdownRef = useRef(null)
-  const nameRef     = useRef(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const nameRef     = useRef<HTMLInputElement>(null)
 
   const activeSubject = subjects.find(s => s.id === activeId) ?? null
 
   // ── Close on outside click ──────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return
-    function handleMouseDown(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    function handleMouseDown(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpen(false)
         setAdding(false)
         setAddError(null)
@@ -56,7 +60,7 @@ export default function SubjectPicker({ onSubjectChange }) {
   }, [activeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  function selectSubject(id) {
+  function selectSubject(id: string | null) {
     setActiveId(id)
     setOpen(false)
     setAdding(false)
@@ -77,7 +81,7 @@ export default function SubjectPicker({ onSubjectChange }) {
     }
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter')  handleAdd()
     if (e.key === 'Escape') { setAdding(false); setNewName(''); setAddError(null) }
   }

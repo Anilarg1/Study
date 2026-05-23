@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
 import LoginPage        from './components/LoginPage'
 import Sidebar          from './components/Sidebar'
 import PomodoroTimer    from './components/PomodoroTimer'
@@ -10,7 +11,7 @@ import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
 
 // mode key map: store names → CSS data-mode values
-const DATA_MODE = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
+const DATA_MODE: Record<string, string> = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
 
 // ── breadcrumb icons ───────────────────────────────────────────────────────
 function TimerIcon() {
@@ -44,18 +45,18 @@ export default function App() {
   const dataMode         = DATA_MODE[timerMode] ?? 'focus'
 
   const [showNewSession, setShowNewSession] = useState(false)
-  const [view,           setView]           = useState('timer') // 'timer' | 'settings'
+  const [view,           setView]           = useState<'timer' | 'settings'>('timer')
 
   const handleNewSession = useCallback(() => {
     setShowNewSession(true)
   }, [])
 
-  const handleStartSession = useCallback((subjectId, durationMins) => {
+  const handleStartSession = useCallback((subjectId: string | null, durationMins: number) => {
     setShowNewSession(false)
     setActiveId(subjectId)
     setTimerSubject(subjectId)
-    setTimerDuration('work', durationMins)   // updates customDurations.work
-    setTimerMode('work')                     // resets remaining to new duration
+    setTimerDuration('work', durationMins)
+    setTimerMode('work')
     startTimer()
   }, [setActiveId, setTimerSubject, setTimerDuration, setTimerMode, startTimer])
 
@@ -64,8 +65,8 @@ export default function App() {
 
   // Global keyboard shortcut: C → New session
   useEffect(() => {
-    function onKey(e) {
-      if (e.target.matches('input, textarea')) return
+    function onKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement).matches('input, textarea')) return
       if (e.key.toLowerCase() === 'c') handleNewSession()
     }
     window.addEventListener('keydown', onKey)
@@ -87,7 +88,8 @@ export default function App() {
   if (!user) return <LoginPage />
 
   // ── derive user display info ────────────────────────────────────────────
-  const email    = user.email ?? ''
+  const typedUser = user as User
+  const email    = typedUser.email ?? ''
   const initials = email.slice(0, 2).toUpperCase()
   const handle   = email.split('@')[0]
 
@@ -114,7 +116,6 @@ export default function App() {
 
       {/* ── TOPBAR ── */}
       <div className="topbar">
-        {/* breadcrumbs */}
         {view === 'timer' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
             <TimerIcon />
@@ -131,7 +132,6 @@ export default function App() {
 
         <div style={{ flex: 1 }} />
 
-        {/* command palette */}
         <button className="cmd-palette">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
@@ -145,7 +145,6 @@ export default function App() {
           </span>
         </button>
 
-        {/* bell */}
         <button className="icon-btn" title="Notifications">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -154,7 +153,6 @@ export default function App() {
           </svg>
         </button>
 
-        {/* new session */}
         <button className="top-btn primary" onClick={handleNewSession}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -167,7 +165,7 @@ export default function App() {
 
       {/* ── NAV ── */}
       <Sidebar
-        user={user}
+        user={typedUser}
         initials={initials}
         email={email}
         onSignOut={signOut}
@@ -176,7 +174,7 @@ export default function App() {
       />
 
       {/* ── MAIN ── */}
-      {view === 'timer'    && <PomodoroTimer dataMode={dataMode} running={running} />}
+      {view === 'timer'    && <PomodoroTimer />}
       {view === 'settings' && <Settings onBack={() => setView('timer')} />}
 
       {/* ── RAIL (hidden in settings view) ── */}

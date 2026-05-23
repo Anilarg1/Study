@@ -4,22 +4,22 @@ import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import { supabase }   from '../lib/supabase'
 
 // ── Interactive dot-grid canvas ────────────────────────────────────────────────
-function useDotCanvas(canvasRef) {
+function useDotCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>): void {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    const GAP    = 38           // dot spacing
-    const R_BASE = 1.1          // baseline radius
-    const R_MAX  = 2.5          // hover radius
-    const REACH  = 170          // cursor influence radius
-    const ALPHA  = 0.045        // baseline dot alpha
-    const ACC_R  = 170          // accent colour channels
+    const GAP    = 38
+    const R_BASE = 1.1
+    const R_MAX  = 2.5
+    const REACH  = 170
+    const ALPHA  = 0.045
+    const ACC_R  = 170
     const ACC_G  = 165
     const ACC_B  = 255
 
-    // Three cursor echoes at different lag speeds for a depth effect
     const center  = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
     let target   = { ...center }
     let mouse    = { ...center }
@@ -32,11 +32,11 @@ function useDotCanvas(canvasRef) {
     }
     resize()
 
-    function onMove(e) { target = { x: e.clientX, y: e.clientY } }
+    function onMove(e: MouseEvent) { target = { x: e.clientX, y: e.clientY } }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('resize', resize)
 
-    let rafId
+    let rafId: number
     function frame() {
       mouse.x   += (target.x - mouse.x)   * 0.12
       mouse.y   += (target.y - mouse.y)   * 0.12
@@ -64,7 +64,6 @@ function useDotCanvas(canvasRef) {
           const tC = Math.max(0, 1 - dC / REACH) * 0.4
           const t  = Math.min(1, tM + tW * 0.4 + tC * 0.2)
 
-          // Gentle spring push away from primary cursor
           const pushX = dM < REACH && dM > 0 ? (x - mouse.x) / dM * t * 3 : 0
           const pushY = dM < REACH && dM > 0 ? (y - mouse.y) / dM * t * 3 : 0
 
@@ -120,20 +119,20 @@ function Spinner() {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function LoginPage() {
-  const [mode,         setMode]         = useState('signin')
+  const [mode,         setMode]         = useState<'signin' | 'signup'>('signin')
   const [email,        setEmail]        = useState('')
   const [password,     setPassword]     = useState('')
   const [showPw,       setShowPw]       = useState(false)
   const [stayIn,       setStayIn]       = useState(false)
-  const [error,        setError]        = useState(null)
+  const [error,        setError]        = useState<string | null>(null)
   const [loading,      setLoading]      = useState(false)
   const [success,      setSuccess]      = useState(false)
-  const [oauthLoading, setOauthLoading] = useState(null)   // 'google' | 'github' | null
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null)
 
-  const canvasRef  = useRef(null)
-  const warmRef    = useRef(null)
-  const coolRef    = useRef(null)
-  const glowRafRef = useRef(null)
+  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const warmRef    = useRef<HTMLDivElement>(null)
+  const coolRef    = useRef<HTMLDivElement>(null)
+  const glowRafRef = useRef<number | null>(null)
 
   const { signIn, signUp } = useAuthStore()
   const loginDates = useStreakStore(s => s.loginDates)
@@ -149,7 +148,7 @@ export default function LoginPage() {
     let warm   = { ...center }
     let cool   = { ...center }
 
-    function onMove(e) { target = { x: e.clientX, y: e.clientY } }
+    function onMove(e: MouseEvent) { target = { x: e.clientX, y: e.clientY } }
     window.addEventListener('mousemove', onMove)
 
     function tick() {
@@ -170,11 +169,11 @@ export default function LoginPage() {
 
     return () => {
       window.removeEventListener('mousemove', onMove)
-      cancelAnimationFrame(glowRafRef.current)
+      if (glowRafRef.current !== null) cancelAnimationFrame(glowRafRef.current)
     }
   }, [])
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
@@ -189,10 +188,9 @@ export default function LoginPage() {
     } else if (mode === 'signup') {
       setSuccess(true)
     }
-    // signIn success fires onAuthStateChange → App re-renders automatically
   }
 
-  async function handleOAuth(provider) {
+  async function handleOAuth(provider: 'google' | 'github') {
     setError(null)
     setOauthLoading(provider)
     const { error: err } = await supabase.auth.signInWithOAuth({
@@ -203,10 +201,9 @@ export default function LoginPage() {
       setError(err.message)
       setOauthLoading(null)
     }
-    // On success Supabase redirects the page; no cleanup needed
   }
 
-  function switchMode(m) {
+  function switchMode(m: 'signin' | 'signup') {
     setMode(m)
     setError(null)
   }
@@ -243,17 +240,11 @@ export default function LoginPage() {
   return (
     <div className="login-root">
 
-      {/* Layer 1 – canvas dot grid */}
       <canvas ref={canvasRef} className="login-canvas" />
-
-      {/* Layer 2 – CSS glow blobs */}
       <div ref={warmRef} className="login-glow-warm" />
       <div ref={coolRef} className="login-glow-cool" />
-
-      {/* Layer 3 – vignette */}
       <div className="login-vignette" />
 
-      {/* ── Header bar ── */}
       <header className="login-header">
         <div className="login-brand">
           <div className="brand-logo" style={{ width: 22, height: 22, fontSize: 11, flexShrink: 0 }}>N</div>
@@ -280,11 +271,9 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {/* ── Auth card ── */}
       <main className="login-card-wrap">
         <div className="login-card">
 
-          {/* Eyebrow pill */}
           <div className="login-eyebrow">
             <span className="login-eyebrow-dot" />
             {mode === 'signin'
@@ -292,12 +281,10 @@ export default function LoginPage() {
               : 'Start your study journey today'}
           </div>
 
-          {/* h1 */}
           <h1 className="login-h1">
             {mode === 'signin' ? 'Sign in to Notebook' : 'Create your account'}
           </h1>
 
-          {/* subtext */}
           <p className="login-subtext">
             {mode === 'signin'
               ? streak > 0
@@ -307,7 +294,6 @@ export default function LoginPage() {
             }
           </p>
 
-          {/* SSO buttons */}
           <div className="login-sso-grid">
             <button
               className="login-sso-btn"
@@ -322,23 +308,17 @@ export default function LoginPage() {
               onClick={() => handleOAuth('github')}
               disabled={!!oauthLoading || loading}
             >
-              {oauthLoading === 'github'
-                ? <Spinner />
-                : <GitHubIcon />
-              }
+              {oauthLoading === 'github' ? <Spinner /> : <GitHubIcon />}
               <span>GitHub</span>
             </button>
           </div>
 
-          {/* Divider */}
           <div className="login-divider">
             <span>or with email</span>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="login-form" noValidate>
 
-            {/* Email field */}
             <div className="login-field">
               <span className="login-field-icon">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -358,7 +338,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password field */}
             <div className="login-field">
               <span className="login-field-icon">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -400,10 +379,8 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Error */}
             {error && <p className="login-error">{error}</p>}
 
-            {/* Options row */}
             <div className="login-options-row">
               <label className="login-checkbox-label">
                 <input
@@ -424,7 +401,6 @@ export default function LoginPage() {
               </span>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading || !!oauthLoading}
@@ -441,7 +417,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Foot link */}
           <p className="login-foot">
             {mode === 'signin' ? (
               <>New to Notebook?{' '}
@@ -461,7 +436,6 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* ── Legal strip ── */}
       <footer className="login-legal">
         <a className="login-legal-link" href="#">Terms</a>
         <span className="login-legal-sep">·</span>

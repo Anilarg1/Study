@@ -1,5 +1,6 @@
+import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
-import useStreakStore, { calcCurrentStreak, toLocalDateStr } from '../store/useStreakStore'
+import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 
 // ── icons ─────────────────────────────────────────────────────────────────
 
@@ -82,9 +83,18 @@ function IcSettings() {
 
 // ── component ─────────────────────────────────────────────────────────────
 
-export default function Sidebar({ user, initials, email, onSignOut, activeView, onSettings }) {
-  const subjects    = useSubjectStore(s => s.subjects)
-  const loginDates  = useStreakStore(s => s.loginDates)
+interface SidebarProps {
+  user:       User
+  initials:   string
+  email:      string
+  onSignOut:  () => void
+  activeView: string
+  onSettings: () => void
+}
+
+export default function Sidebar({ user: _user, initials, email, onSignOut, activeView, onSettings }: SidebarProps) {
+  const subjects      = useSubjectStore(s => s.subjects)
+  const loginDates    = useStreakStore(s => s.loginDates)
   const currentStreak = calcCurrentStreak(new Set(loginDates))
 
   return (

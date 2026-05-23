@@ -3,23 +3,29 @@ import useSubjectStore from '../store/useSubjectStore'
 
 const PRESETS = [25, 50, 90]
 
-export default function NewSessionModal({ running, onStart, onCancel }) {
+interface NewSessionModalProps {
+  running:   boolean
+  onStart:   (subjectId: string | null, durationMins: number) => void
+  onCancel:  () => void
+}
+
+export default function NewSessionModal({ running, onStart, onCancel }: NewSessionModalProps) {
   const subjects = useSubjectStore(s => s.subjects)
   const activeId = useSubjectStore(s => s.activeId)
 
-  const [selectedId, setSelectedId] = useState(activeId)
+  const [selectedId, setSelectedId] = useState<string | null>(activeId)
   const [duration,   setDuration]   = useState(25)
 
   // Close on Escape
   useEffect(() => {
-    function onKey(e) {
+    function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onCancel()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onCancel])
 
-  function adjust(delta) {
+  function adjust(delta: number) {
     setDuration(d => Math.max(1, Math.min(180, d + delta)))
   }
 
@@ -67,8 +73,8 @@ export default function NewSessionModal({ running, onStart, onCancel }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'inherit', transition: 'color 120ms',
             }}
-            onMouseEnter={e => e.target.style.color = 'var(--text)'}
-            onMouseLeave={e => e.target.style.color = 'var(--text-mute)'}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-mute)')}
           >×</button>
         </div>
 
@@ -182,7 +188,7 @@ export default function NewSessionModal({ running, onStart, onCancel }) {
                   fontFamily: 'Geist Mono, monospace',
                   MozAppearance: 'textfield',
                   appearance: 'textfield',
-                }}
+                } as React.CSSProperties}
               />
               <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>min</span>
               <button

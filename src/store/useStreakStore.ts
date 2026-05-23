@@ -6,7 +6,7 @@ import { getCurrentUserId } from '../lib/currentUser'
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 /** 'YYYY-MM-DD' in the user's local timezone (avoids UTC-offset surprises) */
-export function toLocalDateStr(date = new Date()) {
+export function toLocalDateStr(date: Date = new Date()): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
@@ -20,7 +20,7 @@ export function toLocalDateStr(date = new Date()) {
  * Exported so components can compute this reactively from loginDates without
  * relying on Zustand getters (which lose reactivity after the first Object.assign).
  */
-export function calcCurrentStreak(dateSet) {
+export function calcCurrentStreak(dateSet: Set<string>): number {
   const today     = toLocalDateStr()
   const yesterday = toLocalDateStr(new Date(Date.now() - 86_400_000))
 
@@ -43,12 +43,12 @@ export function calcCurrentStreak(dateSet) {
 }
 
 /** All-time longest consecutive-day run */
-function calcLongestStreak(dates) {
+function calcLongestStreak(dates: string[]): number {
   if (!dates.length) return 0
   const sorted = [...new Set(dates)].sort()
   let longest = 1, run = 1
   for (let i = 1; i < sorted.length; i++) {
-    const diff = (new Date(sorted[i]) - new Date(sorted[i - 1])) / 86_400_000
+    const diff = (new Date(sorted[i]).getTime() - new Date(sorted[i - 1]).getTime()) / 86_400_000
     if      (diff === 1) { run++; if (run > longest) longest = run }
     else if (diff  > 1) { run = 1 }
     // diff === 0 → duplicate date, skip
@@ -58,38 +58,36 @@ function calcLongestStreak(dates) {
 
 // ─── store ────────────────────────────────────────────────────────────────────
 
-const useStreakStore = create(
+interface StreakState {
+  loginDates:    string[]
+  longestStreak: number
+
+  clockIn(): void
+  _importFromSupabase(dates: string[]): void
+  _reset(): void
+}
+
+const useStreakStore = create<StreakState>()(
   persist(
     (set, get) => ({
-      /** ['YYYY-MM-DD', …] — mirrors Supabase daily_logins rows */
       loginDates:    [],
       longestStreak: 0,
 
-      /**
-       * Call once after sign-in sync is complete.
-       * No-ops if today is already logged. Syncs to Supabase if signed in.
-       */
       clockIn() {
         const today = toLocalDateStr()
         const { loginDates } = get()
-        if (loginDates.includes(today)) return   // already clocked in
+        if (loginDates.includes(today)) return
 
         const next    = [...loginDates, today]
         const longest = Math.max(get().longestStreak, calcLongestStreak(next))
         set({ loginDates: next, longestStreak: longest })
 
-        // Fire-and-forget: getCurrentUserId() reads from in-memory cache — no
-        // async getSession() call needed.
         const userId = getCurrentUserId()
         if (userId) {
           upsertDailyLogin(userId, today).catch(console.error)
         }
       },
 
-      /**
-       * Called by useAuthStore after sign-in.
-       * Overwrites local login dates with the Supabase source of truth.
-       */
       _importFromSupabase(dates) {
         const longest = calcLongestStreak(dates)
         set({
@@ -98,7 +96,6 @@ const useStreakStore = create(
         })
       },
 
-      /** Called by useAuthStore on sign-out. */
       _reset() {
         set({ loginDates: [], longestStreak: 0 })
       },

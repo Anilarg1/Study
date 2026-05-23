@@ -3,21 +3,29 @@ import useXPStore      from '../store/useXPStore'
 import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 import useSubjectStore from '../store/useSubjectStore'
 import { xpToLevel, xpProgress, xpToNextLevel, levelToXp } from '../utils/xp'
+import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
 const DAY_HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
-function getMonthDays() {
+interface CalendarCell {
+  dateStr:  string
+  day:      number
+  isToday:  boolean
+  isFuture: boolean
+}
+
+function getMonthDays(): { cells: (CalendarCell | null)[]; monthLabel: string } {
   const now    = new Date()
   const year   = now.getFullYear()
   const month  = now.getMonth()
   const first  = new Date(year, month, 1)
   const total  = new Date(year, month + 1, 0).getDate()
-  const offset = first.getDay()          // 0 = Sun
+  const offset = first.getDay()
   const today  = toLocalDateStr(now)
 
-  const cells = []
+  const cells: (CalendarCell | null)[] = []
   for (let i = 0; i < offset; i++) cells.push(null)
   for (let d = 1; d <= total; d++) {
     const date    = new Date(year, month, d)
@@ -30,13 +38,11 @@ function getMonthDays() {
   }
 }
 
-function todayStr() { return toLocalDateStr() }
+function todayStr(): string { return toLocalDateStr() }
 
-/** Parse ISO completedAt → local date string */
-function dateOf(iso) { return toLocalDateStr(new Date(iso)) }
+function dateOf(iso: string): string { return toLocalDateStr(new Date(iso)) }
 
-/** Format minutes as "Xh Ym" or "Ym" */
-function fmtDuration(totalMins) {
+function fmtDuration(totalMins: number): string {
   if (totalMins === 0) return '0m'
   const h = Math.floor(totalMins / 60)
   const m = totalMins % 60
@@ -45,11 +51,10 @@ function fmtDuration(totalMins) {
   return `${h}h ${m}m`
 }
 
-/** Relative time string (e.g. "2m ago", "Today · 11:30 AM") */
-function relativeTime(iso) {
-  const d   = new Date(iso)
-  const now = Date.now()
-  const diff = Math.floor((now - d) / 1000)
+function relativeTime(iso: string): string {
+  const d    = new Date(iso)
+  const now  = Date.now()
+  const diff = Math.floor((now - d.getTime()) / 1000)
   if (diff < 60)   return 'Just now'
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   const hm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -59,30 +64,27 @@ function relativeTime(iso) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` · ${hm}`
 }
 
-/** Level name by level number */
 const LEVEL_NAMES = ['Novice', 'Beginner', 'Student', 'Scholar', 'Expert', 'Master', 'Sage', 'Legend']
-function levelName(lv) { return LEVEL_NAMES[Math.min(lv, LEVEL_NAMES.length - 1)] }
+function levelName(lv: number): string { return LEVEL_NAMES[Math.min(lv, LEVEL_NAMES.length - 1)] }
 
 // ── today stats ───────────────────────────────────────────────────────────
 
-function TodayCard({ sessions }) {
+function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
   const today    = todayStr()
   const todaySes = sessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === today)
-  // Use recorded durationSecs when available; fall back to 25 min for older entries.
   const totalMin = todaySes.reduce((sum, s) =>
     sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0
   )
 
-  // 24-col bar: bucket by hour
-  const hourCounts = Array(24).fill(0)
+  const hourCounts = Array(24).fill(0) as number[]
   todaySes.forEach(s => {
     const h = new Date(s.completedAt).getHours()
     hourCounts[h]++
   })
-  const maxH   = Math.max(1, ...hourCounts)
+  const maxH    = Math.max(1, ...hourCounts)
   const curHour = new Date().getHours()
 
-  function hClass(i) {
+  function hClass(i: number): string {
     if (i === curHour && hourCounts[i] > 0) return 'h-cell now'
     const ratio = hourCounts[i] / maxH
     if (ratio === 0) return 'h-cell'
@@ -143,7 +145,6 @@ function StreakCard() {
 
   return (
     <div className="v2-card">
-      {/* header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', marginRight: 6, verticalAlign: -2, color: 'var(--streak)' }}>
@@ -156,7 +157,6 @@ function StreakCard() {
         )}
       </div>
 
-      {/* streak count */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 18, fontWeight: 500, color: 'var(--text)', lineHeight: 1 }}>
           {currentStreak}
@@ -171,12 +171,10 @@ function StreakCard() {
         )}
       </div>
 
-      {/* month label */}
       <div style={{ fontSize: 10.5, fontFamily: 'Geist Mono, monospace', color: 'var(--text-mute)', marginBottom: 6, letterSpacing: '0.04em' }}>
         {monthLabel.toUpperCase()}
       </div>
 
-      {/* day-of-week headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 2 }}>
         {DAY_HEADERS.map((d, i) => (
           <div key={i} style={{ textAlign: 'center', fontFamily: 'Geist Mono, monospace', fontSize: 8.5, color: 'var(--text-faint)', paddingBottom: 1 }}>
@@ -185,7 +183,6 @@ function StreakCard() {
         ))}
       </div>
 
-      {/* day cells */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((cell, i) => {
           if (!cell) return <div key={i} />
@@ -193,7 +190,7 @@ function StreakCard() {
           const { dateStr, day, isToday, isFuture } = cell
           const logged = dateSet.has(dateStr)
 
-          let bg, border, color
+          let bg: string, border: string, color: string
           if (isToday && logged) {
             bg     = 'color-mix(in oklab, var(--accent) 20%, var(--surface-3))'
             border = '1px solid var(--accent)'
@@ -278,7 +275,7 @@ function LevelCard() {
 
 // ── recent sessions ───────────────────────────────────────────────────────
 
-function RecentSessions({ sessions }) {
+function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
   const subjects = useSubjectStore(s => s.subjects)
 
   const recent = useMemo(() =>
@@ -331,9 +328,8 @@ export default function RightRail() {
   return (
     <aside className="v2-rail">
 
-      {/* tab row */}
       <div className="rail-tabs">
-        {['today', 'week', 'all'].map(t => (
+        {(['today', 'week', 'all'] as const).map(t => (
           <button
             key={t}
             className={`rail-tab${tab === t ? ' active' : ''}`}
@@ -344,12 +340,10 @@ export default function RightRail() {
         ))}
       </div>
 
-      {/* cards */}
       <TodayCard sessions={sessions} />
       <StreakCard />
       <LevelCard />
 
-      {/* recent sessions */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
         <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>Recent sessions</span>
         <span style={{ fontSize: 11, color: 'var(--text-mute)', cursor: 'pointer' }}>View all →</span>

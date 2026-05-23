@@ -1,23 +1,34 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { xpToLevel, xpProgress, xpToNextLevel, XP_REWARDS } from '../utils/xp'
+import { xpToLevel } from '../utils/xp'
+import { XP_REWARDS } from '../utils/xp'
 import { insertSession, upsertUserXP } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
+import type { TimerMode, SessionEntry } from '../types'
 
 const MAX_LOCAL_SESSIONS = 200
 
-const useXPStore = create(
+interface AwardResult {
+  xp:       number
+  leveledUp: boolean
+  newLevel:  number
+}
+
+interface XPState {
+  totalXP:  number
+  sessions: SessionEntry[]
+
+  awardXP(sessionType: TimerMode, subjectId?: string | null, durationSecs?: number | null): AwardResult
+  _importFromSupabase(xp: number): void
+  _reset(): void
+}
+
+const useXPStore = create<XPState>()(
   persist(
     (set, get) => ({
       totalXP:  0,
-      sessions: [],  // lightweight log: { id, type, completedAt, xp, subjectId, durationSecs }
+      sessions: [],
 
-      /**
-       * Award XP for completing a session type.
-       * @param {string} sessionType  — 'work' | 'shortBreak' | 'longBreak'
-       * @param {string|null} subjectId   — uuid of the active subject
-       * @param {number|null} durationSecs — actual timer duration in seconds
-       */
       awardXP(sessionType, subjectId = null, durationSecs = null) {
         const xp        = XP_REWARDS[sessionType] ?? 0
         const prevXP    = get().totalXP
@@ -26,7 +37,7 @@ const useXPStore = create(
         const newLevel  = xpToLevel(newXP)
         const leveledUp = newLevel > prevLevel
 
-        const entry = {
+        const entry: SessionEntry = {
           id:           crypto.randomUUID(),
           type:         sessionType,
           completedAt:  new Date().toISOString(),
@@ -37,14 +48,9 @@ const useXPStore = create(
 
         set(state => ({
           totalXP:  newXP,
-          // Keep the local log capped so localStorage doesn't balloon over time.
-          // Stats that need full history will query Supabase directly.
           sessions: [...state.sessions, entry].slice(-MAX_LOCAL_SESSIONS),
         }))
 
-        // Fire-and-forget: sync to Supabase if the user is signed in.
-        // getCurrentUserId() reads from an in-memory cache set by useAuthStore —
-        // no async getSession() call needed here.
         const userId = getCurrentUserId()
         if (userId) {
           insertSession(userId, entry).catch(console.error)
@@ -54,16 +60,10 @@ const useXPStore = create(
         return { xp, leveledUp, newLevel }
       },
 
-      /**
-       * Called by useAuthStore after sign-in.
-       * Uses whichever is higher — local (earned this session) or Supabase — so
-       * a failed fire-and-forget upsert never silently wipes locally earned XP.
-       */
       _importFromSupabase(xp) {
         set(state => ({ totalXP: Math.max(state.totalXP, xp) }))
       },
 
-      /** Called by useAuthStore on sign-out. */
       _reset() {
         set({ totalXP: 0, sessions: [] })
       },
@@ -71,7 +71,7 @@ const useXPStore = create(
     {
       name:    'notebook-xp',
       version: 1,
-      partialize: state => ({
+      partialize: (state): Partial<XPState> => ({
         totalXP:  state.totalXP,
         sessions: state.sessions,
       }),

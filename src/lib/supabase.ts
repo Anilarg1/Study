@@ -1,14 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase-js'
+import type { Subject, SessionEntry } from '../types'
 
-const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL as string
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // ─── User / XP helpers ────────────────────────────────────────────────────────
 
 /** Fetch the user's current XP from the users table. */
-export async function fetchUserXP(userId) {
+export function fetchUserXP(userId: string): Promise<PostgrestSingleResponse<{ xp: number }>> {
   return supabase
     .from('users')
     .select('xp')
@@ -20,7 +22,7 @@ export async function fetchUserXP(userId) {
  * Overwrite the user's XP.
  * Called fire-and-forget after every awardXP().
  */
-export async function upsertUserXP(userId, xp) {
+export async function upsertUserXP(userId: string, xp: number): Promise<PostgrestError | null> {
   const { error } = await supabase
     .from('users')
     .upsert({ id: userId, xp }, { onConflict: 'id' })
@@ -31,7 +33,7 @@ export async function upsertUserXP(userId, xp) {
  * Insert a completed-session record.
  * Called fire-and-forget after every awardXP().
  */
-export async function insertSession(userId, session) {
+export async function insertSession(userId: string, session: SessionEntry): Promise<PostgrestError | null> {
   const { error } = await supabase.from('sessions').insert({
     id:            session.id,
     user_id:       userId,
@@ -45,19 +47,19 @@ export async function insertSession(userId, session) {
 }
 
 /** Fetch all login dates for the user as a string[] (YYYY-MM-DD). */
-export async function fetchLoginDates(userId) {
+export async function fetchLoginDates(userId: string): Promise<{ data: string[], error: PostgrestError | null }> {
   const { data, error } = await supabase
     .from('daily_logins')
     .select('date')
     .eq('user_id', userId)
-  return { data: data?.map(r => r.date) ?? [], error }
+  return { data: data?.map(r => r.date as string) ?? [], error }
 }
 
 /**
  * Upsert today's login (idempotent — unique constraint on user_id + date).
  * Called fire-and-forget from clockIn().
  */
-export async function upsertDailyLogin(userId, date) {
+export async function upsertDailyLogin(userId: string, date: string): Promise<PostgrestError | null> {
   const { error } = await supabase
     .from('daily_logins')
     .upsert({ user_id: userId, date }, { onConflict: 'user_id,date' })
@@ -67,27 +69,33 @@ export async function upsertDailyLogin(userId, date) {
 // ─── Subjects helpers ─────────────────────────────────────────────────────────
 
 /** Fetch all subjects for a user, ordered by creation time. */
-export async function fetchSubjects(userId) {
+export async function fetchSubjects(userId: string): Promise<{ data: Subject[], error: PostgrestError | null }> {
   const { data, error } = await supabase
     .from('subjects')
     .select('id, name, color, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: true })
-  return { data: data ?? [], error }
+  return { data: (data as Subject[]) ?? [], error }
 }
 
 /** Insert a new subject. Returns the created row. */
-export async function createSubject(userId, { name, color }) {
+export async function createSubject(
+  userId: string,
+  { name, color }: { name: string; color: string },
+): Promise<{ data: Subject | null; error: PostgrestError | null }> {
   const { data, error } = await supabase
     .from('subjects')
     .insert({ user_id: userId, name, color })
     .select()
     .single()
-  return { data, error }
+  return { data: data as Subject | null, error }
 }
 
 /** Update an existing subject's name and/or color. */
-export async function patchSubject(subjectId, updates) {
+export async function patchSubject(
+  subjectId: string,
+  updates: Partial<Pick<Subject, 'name' | 'color'>>,
+): Promise<PostgrestError | null> {
   const { error } = await supabase
     .from('subjects')
     .update(updates)
@@ -96,7 +104,7 @@ export async function patchSubject(subjectId, updates) {
 }
 
 /** Delete a subject by id. */
-export async function removeSubject(subjectId) {
+export async function removeSubject(subjectId: string): Promise<PostgrestError | null> {
   const { error } = await supabase
     .from('subjects')
     .delete()

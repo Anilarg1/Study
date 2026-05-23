@@ -10,12 +10,12 @@
  *   getCurrentUserId()    — called by useXPStore, useStreakStore, useSubjectStore
  */
 
-let _userId = null
+let _userId: string | null = null
 
-export function getCurrentUserId() {
+export function getCurrentUserId(): string | null {
   return _userId
 }
 
-export function setCurrentUserId(id) {
+export function setCurrentUserId(id: string | null): void {
   _userId = id ?? null
 }

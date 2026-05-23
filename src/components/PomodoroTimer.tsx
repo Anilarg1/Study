@@ -4,32 +4,34 @@ import useXPStore       from '../store/useXPStore'
 import useSubjectStore  from '../store/useSubjectStore'
 import useSettingsStore from '../store/useSettingsStore'
 import { playChime }    from '../lib/chime'
+import type { TimerMode, TimerDurations, Subject } from '../types'
 
 // ── constants ─────────────────────────────────────────────────────────────
 
 const R    = 92
-const CIRC = 2 * Math.PI * R   // ≈ 578.05
+const CIRC = 2 * Math.PI * R
 
-const MODE_LABELS = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
-const MODE_KEYS   = { work: '1', shortBreak: '2', longBreak: '3' }
+const MODE_LABELS: Record<TimerMode, string> = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
+const MODE_KEYS:   Record<TimerMode, string> = { work: '1', shortBreak: '2', longBreak: '3' }
 
-function fmt(seconds) {
+function fmt(seconds: number): [string, string] {
   const m = String(Math.floor(seconds / 60)).padStart(2, '0')
   const s = String(seconds % 60).padStart(2, '0')
   return [m, s]
 }
 
-// Pip state for the current pomodoro cycle (0–3 completed work sessions)
-function getPips(completedWork) {
-  const pos = completedWork % 4   // 0–3 done in this cycle
+type PipState = 'done' | 'now' | 'pending'
+
+function getPips(completedWork: number): PipState[] {
+  const pos = completedWork % 4
   return Array.from({ length: 4 }, (_, i) => {
-    if (i < pos)  return 'done'
+    if (i < pos)   return 'done'
     if (i === pos) return 'now'
     return 'pending'
   })
 }
 
-function nextLabel(completedWork) {
+function nextLabel(completedWork: number): string {
   const pos = completedWork % 4
   if (pos < 3) return 'short break next'
   return 'long break next'
@@ -37,11 +39,16 @@ function nextLabel(completedWork) {
 
 // ── sub-components ────────────────────────────────────────────────────────
 
-function AddSubjectPanel({ onAdd, onCancel }) {
+interface AddSubjectPanelProps {
+  onAdd:    (name: string, color: string) => Promise<Subject | null>
+  onCancel: () => void
+}
+
+function AddSubjectPanel({ onAdd, onCancel }: AddSubjectPanelProps) {
   const [name, setName]   = useState('')
   const [color, setColor] = useState('#8b85ff')
-  const [err, setErr]     = useState(null)
-  const inputRef          = useRef(null)
+  const [err, setErr]     = useState<string | null>(null)
+  const inputRef          = useRef<HTMLInputElement>(null)
 
   const COLORS = ['#8b85ff','#4cb782','#5e9eea','#f5a25a','#c97ad8','#f87171','#38bdf8','#34d399']
 
@@ -123,12 +130,12 @@ function AddSubjectPanel({ onAdd, onCancel }) {
 
 // ── settings panel ────────────────────────────────────────────────────────
 
-const DURATION_LABELS = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
+const DURATION_LABELS: Record<TimerMode, string> = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
 
-const SLIDER_CONFIG = {
+const SLIDER_CONFIG: Record<TimerMode, { min: number; max: number; step: number; color: string }> = {
   work:       { min: 5,  max: 120, step: 5,  color: 'var(--focus)' },
-  shortBreak: { min: 1,  max: 30, step: 1,  color: 'var(--short)' },
-  longBreak:  { min: 5,  max: 60, step: 5,  color: 'var(--long)'  },
+  shortBreak: { min: 1,  max: 30,  step: 1,  color: 'var(--short)' },
+  longBreak:  { min: 5,  max: 60,  step: 5,  color: 'var(--long)'  },
 }
 
 const PRESETS = [
@@ -137,8 +144,13 @@ const PRESETS = [
   { label: '40 / 20', work: 40, shortBreak: 20, longBreak: 15 },
 ]
 
-function SettingsPanel({ customDurations, setDuration }) {
-  const [drafts, setDrafts] = useState({
+interface SettingsPanelProps {
+  customDurations: TimerDurations
+  setDuration:     (mode: TimerMode, minutes: number) => void
+}
+
+function SettingsPanel({ customDurations, setDuration }: SettingsPanelProps) {
+  const [drafts, setDrafts] = useState<Record<TimerMode, number>>({
     work:       customDurations.work       / 60,
     shortBreak: customDurations.shortBreak / 60,
     longBreak:  customDurations.longBreak  / 60,
@@ -152,20 +164,20 @@ function SettingsPanel({ customDurations, setDuration }) {
     })
   }, [customDurations.work, customDurations.shortBreak, customDurations.longBreak])
 
-  function applyPreset(preset) {
+  function applyPreset(preset: typeof PRESETS[number]) {
     setDrafts({ work: preset.work, shortBreak: preset.shortBreak, longBreak: preset.longBreak })
     setDuration('work',       preset.work)
     setDuration('shortBreak', preset.shortBreak)
     setDuration('longBreak',  preset.longBreak)
   }
 
-  function handleSlider(m, val) {
+  function handleSlider(m: TimerMode, val: string) {
     const v = Number(val)
     setDrafts(d => ({ ...d, [m]: v }))
     setDuration(m, v)
   }
 
-  function fillPct(m) {
+  function fillPct(m: TimerMode): string {
     const { min, max } = SLIDER_CONFIG[m]
     return ((drafts[m] - min) / (max - min) * 100).toFixed(2) + '%'
   }
@@ -177,7 +189,6 @@ function SettingsPanel({ customDurations, setDuration }) {
   return (
     <div className="settings-panel" style={{ marginTop: 6 }}>
 
-      {/* ── presets ── */}
       <p className="sp-label">Preset</p>
       <div className="sp-presets">
         {PRESETS.map(p => (
@@ -191,9 +202,8 @@ function SettingsPanel({ customDurations, setDuration }) {
         ))}
       </div>
 
-      {/* ── sliders ── */}
       <p className="sp-label" style={{ marginTop: 14 }}>Duration (min)</p>
-      {(['work', 'shortBreak', 'longBreak']).map(m => {
+      {(['work', 'shortBreak', 'longBreak'] as TimerMode[]).map(m => {
         const { min, max, step, color } = SLIDER_CONFIG[m]
         return (
           <div key={m} className="sp-slider-row">
@@ -208,7 +218,7 @@ function SettingsPanel({ customDurations, setDuration }) {
               className="pomo-slider"
               min={min} max={max} step={step}
               value={drafts[m]}
-              style={{ '--fill-color': color, '--fill-pct': fillPct(m) }}
+              style={{ '--fill-color': color, '--fill-pct': fillPct(m) } as React.CSSProperties}
               onChange={e => handleSlider(m, e.target.value)}
             />
           </div>
@@ -229,24 +239,24 @@ export default function PomodoroTimer() {
   const awardXP      = useXPStore(s => s.awardXP)
   const soundEnabled = useSettingsStore(s => s.soundEnabled)
 
-  const subjects   = useSubjectStore(s => s.subjects)
-  const activeId   = useSubjectStore(s => s.activeId)
-  const setActiveId = useSubjectStore(s => s.setActiveId)
-  const addSubject = useSubjectStore(s => s.addSubject)
+  const subjects      = useSubjectStore(s => s.subjects)
+  const activeId      = useSubjectStore(s => s.activeId)
+  const setActiveId   = useSubjectStore(s => s.setActiveId)
+  const addSubject    = useSubjectStore(s => s.addSubject)
   const activeSubject = subjects.find(s => s.id === activeId) ?? null
 
-  const [toast,       setToast]       = useState(null)
-  const [showSettings, setSettings]   = useState(false)
+  const [toast,        setToast]       = useState<{ msg: string; key: number } | null>(null)
+  const [showSettings, setSettings]    = useState(false)
   const [showAddSubj,  setShowAddSubj] = useState(false)
-  const tickRef      = useRef(null)
-  const chipsRef     = useRef(null)
-  const settingsRef  = useRef(null)
+  const tickRef      = useRef<ReturnType<typeof setInterval> | null>(null)
+  const chipsRef     = useRef<HTMLDivElement>(null)
+  const settingsRef  = useRef<HTMLDivElement>(null)
 
   // ── close settings on outside click ──────────────────────────────────────
   useEffect(() => {
     if (!showSettings) return
-    function onOutside(e) {
-      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+    function onOutside(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
         setSettings(false)
       }
     }
@@ -258,9 +268,6 @@ export default function PomodoroTimer() {
   const handleTick = useCallback(() => {
     const finished = tick()
     if (finished) {
-      // Pass the actual timer duration so it's recorded accurately in Supabase.
-      // customDurations[mode] is the completed mode's duration (mode hasn't
-      // advanced yet in the closure — _advance() runs inside tick()).
       const result = awardXP(mode, subjectId, customDurations[mode])
       if (soundEnabled) playChime(mode)
       const msg = result.leveledUp
@@ -275,9 +282,9 @@ export default function PomodoroTimer() {
     if (running) {
       tickRef.current = setInterval(handleTick, 1000)
     } else {
-      clearInterval(tickRef.current)
+      if (tickRef.current !== null) clearInterval(tickRef.current)
     }
-    return () => clearInterval(tickRef.current)
+    return () => { if (tickRef.current !== null) clearInterval(tickRef.current) }
   }, [running, handleTick])
 
   // ── document title ────────────────────────────────────────────────────────
@@ -290,8 +297,8 @@ export default function PomodoroTimer() {
 
   // ── keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
-    function onKey(e) {
-      if (e.target.matches('input, textarea')) return
+    function onKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement).matches('input, textarea')) return
       if (e.code === 'Space') {
         e.preventDefault()
         running ? pause() : start()
@@ -310,20 +317,24 @@ export default function PomodoroTimer() {
   // ── ring ──────────────────────────────────────────────────────────────────
   const total      = customDurations[mode]
   const progress   = remaining / total
-  const dashOffset = CIRC * (1 - (1 - progress))   // fills as time passes
+  const dashOffset = CIRC * (1 - (1 - progress))
 
   // ── pips ──────────────────────────────────────────────────────────────────
-  const pips    = getPips(completedWork)
+  const pips     = getPips(completedWork)
   const pipsDone = pips.filter(p => p === 'done').length
   const pipNow   = pips.indexOf('now')
 
+  // suppress unused warning
+  void pipNow
+  void chipsRef
+
   // ── subject chip handlers ────────────────────────────────────────────────
-  function selectSubject(id) {
+  function selectSubject(id: string | null) {
     setActiveId(id)
     setSubjectId(id)
   }
 
-  async function handleAddSubject(name, color) {
+  async function handleAddSubject(name: string, color: string): Promise<Subject | null> {
     const subj = await addSubject(name, color)
     if (subj) {
       selectSubject(subj.id)
@@ -375,7 +386,7 @@ export default function PomodoroTimer() {
 
         {/* mode tabs */}
         <div className="mode-tabs" style={{ position: 'relative' }} ref={settingsRef}>
-          {(['work', 'shortBreak', 'longBreak']).map(m => (
+          {(['work', 'shortBreak', 'longBreak'] as TimerMode[]).map(m => (
             <button
               key={m}
               className={`mode-tab${mode === m ? ' active' : ''}`}
@@ -418,7 +429,6 @@ export default function PomodoroTimer() {
           </svg>
 
           <div className="timer-content">
-            {/* context badge */}
             <div className="timer-context">
               <span className={`ctx-dot${running ? ' pulsing' : ''}`} />
               <span>{MODE_LABELS[mode]}</span>
@@ -427,12 +437,10 @@ export default function PomodoroTimer() {
               </span>
             </div>
 
-            {/* time */}
             <div className="time-display">
               {mm}<span className="time-sep">:</span>{ss}
             </div>
 
-            {/* subtitle */}
             <div className="timer-subtitle">
               {activeSubject
                 ? <><b>{activeSubject.name}</b><span className="sub-sep">·</span><span style={{ color: 'var(--text-dim)' }}>Focus session</span></>
@@ -487,7 +495,6 @@ export default function PomodoroTimer() {
 
         {/* controls */}
         <div className="controls-row">
-          {/* reset */}
           <div className="ctrl-wrap">
             <button className="ctrl" onClick={reset} aria-label="Reset">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -497,7 +504,6 @@ export default function PomodoroTimer() {
             <span className="ctrl-hint">RESET · R</span>
           </div>
 
-          {/* play / pause */}
           <div className="ctrl-wrap">
             <button
               className="ctrl primary"
@@ -517,13 +523,8 @@ export default function PomodoroTimer() {
             <span className="ctrl-hint">{running ? 'PAUSE · SPACE' : 'PLAY · SPACE'}</span>
           </div>
 
-          {/* skip */}
           <div className="ctrl-wrap">
-            <button
-              className="ctrl"
-              onClick={skip}
-              aria-label="Skip"
-            >
+            <button className="ctrl" onClick={skip} aria-label="Skip">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/>
               </svg>

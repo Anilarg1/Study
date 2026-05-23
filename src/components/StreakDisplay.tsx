@@ -4,10 +4,16 @@ import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useS
 
 const DAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] // Sun → Sat
 
+interface DayInfo {
+  dateStr: string
+  label:   string
+  isToday: boolean
+}
+
 /** Returns the last 7 days (oldest → newest) with metadata */
-function getLast7() {
+function getLast7(): DayInfo[] {
   return Array.from({ length: 7 }, (_, i) => {
-    const d     = new Date(Date.now() - (6 - i) * 86_400_000)
+    const d = new Date(Date.now() - (6 - i) * 86_400_000)
     return {
       dateStr: toLocalDateStr(d),
       label:   DAY_INITIALS[d.getDay()],
