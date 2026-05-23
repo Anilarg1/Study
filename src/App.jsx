@@ -4,6 +4,7 @@ import Sidebar          from './components/Sidebar'
 import PomodoroTimer    from './components/PomodoroTimer'
 import RightRail        from './components/RightRail'
 import NewSessionModal  from './components/NewSessionModal'
+import Settings         from './components/Settings'
 import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
@@ -11,12 +12,21 @@ import useSubjectStore  from './store/useSubjectStore'
 // mode key map: store names → CSS data-mode values
 const DATA_MODE = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
 
-// ── breadcrumb icon ────────────────────────────────────────────────────────
+// ── breadcrumb icons ───────────────────────────────────────────────────────
 function TimerIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
       <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/>
+    </svg>
+  )
+}
+function GearIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
   )
 }
@@ -34,6 +44,7 @@ export default function App() {
   const dataMode         = DATA_MODE[timerMode] ?? 'focus'
 
   const [showNewSession, setShowNewSession] = useState(false)
+  const [view,           setView]           = useState('timer') // 'timer' | 'settings'
 
   const handleNewSession = useCallback(() => {
     setShowNewSession(true)
@@ -96,7 +107,7 @@ export default function App() {
 
   // ── main app — Linear-inspired 3-col shell ──────────────────────────────
   return (
-    <div className="app-shell" data-mode={dataMode}>
+    <div className="app-shell" data-mode={dataMode} data-view={view}>
 
       {/* ── BRAND CORNER ── */}
       <div className="brand-corner">
@@ -118,12 +129,19 @@ export default function App() {
       {/* ── TOPBAR ── */}
       <div className="topbar">
         {/* breadcrumbs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
-          <TimerIcon />
-          <span>Practice</span>
-          <span style={{ color: 'var(--text-faint)' }}>/</span>
-          <span style={{ color: 'var(--text)', fontWeight: 500 }}>Timer</span>
-        </div>
+        {view === 'timer' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
+            <TimerIcon />
+            <span>Practice</span>
+            <span style={{ color: 'var(--text-faint)' }}>/</span>
+            <span style={{ color: 'var(--text)', fontWeight: 500 }}>Timer</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
+            <GearIcon />
+            <span style={{ color: 'var(--text)', fontWeight: 500 }}>Settings</span>
+          </div>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -167,13 +185,16 @@ export default function App() {
         initials={initials}
         email={email}
         onSignOut={signOut}
+        activeView={view}
+        onSettings={() => setView('settings')}
       />
 
       {/* ── MAIN ── */}
-      <PomodoroTimer dataMode={dataMode} running={running} />
+      {view === 'timer'    && <PomodoroTimer dataMode={dataMode} running={running} />}
+      {view === 'settings' && <Settings onBack={() => setView('timer')} />}
 
-      {/* ── RAIL ── */}
-      <RightRail />
+      {/* ── RAIL (hidden in settings view) ── */}
+      {view === 'timer' && <RightRail />}
 
       {/* ── NEW SESSION MODAL ── */}
       {showNewSession && (
