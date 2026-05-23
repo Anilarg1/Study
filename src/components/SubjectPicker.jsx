@@ -24,6 +24,7 @@ export default function SubjectPicker({ onSubjectChange }) {
   const [adding,   setAdding]   = useState(false)
   const [newName,  setNewName]  = useState('')
   const [newColor, setNewColor] = useState(SUBJECT_COLORS[0])
+  const [addError, setAddError] = useState(null)
 
   const dropdownRef = useRef(null)
   const nameRef     = useRef(null)
@@ -37,6 +38,7 @@ export default function SubjectPicker({ onSubjectChange }) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpen(false)
         setAdding(false)
+        setAddError(null)
       }
     }
     document.addEventListener('mousedown', handleMouseDown)
@@ -62,6 +64,7 @@ export default function SubjectPicker({ onSubjectChange }) {
 
   async function handleAdd() {
     if (!newName.trim()) return
+    setAddError(null)
     const subject = await addSubject(newName.trim(), newColor)
     if (subject) {
       setActiveId(subject.id)
@@ -69,12 +72,14 @@ export default function SubjectPicker({ onSubjectChange }) {
       setNewColor(SUBJECT_COLORS[0])
       setAdding(false)
       setOpen(false)
+    } else {
+      setAddError('Could not save — check your connection and try again.')
     }
   }
 
   function handleKeyDown(e) {
     if (e.key === 'Enter')  handleAdd()
-    if (e.key === 'Escape') { setAdding(false); setNewName('') }
+    if (e.key === 'Escape') { setAdding(false); setNewName(''); setAddError(null) }
   }
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -170,7 +175,7 @@ export default function SubjectPicker({ onSubjectChange }) {
                 ref={nameRef}
                 type="text"
                 value={newName}
-                onChange={e => setNewName(e.target.value)}
+                onChange={e => { setNewName(e.target.value); setAddError(null) }}
                 onKeyDown={handleKeyDown}
                 placeholder="Subject name"
                 maxLength={40}
@@ -194,6 +199,11 @@ export default function SubjectPicker({ onSubjectChange }) {
                 ))}
               </div>
 
+              {/* Error */}
+              {addError && (
+                <p className="text-[11px] text-red leading-snug">{addError}</p>
+              )}
+
               {/* Confirm / cancel */}
               <div className="flex gap-2">
                 <button
@@ -204,7 +214,7 @@ export default function SubjectPicker({ onSubjectChange }) {
                   Add
                 </button>
                 <button
-                  onClick={() => { setAdding(false); setNewName('') }}
+                  onClick={() => { setAdding(false); setNewName(''); setAddError(null) }}
                   className="flex-1 py-1.5 rounded-md bg-surface border border-border text-dim text-xs hover:text-soft transition-colors"
                 >
                   Cancel

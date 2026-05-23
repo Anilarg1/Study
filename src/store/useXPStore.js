@@ -45,10 +45,11 @@ const useXPStore = create(
 
       /**
        * Called by useAuthStore after sign-in.
-       * Overwrites local XP with the value from Supabase (source of truth).
+       * Uses whichever is higher — local (earned this session) or Supabase — so
+       * a failed fire-and-forget upsert never silently wipes locally earned XP.
        */
       _importFromSupabase(xp) {
-        set({ totalXP: xp })
+        set(state => ({ totalXP: Math.max(state.totalXP, xp) }))
       },
 
       /** Called by useAuthStore on sign-out. */
@@ -64,6 +65,10 @@ const useXPStore = create(
     {
       name:    'notebook-xp',
       version: 1,
+      partialize: state => ({
+        totalXP:  state.totalXP,
+        sessions: state.sessions,
+      }),
     }
   )
 )

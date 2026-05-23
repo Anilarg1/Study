@@ -9,7 +9,10 @@
       "Bash(npx --yes playwright install chromium)",
       "Bash(npx playwright *)",
       "Bash(node verify-ui.mjs)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(git restore *)",
+      "Bash(git commit -m 'fixup! Step 5: settings panel floats \\(absolute\\) — no layout shift on open *)",
+      "Bash(git commit -m 'Step 5: timer ring + glow + text + dots follow active subject color *)"
     ]
   }
 }
