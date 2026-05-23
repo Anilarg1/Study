@@ -14,16 +14,21 @@ const useAuthStore = create((set, get) => ({
    * then subscribes to future auth state changes.
    */
   async init() {
-    const { data: { session } } = await supabase.auth.getSession()
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
 
-    if (session?.user) {
-      set({ user: session.user })
-      await get()._syncFromSupabase(session.user.id)
-      // Clock in *after* Supabase dates are loaded so we don't overwrite them
-      useStreakStore.getState().clockIn()
+      if (session?.user) {
+        set({ user: session.user })
+        await get()._syncFromSupabase(session.user.id)
+        // Clock in *after* Supabase dates are loaded so we don't overwrite them
+        useStreakStore.getState().clockIn()
+      }
+    } catch (err) {
+      console.error('[auth] init failed:', err)
+    } finally {
+      // Always unblock the UI — even if Supabase is unreachable
+      set({ loading: false })
     }
-
-    set({ loading: false })
 
     // Subscribe to future auth changes (sign-in, sign-out, token refresh)
     supabase.auth.onAuthStateChange(async (event, session) => {
