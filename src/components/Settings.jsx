@@ -509,6 +509,13 @@ function NotificationsSection() {
         <p className="s-subhead">Choose how and when Notebook reaches you.</p>
       </div>
 
+      {/* ── Sound ── */}
+      <Group title="Sound">
+        <Row label="Sound alerts" description="Play a chime when each timer session completes">
+          <Toggle checked={s.soundEnabled} onChange={v => s.setField('soundEnabled', v)} />
+        </Row>
+      </Group>
+
       {/* ── Channels ── */}
       <Group title="Channels">
         <Row label="Push notifications" description="Browser and mobile push alerts">

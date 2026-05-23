@@ -54,6 +54,7 @@ const useSettingsStore = create(
       highContrast: false,
 
       // ── Notifications ────────────────────────────────────────────────────
+      soundEnabled:     true,
       pushEnabled:      false,
       emailDigest:      true,
       desktopAlerts:    false,
@@ -74,6 +75,7 @@ const useSettingsStore = create(
         theme: state.theme, density: state.density, language: state.language,
         timeFormat: state.timeFormat, weekStart: state.weekStart,
         fontScale: state.fontScale, highContrast: state.highContrast,
+        soundEnabled: state.soundEnabled,
         pushEnabled: state.pushEnabled, emailDigest: state.emailDigest,
         desktopAlerts: state.desktopAlerts, notifyMentions: state.notifyMentions,
         notifyDueDates: state.notifyDueDates, notifyDailyRecap: state.notifyDailyRecap,

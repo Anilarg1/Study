@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import useTimerStore   from '../store/useTimerStore'
-import useXPStore      from '../store/useXPStore'
-import useSubjectStore from '../store/useSubjectStore'
+import useTimerStore    from '../store/useTimerStore'
+import useXPStore       from '../store/useXPStore'
+import useSubjectStore  from '../store/useSubjectStore'
+import useSettingsStore from '../store/useSettingsStore'
+import { playChime }    from '../lib/chime'
 
 // ── constants ─────────────────────────────────────────────────────────────
 
@@ -224,7 +226,8 @@ export default function PomodoroTimer() {
     start, pause, reset, setMode, setDuration, tick, setSubjectId, skip,
   } = useTimerStore()
 
-  const awardXP = useXPStore(s => s.awardXP)
+  const awardXP      = useXPStore(s => s.awardXP)
+  const soundEnabled = useSettingsStore(s => s.soundEnabled)
 
   const subjects   = useSubjectStore(s => s.subjects)
   const activeId   = useSubjectStore(s => s.activeId)
@@ -259,13 +262,14 @@ export default function PomodoroTimer() {
       // customDurations[mode] is the completed mode's duration (mode hasn't
       // advanced yet in the closure — _advance() runs inside tick()).
       const result = awardXP(mode, subjectId, customDurations[mode])
+      if (soundEnabled) playChime(mode)
       const msg = result.leveledUp
         ? `🎉 Level up! You're now Level ${result.newLevel}`
         : `+${result.xp} XP`
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
     }
-  }, [tick, awardXP, mode, subjectId, customDurations])
+  }, [tick, awardXP, mode, subjectId, customDurations, soundEnabled])
 
   useEffect(() => {
     if (running) {
