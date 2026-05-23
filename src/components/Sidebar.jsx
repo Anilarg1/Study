@@ -166,7 +166,7 @@ export default function Sidebar({ user, initials, email, onSignOut, activeView, 
       </button>
 
       {/* ── User row ── */}
-      <div className="nav-user" onClick={onSignOut} title="Sign out">
+      <div className="nav-user">
         <div className="avatar">{initials}</div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
           <span style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 500 }}>
@@ -176,7 +176,9 @@ export default function Sidebar({ user, initials, email, onSignOut, activeView, 
             {email}
           </span>
         </div>
-        <span className="pres-dot" title="Active" />
+        <button className="nav-signout" onClick={onSignOut} title="Sign out">
+          <IcSignOut />
+        </button>
       </div>
 
     </nav>

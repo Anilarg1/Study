@@ -297,10 +297,29 @@
   padding: 8px;
   margin: 6px -2px -2px;
   border-radius: 6px;
-  cursor: pointer;
-  transition: background 140ms;
 }
-.nav-user:hover { background: var(--surface-2); }
+
+.nav-signout {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 120ms, background 120ms, color 120ms;
+}
+.nav-user:hover .nav-signout {
+  opacity: 1;
+}
+.nav-signout:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
 
 .avatar {
   width: 22px;
