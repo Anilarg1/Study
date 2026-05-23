@@ -591,6 +591,14 @@
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
 .pip-label {
   font-size: 11px;
   color: var(--text-mute);

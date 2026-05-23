@@ -1,10 +1,12 @@
-import { useEffect, useCallback } from 'react'
-import AuthForm      from './components/AuthForm'
-import Sidebar       from './components/Sidebar'
-import PomodoroTimer from './components/PomodoroTimer'
-import RightRail     from './components/RightRail'
-import useAuthStore  from './store/useAuthStore'
-import useTimerStore from './store/useTimerStore'
+import { useEffect, useCallback, useState } from 'react'
+import AuthForm         from './components/AuthForm'
+import Sidebar          from './components/Sidebar'
+import PomodoroTimer    from './components/PomodoroTimer'
+import RightRail        from './components/RightRail'
+import NewSessionModal  from './components/NewSessionModal'
+import useAuthStore     from './store/useAuthStore'
+import useTimerStore    from './store/useTimerStore'
+import useSubjectStore  from './store/useSubjectStore'
 
 // mode key map: store names → CSS data-mode values
 const DATA_MODE = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
@@ -22,17 +24,29 @@ function TimerIcon() {
 // ── app ───────────────────────────────────────────────────────────────────
 export default function App() {
   const { user, loading, init, signOut } = useAuthStore()
-  const timerMode    = useTimerStore(s => s.mode)
-  const running      = useTimerStore(s => s.running)
-  const startTimer   = useTimerStore(s => s.start)
-  const setTimerMode = useTimerStore(s => s.setMode)
-  const dataMode     = DATA_MODE[timerMode] ?? 'focus'
+  const timerMode        = useTimerStore(s => s.mode)
+  const running          = useTimerStore(s => s.running)
+  const startTimer       = useTimerStore(s => s.start)
+  const setTimerMode     = useTimerStore(s => s.setMode)
+  const setTimerDuration = useTimerStore(s => s.setDuration)
+  const setTimerSubject  = useTimerStore(s => s.setSubjectId)
+  const setActiveId      = useSubjectStore(s => s.setActiveId)
+  const dataMode         = DATA_MODE[timerMode] ?? 'focus'
+
+  const [showNewSession, setShowNewSession] = useState(false)
 
   const handleNewSession = useCallback(() => {
-    if (running && !window.confirm('A session is in progress. Start a new one?')) return
-    setTimerMode('work')
+    setShowNewSession(true)
+  }, [])
+
+  const handleStartSession = useCallback((subjectId, durationMins) => {
+    setShowNewSession(false)
+    setActiveId(subjectId)
+    setTimerSubject(subjectId)
+    setTimerDuration('work', durationMins)   // updates customDurations.work
+    setTimerMode('work')                     // resets remaining to new duration
     startTimer()
-  }, [running, setTimerMode, startTimer])
+  }, [setActiveId, setTimerSubject, setTimerDuration, setTimerMode, startTimer])
 
   // Restore Supabase session once on mount
   useEffect(() => { init() }, [init])
@@ -160,6 +174,15 @@ export default function App() {
 
       {/* ── RAIL ── */}
       <RightRail />
+
+      {/* ── NEW SESSION MODAL ── */}
+      {showNewSession && (
+        <NewSessionModal
+          running={running}
+          onStart={handleStartSession}
+          onCancel={() => setShowNewSession(false)}
+        />
+      )}
 
     </div>
   )
