@@ -36,10 +36,12 @@ const useAuthStore = create((set, get) => ({
       }
 
       if (event === 'SIGNED_OUT') {
+        // Only update auth state here — do NOT call _reset() on the data
+        // stores. Supabase fires SIGNED_OUT during automatic token refresh
+        // (expiry → refresh), which would wipe persisted XP/streak data
+        // before the subsequent SIGNED_IN restores it. Explicit resets are
+        // handled in signOut() above.
         set({ user: null })
-        useXPStore.getState()._reset()
-        useStreakStore.getState()._reset()
-        useSubjectStore.getState()._reset()
       }
     })
   },
@@ -57,6 +59,11 @@ const useAuthStore = create((set, get) => ({
   },
 
   async signOut() {
+    // Reset local stores *before* signing out so the SIGNED_OUT event
+    // fired by onAuthStateChange doesn't try to reset them a second time.
+    useXPStore.getState()._reset()
+    useStreakStore.getState()._reset()
+    useSubjectStore.getState()._reset()
     await supabase.auth.signOut()
   },
 
