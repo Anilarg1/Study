@@ -9,6 +9,7 @@ import Settings         from './components/Settings'
 import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
+import useSettingsStore from './store/useSettingsStore'
 
 // mode key map: store names → CSS data-mode values
 const DATA_MODE: Record<string, string> = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
@@ -44,6 +45,9 @@ export default function App() {
   const setActiveId      = useSubjectStore(s => s.setActiveId)
   const dataMode         = DATA_MODE[timerMode] ?? 'focus'
 
+  const sidebarCollapsed = useSettingsStore(s => s.sidebarCollapsed)
+  const toggleSidebar    = useSettingsStore(s => s.toggle)
+
   const [showNewSession, setShowNewSession] = useState(false)
   const [view,           setView]           = useState<'timer' | 'settings'>('timer')
 
@@ -63,15 +67,16 @@ export default function App() {
   // Restore Supabase session once on mount
   useEffect(() => { init() }, [init])
 
-  // Global keyboard shortcut: C → New session
+  // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.target as HTMLElement).matches('input, textarea')) return
       if (e.key.toLowerCase() === 'c') handleNewSession()
+      if (e.key === '[') toggleSidebar('sidebarCollapsed')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleNewSession])
+  }, [handleNewSession, toggleSidebar])
 
   // ── loading splash ──────────────────────────────────────────────────────
   if (loading) {
@@ -95,18 +100,23 @@ export default function App() {
 
   // ── main app — Linear-inspired 3-col shell ──────────────────────────────
   return (
-    <div className="app-shell" data-mode={dataMode} data-view={view}>
+    <div
+      className="app-shell"
+      data-mode={dataMode}
+      data-view={view}
+      {...(sidebarCollapsed ? { 'data-nav-collapsed': '' } : {})}
+    >
 
       {/* ── BRAND CORNER ── */}
       <div className="brand-corner">
         <div className="brand-logo">N</div>
-        <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text)' }}>
+        <span className="brand-text" style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text)' }}>
           Notebook
           <span style={{ color: 'var(--text-dim)', fontWeight: 450, marginLeft: 6 }}>
             / {handle}
           </span>
         </span>
-        <button className="icon-btn" style={{ marginLeft: 'auto' }} title="Switch workspace">
+        <button className="icon-btn brand-chevron" style={{ marginLeft: 'auto' }} title="Switch workspace">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <path d="m7 9 5-5 5 5M7 15l5 5 5-5"/>
@@ -171,6 +181,8 @@ export default function App() {
         onSignOut={signOut}
         activeView={view}
         onSettings={() => setView('settings')}
+        collapsed={sidebarCollapsed}
+        onToggle={() => toggleSidebar('sidebarCollapsed')}
       />
 
       {/* ── MAIN ── */}

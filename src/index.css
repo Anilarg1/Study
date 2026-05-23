@@ -83,7 +83,10 @@
   background:
     radial-gradient(900px 600px at 56% 36%, var(--accent-fade), transparent 65%),
     var(--bg);
-  transition: background 700ms ease;
+  transition: background 700ms ease, grid-template-columns 220ms cubic-bezier(.4,0,.2,1);
+}
+.app-shell[data-nav-collapsed] {
+  grid-template-columns: 48px 1fr 336px;
 }
 
 /* ── brand corner ────────────────────────────────────────────────────────── */
@@ -111,6 +114,16 @@
   transition: background 700ms ease, box-shadow 400ms ease;
   flex-shrink: 0;
 }
+
+/* ── brand corner — collapsed ────────────────────────────────────────────── */
+.app-shell[data-nav-collapsed] .brand-corner {
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+  overflow: hidden;
+}
+.app-shell[data-nav-collapsed] .brand-corner .brand-text,
+.app-shell[data-nav-collapsed] .brand-corner .brand-chevron { display: none; }
 
 /* ── topbar ──────────────────────────────────────────────────────────────── */
 .topbar {
@@ -289,6 +302,49 @@
 }
 
 .nav-spacer { flex: 1; }
+
+/* ── nav — collapsed (icon rail) ────────────────────────────────────────── */
+.app-shell[data-nav-collapsed] .v2-nav { padding: 6px 4px; }
+.app-shell[data-nav-collapsed] .v2-nav .nav-section-hd { display: none; }
+.app-shell[data-nav-collapsed] .v2-nav .nav-item {
+  justify-content: center;
+  padding: 7px 4px;
+  gap: 0;
+}
+.app-shell[data-nav-collapsed] .v2-nav .nav-item .nav-label,
+.app-shell[data-nav-collapsed] .v2-nav .nav-item .ni-shortcut,
+.app-shell[data-nav-collapsed] .v2-nav .nav-item .ni-count { display: none; }
+.app-shell[data-nav-collapsed] .v2-nav .nav-item .ni-icon { width: 17px; height: 17px; flex: 0 0 17px; }
+.app-shell[data-nav-collapsed] .v2-nav .nav-item .subj-dot { display: none; }
+
+/* nav-toggle button — sits at the top of the nav */
+.nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 6px 4px 0;
+  margin-bottom: 2px;
+}
+.app-shell[data-nav-collapsed] .nav-toggle { justify-content: center; padding: 4px 0; }
+.nav-toggle-btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color 120ms, background 120ms;
+  flex-shrink: 0;
+}
+.nav-toggle-btn:hover { background: var(--surface-2); color: var(--text-dim); }
+
+/* nav-user collapsed */
+.app-shell[data-nav-collapsed] .nav-user { justify-content: center; padding: 8px 4px; }
+.app-shell[data-nav-collapsed] .nav-user .nav-user-info,
+.app-shell[data-nav-collapsed] .nav-user .nav-signout { display: none; }
 
 .nav-user {
   display: flex;

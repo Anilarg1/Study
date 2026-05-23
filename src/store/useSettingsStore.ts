@@ -43,23 +43,24 @@ export function bootSettings(): void {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SettingsData {
-  theme:            Theme
-  density:          Density
-  language:         string
-  timeFormat:       TimeFormat
-  weekStart:        WeekStart
-  fontScale:        FontScale
-  highContrast:     boolean
-  soundEnabled:     boolean
-  pushEnabled:      boolean
-  emailDigest:      boolean
-  desktopAlerts:    boolean
-  notifyMentions:   boolean
-  notifyDueDates:   boolean
-  notifyDailyRecap: boolean
-  dndEnabled:       boolean
-  dndStart:         string
-  dndEnd:           string
+  theme:             Theme
+  density:           Density
+  language:          string
+  timeFormat:        TimeFormat
+  weekStart:         WeekStart
+  fontScale:         FontScale
+  highContrast:      boolean
+  sidebarCollapsed:  boolean
+  soundEnabled:      boolean
+  pushEnabled:       boolean
+  emailDigest:       boolean
+  desktopAlerts:     boolean
+  notifyMentions:    boolean
+  notifyDueDates:    boolean
+  notifyDailyRecap:  boolean
+  dndEnabled:        boolean
+  dndStart:          string
+  dndEnd:            string
 }
 
 type BooleanSettingsKey = {
@@ -77,13 +78,14 @@ const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // ── Interface ───────────────────────────────────────────────────────
-      theme:        'dark',
-      density:      'comfortable',
-      language:     'en',
-      timeFormat:   '24h',
-      weekStart:    'monday',
-      fontScale:    100,
-      highContrast: false,
+      theme:            'dark',
+      density:          'comfortable',
+      language:         'en',
+      timeFormat:       '24h',
+      weekStart:        'monday',
+      fontScale:        100,
+      highContrast:     false,
+      sidebarCollapsed: false,
 
       // ── Notifications ────────────────────────────────────────────────────
       soundEnabled:     true,
@@ -107,6 +109,7 @@ const useSettingsStore = create<SettingsState>()(
         theme: state.theme, density: state.density, language: state.language,
         timeFormat: state.timeFormat, weekStart: state.weekStart,
         fontScale: state.fontScale, highContrast: state.highContrast,
+        sidebarCollapsed: state.sidebarCollapsed,
         soundEnabled: state.soundEnabled,
         pushEnabled: state.pushEnabled, emailDigest: state.emailDigest,
         desktopAlerts: state.desktopAlerts, notifyMentions: state.notifyMentions,

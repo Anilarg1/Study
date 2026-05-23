@@ -80,6 +80,16 @@ function IcSettings() {
     </svg>
   )
 }
+/** Chevron pointing left (collapse) or right (expand) */
+function IcChevron({ right }: { right?: boolean }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+         style={{ transition: 'transform 220ms cubic-bezier(.4,0,.2,1)', transform: right ? 'rotate(180deg)' : 'none' }}>
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  )
+}
 
 // ── component ─────────────────────────────────────────────────────────────
 
@@ -90,9 +100,13 @@ interface SidebarProps {
   onSignOut:  () => void
   activeView: string
   onSettings: () => void
+  collapsed:  boolean
+  onToggle:   () => void
 }
 
-export default function Sidebar({ user: _user, initials, email, onSignOut, activeView, onSettings }: SidebarProps) {
+export default function Sidebar({
+  user: _user, initials, email, onSignOut, activeView, onSettings, collapsed, onToggle,
+}: SidebarProps) {
   const subjects      = useSubjectStore(s => s.subjects)
   const loginDates    = useStreakStore(s => s.loginDates)
   const currentStreak = calcCurrentStreak(new Set(loginDates))
@@ -100,70 +114,87 @@ export default function Sidebar({ user: _user, initials, email, onSignOut, activ
   return (
     <nav className="v2-nav">
 
-      {/* ── Practice section ── */}
-      <div className="nav-section-hd">
-        <span className="nav-section-label">Practice</span>
+      {/* ── Collapse toggle ── */}
+      <div className="nav-toggle">
+        <button
+          className="nav-toggle-btn"
+          onClick={onToggle}
+          title={collapsed ? 'Expand sidebar  [' : 'Collapse sidebar  ['}
+        >
+          <IcChevron right={collapsed} />
+        </button>
       </div>
 
-      <button className="nav-item active">
+      {/* ── Practice section ── */}
+      {!collapsed && (
+        <div className="nav-section-hd">
+          <span className="nav-section-label">Practice</span>
+        </div>
+      )}
+
+      <button className="nav-item active" title="Timer">
         <IcTimer />
-        Timer
+        <span className="nav-label">Timer</span>
         <span className="ni-shortcut">G T</span>
       </button>
-      <button className="nav-item">
+      <button className="nav-item" title={`Streak${currentStreak > 0 ? ` — ${currentStreak} days` : ''}`}>
         <IcStreak />
-        Streak
+        <span className="nav-label">Streak</span>
         <span className="ni-count">{currentStreak > 0 ? currentStreak : '—'}</span>
       </button>
-      <button className="nav-item">
+      <button className="nav-item" title="Today">
         <IcToday />
-        Today
+        <span className="nav-label">Today</span>
         <span className="ni-shortcut">G D</span>
       </button>
-      <button className="nav-item muted">
+      <button className="nav-item muted" title="Stats — coming soon">
         <IcStats />
-        Stats
+        <span className="nav-label">Stats</span>
         <span className="ni-count">SOON</span>
       </button>
-      <button className="nav-item muted">
+      <button className="nav-item muted" title="Timetable — coming soon">
         <IcTimetable />
-        Timetable
+        <span className="nav-label">Timetable</span>
         <span className="ni-count">SOON</span>
       </button>
 
       {/* ── Library section ── */}
-      <div className="nav-section-hd">
-        <span className="nav-section-label">Library</span>
-        <button className="nav-section-ic" title="New note"><IcPlus /></button>
-      </div>
+      {!collapsed && (
+        <div className="nav-section-hd">
+          <span className="nav-section-label">Library</span>
+          <button className="nav-section-ic" title="New note"><IcPlus /></button>
+        </div>
+      )}
 
-      <button className="nav-item">
+      <button className="nav-item" title="Notes">
         <IcNotes />
-        Notes
+        <span className="nav-label">Notes</span>
         <span className="ni-count">—</span>
       </button>
-      <button className="nav-item">
+      <button className="nav-item" title="Flashcards">
         <IcFlash />
-        Flashcards
+        <span className="nav-label">Flashcards</span>
         <span className="ni-count">—</span>
       </button>
 
       {/* ── Subjects section ── */}
-      <div className="nav-section-hd">
-        <span className="nav-section-label">Subjects</span>
-        <button className="nav-section-ic" title="New subject"><IcPlus /></button>
-      </div>
+      {!collapsed && (
+        <div className="nav-section-hd">
+          <span className="nav-section-label">Subjects</span>
+          <button className="nav-section-ic" title="New subject"><IcPlus /></button>
+        </div>
+      )}
 
-      {subjects.length === 0 && (
+      {!collapsed && subjects.length === 0 && (
         <span style={{ fontSize: '11.5px', color: 'var(--text-faint)', padding: '4px 8px', display: 'block' }}>
           No subjects yet
         </span>
       )}
 
       {subjects.map(s => (
-        <button key={s.id} className="nav-item">
+        <button key={s.id} className="nav-item" title={s.name}>
           <span className="subj-dot" style={{ background: s.color }} />
-          {s.name}
+          <span className="nav-label">{s.name}</span>
         </button>
       ))}
 
@@ -173,15 +204,16 @@ export default function Sidebar({ user: _user, initials, email, onSignOut, activ
       <button
         className={`nav-item${activeView === 'settings' ? ' active' : ''}`}
         onClick={onSettings}
+        title="Settings"
       >
         <IcSettings />
-        Settings
+        <span className="nav-label">Settings</span>
       </button>
 
       {/* ── User row ── */}
       <div className="nav-user">
         <div className="avatar">{initials}</div>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+        <div className="nav-user-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
           <span style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 500 }}>
             {email.split('@')[0]}
           </span>
