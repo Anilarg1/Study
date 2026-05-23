@@ -1,99 +1,224 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import useTimerStore    from '../store/useTimerStore'
-import useXPStore       from '../store/useXPStore'
-import useSubjectStore  from '../store/useSubjectStore'
-import XPBar            from './XPBar'
-import SubjectPicker    from './SubjectPicker'
-import clsx             from 'clsx'
+import useTimerStore   from '../store/useTimerStore'
+import useXPStore      from '../store/useXPStore'
+import useSubjectStore from '../store/useSubjectStore'
 
-// ─── tiny helpers ────────────────────────────────────────────────────────────
+// ── constants ─────────────────────────────────────────────────────────────
+
+const R    = 92
+const CIRC = 2 * Math.PI * R   // ≈ 578.05
+
+const MODE_LABELS = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
+const MODE_KEYS   = { work: '1', shortBreak: '2', longBreak: '3' }
+
+// Pomodoro skip order
+const SKIP_ORDER = ['work', 'shortBreak', 'work', 'shortBreak', 'work', 'shortBreak', 'work', 'longBreak']
 
 function fmt(seconds) {
   const m = String(Math.floor(seconds / 60)).padStart(2, '0')
   const s = String(seconds % 60).padStart(2, '0')
-  return `${m}:${s}`
+  return [m, s]
 }
 
-const MODE_LABELS = {
-  work:       'Focus',
-  shortBreak: 'Short Break',
-  longBreak:  'Long Break',
+// Pip state for the current pomodoro cycle (0–3 completed work sessions)
+function getPips(completedWork) {
+  const pos = completedWork % 4   // 0–3 done in this cycle
+  return Array.from({ length: 4 }, (_, i) => {
+    if (i < pos)  return 'done'
+    if (i === pos) return 'now'
+    return 'pending'
+  })
 }
 
-// Tailwind classes — still used for the settings panel labels
-const MODE_COLORS = {
-  work:       'text-accent',
-  shortBreak: 'text-green',
-  longBreak:  'text-amber',
+function nextLabel(completedWork) {
+  const pos = completedWork % 4
+  if (pos < 3) return 'short break next'
+  return 'long break next'
 }
 
-// Hex fallbacks for when no subject is selected
-const MODE_HEX = {
-  work:       '#7c6af0',
-  shortBreak: '#4ade80',
-  longBreak:  '#fbbf24',
+// ── sub-components ────────────────────────────────────────────────────────
+
+function AddSubjectPanel({ onAdd, onCancel }) {
+  const [name, setName]   = useState('')
+  const [color, setColor] = useState('#8b85ff')
+  const [err, setErr]     = useState(null)
+  const inputRef          = useRef(null)
+
+  const COLORS = ['#8b85ff','#4cb782','#5e9eea','#f5a25a','#c97ad8','#f87171','#38bdf8','#34d399']
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  async function submit() {
+    if (!name.trim()) return
+    const result = await onAdd(name.trim(), color)
+    if (!result) setErr('Could not save — check connection and try again.')
+  }
+
+  return (
+    <div className="add-subj-panel" style={{ position: 'absolute', top: '100%', marginTop: 6, zIndex: 50 }}>
+      <input
+        ref={inputRef}
+        type="text"
+        value={name}
+        onChange={e => { setName(e.target.value); setErr(null) }}
+        onKeyDown={e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onCancel() }}
+        placeholder="Subject name"
+        maxLength={40}
+        style={{
+          width: '100%',
+          background: 'var(--surface-3)',
+          border: '1px solid var(--hairline-2)',
+          borderRadius: 6,
+          padding: '5px 8px',
+          fontSize: 13,
+          color: 'var(--text)',
+          outline: 'none',
+          fontFamily: 'inherit',
+          marginBottom: 10,
+        }}
+      />
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        {COLORS.map(c => (
+          <button
+            key={c}
+            onClick={() => setColor(c)}
+            style={{
+              width: 20, height: 20,
+              borderRadius: '50%',
+              background: c,
+              border: color === c ? '2px solid var(--text)' : '2px solid transparent',
+              cursor: 'pointer',
+              outline: color === c ? '2px solid var(--surface-3)' : 'none',
+              outlineOffset: 1,
+            }}
+          />
+        ))}
+      </div>
+      {err && <p style={{ fontSize: 11, color: '#f87171', marginBottom: 8 }}>{err}</p>}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button
+          onClick={submit}
+          disabled={!name.trim()}
+          style={{
+            flex: 1, padding: '5px 0', borderRadius: 6,
+            background: 'var(--accent)', color: '#fff',
+            fontSize: 12, fontWeight: 500,
+            border: 'none', cursor: 'pointer',
+            opacity: name.trim() ? 1 : 0.4,
+            fontFamily: 'inherit',
+          }}
+        >Add</button>
+        <button
+          onClick={onCancel}
+          style={{
+            flex: 1, padding: '5px 0', borderRadius: 6,
+            background: 'var(--surface-3)', color: 'var(--text-dim)',
+            fontSize: 12, border: '1px solid var(--hairline)', cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >Cancel</button>
+      </div>
+    </div>
+  )
 }
 
-// SVG ring constants
-const R  = 88   // radius
-const CX = 100  // cx / cy
-const CIRC = 2 * Math.PI * R   // ≈ 552.9
+// ── settings panel ────────────────────────────────────────────────────────
 
-// ─── component ───────────────────────────────────────────────────────────────
+const DURATION_LABELS = { work: 'Focus', shortBreak: 'Short break', longBreak: 'Long break' }
+const DURATION_COLORS = { work: 'var(--focus)', shortBreak: 'var(--short)', longBreak: 'var(--long)' }
 
-const DURATION_LABELS = {
-  work:       'Focus',
-  shortBreak: 'Short Break',
-  longBreak:  'Long Break',
-}
-
-export default function PomodoroTimer() {
-  const {
-    mode, remaining, running, completedWork, subjectId, customDurations,
-    start, pause, reset, setMode, setDuration, tick,
-  } = useTimerStore()
-
-  const awardXP = useXPStore(s => s.awardXP)
-
-  // Active subject color → drives ring, glow, text, dots
-  const subjects        = useSubjectStore(s => s.subjects)
-  const activeSubjectId = useSubjectStore(s => s.activeId)
-  const activeSubject   = subjects.find(s => s.id === activeSubjectId) ?? null
-  const ringColor       = activeSubject?.color ?? MODE_HEX[mode]
-
-  // Flash state for XP bar + level-up toast
-  const [xpFlash,      setXpFlash]      = useState(false)
-  const [toast,        setToast]        = useState(null)   // { msg, key }
-  const [showSettings, setShowSettings] = useState(false)
-  // Local draft values for the settings inputs (in minutes)
-  const [draftMins,    setDraftMins]    = useState({
+function SettingsPanel({ customDurations, setDuration }) {
+  const [drafts, setDrafts] = useState({
     work:       customDurations.work       / 60,
     shortBreak: customDurations.shortBreak / 60,
     longBreak:  customDurations.longBreak  / 60,
   })
-  const tickRef = useRef(null)
 
-  // Keep drafts in sync when the store changes externally
   useEffect(() => {
-    setDraftMins({
+    setDrafts({
       work:       customDurations.work       / 60,
       shortBreak: customDurations.shortBreak / 60,
       longBreak:  customDurations.longBreak  / 60,
     })
   }, [customDurations.work, customDurations.shortBreak, customDurations.longBreak])
 
-  // ── ticker ──────────────────────────────────────────────────────────────────
+  function adjust(m, delta) {
+    const next = Math.max(1, Math.min(180, (drafts[m] || 1) + delta))
+    setDrafts(d => ({ ...d, [m]: next }))
+    setDuration(m, next)
+  }
+
+  return (
+    <div className="settings-panel" style={{ marginTop: 6 }}>
+      <p style={{ fontSize: '10.5px', color: 'var(--text-mute)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12, margin: '0 0 12px' }}>
+        Duration (minutes)
+      </p>
+      {(['work', 'shortBreak', 'longBreak']).map(m => (
+        <div key={m} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <span style={{ fontSize: 12, color: DURATION_COLORS[m] }}>{DURATION_LABELS[m]}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => adjust(m, -1)}
+              style={{ width: 24, height: 24, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', background: 'var(--surface-3)', border: '1px solid var(--hairline)', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}
+            >−</button>
+            <input
+              type="number" min="1" max="180"
+              value={drafts[m]}
+              onChange={e => setDrafts(d => ({ ...d, [m]: e.target.value === '' ? '' : Number(e.target.value) }))}
+              onBlur={e => {
+                const v = Math.max(1, Math.min(180, Number(e.target.value) || 1))
+                setDrafts(d => ({ ...d, [m]: v }))
+                setDuration(m, v)
+              }}
+              style={{
+                width: 44, textAlign: 'center', fontSize: 13,
+                background: 'var(--surface-3)', color: 'var(--text)',
+                border: '1px solid var(--hairline-2)', borderRadius: 5,
+                padding: '2px 0', outline: 'none', fontFamily: 'Geist Mono, monospace',
+                appearance: 'textfield',
+              }}
+            />
+            <button
+              onClick={() => adjust(m, 1)}
+              style={{ width: 24, height: 24, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', background: 'var(--surface-3)', border: '1px solid var(--hairline)', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}
+            >+</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── main component ────────────────────────────────────────────────────────
+
+export default function PomodoroTimer() {
+  const {
+    mode, remaining, running, completedWork, subjectId, customDurations,
+    start, pause, reset, setMode, setDuration, tick, setSubjectId,
+  } = useTimerStore()
+
+  const awardXP = useXPStore(s => s.awardXP)
+
+  const subjects   = useSubjectStore(s => s.subjects)
+  const activeId   = useSubjectStore(s => s.activeId)
+  const setActiveId = useSubjectStore(s => s.setActiveId)
+  const addSubject = useSubjectStore(s => s.addSubject)
+  const activeSubject = subjects.find(s => s.id === activeId) ?? null
+
+  const [toast,       setToast]       = useState(null)
+  const [showSettings, setSettings]   = useState(false)
+  const [showAddSubj,  setShowAddSubj] = useState(false)
+  const tickRef = useRef(null)
+  const chipsRef = useRef(null)
+
+  // ── ticker ────────────────────────────────────────────────────────────────
   const handleTick = useCallback(() => {
     const finished = tick()
     if (finished) {
-      const result = awardXP(mode, subjectId)   // mode + subject that just finished
-      setXpFlash(true)
-      setTimeout(() => setXpFlash(false), 800)
-
+      const result = awardXP(mode, subjectId)
       const msg = result.leveledUp
         ? `🎉 Level up! You're now Level ${result.newLevel}`
         : `+${result.xp} XP`
-
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
     }
@@ -108,244 +233,281 @@ export default function PomodoroTimer() {
     return () => clearInterval(tickRef.current)
   }, [running, handleTick])
 
-  // ── document title ──────────────────────────────────────────────────────────
+  // ── document title ────────────────────────────────────────────────────────
+  const [mm, ss] = fmt(remaining)
   useEffect(() => {
     document.title = running
-      ? `${fmt(remaining)} — ${MODE_LABELS[mode]} | Notebook`
+      ? `${mm}:${ss} — ${MODE_LABELS[mode]} | Notebook`
       : 'Notebook'
-  }, [running, remaining, mode])
+  }, [running, mm, ss, mode])
 
-  // ── ring progress ───────────────────────────────────────────────────────────
+  // ── keyboard shortcuts ────────────────────────────────────────────────────
+  useEffect(() => {
+    function onKey(e) {
+      if (e.target.matches('input, textarea')) return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        running ? pause() : start()
+      } else if (e.key.toLowerCase() === 'r') {
+        reset()
+      } else if (e.key === 'ArrowRight') {
+        const i = SKIP_ORDER.indexOf(mode)
+        setMode(SKIP_ORDER[(i + 1) % SKIP_ORDER.length])
+      } else if (e.key === '1') setMode('work')
+      else if (e.key === '2') setMode('shortBreak')
+      else if (e.key === '3') setMode('longBreak')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [running, mode, start, pause, reset, setMode])
+
+  // ── ring ──────────────────────────────────────────────────────────────────
   const total      = customDurations[mode]
-  const progress   = remaining / total                   // 1 → 0
-  const dashOffset = CIRC * (1 - progress)
+  const progress   = remaining / total
+  const dashOffset = CIRC * (1 - (1 - progress))   // fills as time passes
 
-  // ── dots: completed work sessions in current long-break cycle ───────────────
-  const dotsFilled = completedWork % 4
+  // ── pips ──────────────────────────────────────────────────────────────────
+  const pips    = getPips(completedWork)
+  const pipsDone = pips.filter(p => p === 'done').length
+  const pipNow   = pips.indexOf('now')
 
+  // ── subject chip handlers ────────────────────────────────────────────────
+  function selectSubject(id) {
+    setActiveId(id)
+    setSubjectId(id)
+  }
+
+  async function handleAddSubject(name, color) {
+    const subj = await addSubject(name, color)
+    if (subj) {
+      selectSubject(subj.id)
+      setShowAddSubj(false)
+    }
+    return subj
+  }
+
+  // ── render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto py-8 px-4">
+    <main className="v2-main">
 
-      {/* ── mode tabs + gear icon (relative so settings panel can float below) ── */}
-      <div className="relative flex items-center gap-2 w-full">
-        <div className="flex gap-1 bg-card rounded-lg p-1 flex-1">
+      {/* ── filter bar ── */}
+      <div className="filter-bar">
+        <button className="filter-pill">
+          <span className="pill-dot" />
+          Focus session
+        </button>
+        {activeSubject && (
+          <button className="filter-pill">
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: activeSubject.color, display: 'inline-block', flexShrink: 0 }} />
+            {activeSubject.name}
+            <span style={{ color: 'var(--text-faint)', marginLeft: 2 }}>×</span>
+          </button>
+        )}
+        <button className="filter-pill" style={{ borderStyle: 'dashed', color: 'var(--text-mute)' }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Tag
+        </button>
+        <div style={{ flex: 1 }} />
+        <div className="view-toggle">
+          <button className="view-btn active" title="Timer view">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+            </svg>
+          </button>
+          <button className="view-btn" title="List view">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* ── timer stage ── */}
+      <div className="timer-stage">
+
+        {/* mode tabs */}
+        <div className="mode-tabs" style={{ position: 'relative' }}>
           {(['work', 'shortBreak', 'longBreak']).map(m => (
             <button
               key={m}
+              className={`mode-tab${mode === m ? ' active' : ''}`}
               onClick={() => setMode(m)}
-              className={clsx(
-                'flex-1 text-[11px] tracking-wide py-1.5 rounded-md transition-all duration-200',
-                mode === m
-                  ? 'bg-surface text-bright shadow-sm'
-                  : 'text-dim hover:text-soft'
-              )}
             >
               {MODE_LABELS[m]}
+              <span className="kbd-mini">{MODE_KEYS[m]}</span>
             </button>
           ))}
+          <button
+            className="gear-btn"
+            title="Timer settings"
+            onClick={() => { setSettings(s => !s); setShowAddSubj(false) }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+            </svg>
+          </button>
+
+          {showSettings && (
+            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+              <SettingsPanel customDurations={customDurations} setDuration={setDuration} />
+            </div>
+          )}
         </div>
 
-        {/* Settings gear */}
-        <button
-          onClick={() => setShowSettings(s => !s)}
-          aria-label="Timer settings"
-          className={clsx(
-            'p-1.5 rounded-md transition-colors shrink-0',
-            showSettings ? 'text-accent bg-surface' : 'text-dim hover:text-soft'
-          )}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
+        {/* timer hero */}
+        <div className="timer-wrap">
+          <div className={`timer-glow${running ? ' running' : ''}`} />
 
-        {/* ── settings panel — floats below the row, doesn't shift layout ── */}
-        {showSettings && (
-          <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-card rounded-xl p-4 flex flex-col gap-3 border border-border shadow-2xl">
-            <p className="text-[11px] text-dim tracking-widest uppercase">Duration (minutes)</p>
-            {(['work', 'shortBreak', 'longBreak']).map(m => (
-              <div key={m} className="flex items-center justify-between gap-3">
-                <span className={clsx('text-xs', MODE_COLORS[m])}>{DURATION_LABELS[m]}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      const next = Math.max(1, draftMins[m] - 1)
-                      setDraftMins(d => ({ ...d, [m]: next }))
-                      setDuration(m, next)
-                    }}
-                    className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
-                  >−</button>
-                  <input
-                    type="number"
-                    min="1"
-                    max="180"
-                    value={draftMins[m]}
-                    onChange={e => {
-                      const val = e.target.value === '' ? '' : Number(e.target.value)
-                      setDraftMins(d => ({ ...d, [m]: val }))
-                    }}
-                    onBlur={e => {
-                      const mins = Math.max(1, Math.min(180, Number(e.target.value) || 1))
-                      setDraftMins(d => ({ ...d, [m]: mins }))
-                      setDuration(m, mins)
-                    }}
-                    className="w-12 bg-surface text-center text-sm text-bright rounded-md py-0.5 border border-border focus:outline-none focus:border-accent tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                  <button
-                    onClick={() => {
-                      const next = Math.min(180, draftMins[m] + 1)
-                      setDraftMins(d => ({ ...d, [m]: next }))
-                      setDuration(m, next)
-                    }}
-                    className="w-6 h-6 rounded flex items-center justify-center text-dim hover:text-soft hover:bg-surface transition-colors text-base leading-none"
-                  >+</button>
-                </div>
-              </div>
-            ))}
+          <svg className="timer-ring" viewBox="0 0 200 200" aria-hidden="true">
+            <circle className="ring-track" cx="100" cy="100" r={R} />
+            <circle
+              className="ring-progress"
+              cx="100" cy="100" r={R}
+              strokeDasharray={CIRC}
+              strokeDashoffset={dashOffset}
+            />
+          </svg>
+
+          <div className="timer-content">
+            {/* context badge */}
+            <div className="timer-context">
+              <span className={`ctx-dot${running ? ' pulsing' : ''}`} />
+              <span>{MODE_LABELS[mode]}</span>
+              <span className="ctx-session">
+                Session {Math.min(pipsDone + 1, 4)} / 4
+              </span>
+            </div>
+
+            {/* time */}
+            <div className="time-display">
+              {mm}<span className="time-sep">:</span>{ss}
+            </div>
+
+            {/* subtitle */}
+            <div className="timer-subtitle">
+              {activeSubject
+                ? <><b>{activeSubject.name}</b><span className="sub-sep">·</span><span style={{ color: 'var(--text-dim)' }}>Focus session</span></>
+                : mode === 'work'
+                  ? <span style={{ color: 'var(--text-mute)' }}>Select a subject below</span>
+                  : <span style={{ color: 'var(--text-dim)' }}>{mode === 'shortBreak' ? 'Stretch, sip water, breathe' : 'Stand up, walk around, reset'}</span>
+              }
+            </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* ── SVG ring clock ── */}
-      <div className="relative">
-        {/* glow pulse behind ring when running */}
-        {running && (
-          <div
-            className="absolute inset-0 rounded-full animate-pulse-ring"
-            style={{ backgroundColor: ringColor }}
-          />
-        )}
-
-        <svg width="200" height="200" className="-rotate-90">
-          {/* track */}
-          <circle
-            cx={CX} cy={CX} r={R}
-            fill="none"
-            strokeWidth="5"
-            className="stroke-muted"
-          />
-          {/* progress */}
-          <circle
-            cx={CX} cy={CX} r={R}
-            fill="none"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={dashOffset}
-            className="transition-all duration-1000 ease-linear"
-            style={{ stroke: ringColor }}
-          />
-        </svg>
-
-        {/* centre readout */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span
-            className={clsx(
-              'text-4xl font-semibold tabular-nums tracking-tight',
-              !running && 'text-bright'
-            )}
-            style={running ? { color: ringColor } : undefined}
-          >
-            {fmt(remaining)}
-          </span>
-          <span
-            className="text-[11px] tracking-widest mt-1 uppercase"
-            style={{ color: ringColor }}
-          >
-            {MODE_LABELS[mode]}
+        {/* pips */}
+        <div className="pips-row" aria-label="Pomodoro session progress">
+          {pips.map((state, i) => (
+            <div key={i} className={`pip${state === 'done' ? ' done' : state === 'now' ? ' now' : ''}`} title={`Session ${i + 1}`} />
+          ))}
+          <span className="pip-label">
+            <b>{pipsDone + 1} / 4</b> · {nextLabel(completedWork)}
           </span>
         </div>
+
+        {/* subject chips */}
+        <div className="chips-row" ref={chipsRef} style={{ position: 'relative' }}>
+          {subjects.map(s => (
+            <button
+              key={s.id}
+              className={`chip${activeId === s.id ? ' selected' : ''}`}
+              onClick={() => selectSubject(s.id)}
+            >
+              <span className="chip-swatch" style={{ background: s.color }} />
+              {s.name}
+            </button>
+          ))}
+          <div style={{ position: 'relative' }}>
+            <button
+              className="chip chip-add"
+              onClick={() => { setShowAddSubj(v => !v); setSettings(false) }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Subject
+            </button>
+            {showAddSubj && (
+              <AddSubjectPanel
+                onAdd={handleAddSubject}
+                onCancel={() => setShowAddSubj(false)}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* controls */}
+        <div className="controls-row">
+          {/* reset */}
+          <div className="ctrl-wrap">
+            <button className="ctrl" onClick={reset} aria-label="Reset">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/>
+              </svg>
+            </button>
+            <span className="ctrl-hint">RESET · R</span>
+          </div>
+
+          {/* play / pause */}
+          <div className="ctrl-wrap">
+            <button
+              className="ctrl primary"
+              onClick={running ? pause : start}
+              aria-label={running ? 'Pause' : 'Start'}
+            >
+              {running ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 5h4v14H7zM13 5h4v14h-4z"/>
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              )}
+            </button>
+            <span className="ctrl-hint">{running ? 'PAUSE · SPACE' : 'PLAY · SPACE'}</span>
+          </div>
+
+          {/* skip */}
+          <div className="ctrl-wrap">
+            <button
+              className="ctrl"
+              onClick={() => {
+                const i = SKIP_ORDER.indexOf(mode)
+                setMode(SKIP_ORDER[(i + 1) % SKIP_ORDER.length])
+              }}
+              aria-label="Skip"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/>
+              </svg>
+            </button>
+            <span className="ctrl-hint">SKIP · →</span>
+          </div>
+        </div>
+
+        {/* keyboard hint bar */}
+        <div className="kbd-hint-bar">
+          <span><span className="kbd-badge">Space</span> pause</span>
+          <span><span className="kbd-badge">R</span> reset</span>
+          <span><span className="kbd-badge">→</span> skip</span>
+          <span>
+            <span className="kbd-badge">1</span>
+            <span className="kbd-badge">2</span>
+            <span className="kbd-badge">3</span>
+            {' '}mode
+          </span>
+        </div>
+
       </div>
-
-      {/* ── session dots ── */}
-      <div className="flex gap-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className={clsx('w-2 h-2 rounded-full transition-all duration-300', i >= dotsFilled && 'bg-muted')}
-            style={i < dotsFilled ? { backgroundColor: ringColor } : undefined}
-          />
-        ))}
-      </div>
-
-      {/* ── subject picker ── */}
-      <SubjectPicker
-        onSubjectChange={id => useTimerStore.getState().setSubjectId(id)}
-      />
-
-      {/* ── controls ── */}
-      <div className="flex items-center gap-4">
-        {/* Reset */}
-        <button
-          onClick={reset}
-          aria-label="Reset"
-          className="p-2 rounded-full text-dim hover:text-soft transition-colors"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="1 4 1 10 7 10"/>
-            <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
-          </svg>
-        </button>
-
-        {/* Play / Pause — primary button */}
-        <button
-          onClick={running ? pause : start}
-          aria-label={running ? 'Pause' : 'Start'}
-          className={clsx(
-            'w-14 h-14 rounded-full flex items-center justify-center',
-            'transition-all duration-200 active:scale-95 shadow-lg',
-            running
-              ? 'bg-surface border border-border text-soft hover:text-bright hover:border-soft'
-              : 'bg-accent text-white hover:bg-accent-dim'
-          )}
-        >
-          {running ? (
-            // Pause icon
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6"  y="4" width="4" height="16" rx="1"/>
-              <rect x="14" y="4" width="4" height="16" rx="1"/>
-            </svg>
-          ) : (
-            // Play icon
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5,3 19,12 5,21"/>
-            </svg>
-          )}
-        </button>
-
-        {/* Skip */}
-        <button
-          onClick={() => useTimerStore.getState().skip()}
-          aria-label="Skip"
-          className="p-2 rounded-full text-dim hover:text-soft transition-colors"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="5 4 15 12 5 20 5 4"/>
-            <line x1="19" y1="5" x2="19" y2="19"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* ── XP bar ── */}
-      <div className="w-full mt-2">
-        <XPBar flash={xpFlash} />
-      </div>
-
-      {/* ── session count ── */}
-      <p className="text-[11px] text-dim tracking-wide">
-        {completedWork} session{completedWork !== 1 ? 's' : ''} completed today
-      </p>
 
       {/* ── toast ── */}
       {toast && (
-        <div
-          key={toast.key}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-card border border-border text-bright text-sm px-5 py-2.5 rounded-full shadow-xl animate-pop"
-        >
-          {toast.msg}
-        </div>
+        <div key={toast.key} className="v2-toast">{toast.msg}</div>
       )}
-    </div>
+    </main>
   )
 }
