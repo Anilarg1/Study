@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import AuthForm      from './components/AuthForm'
 import Sidebar       from './components/Sidebar'
 import PomodoroTimer from './components/PomodoroTimer'
@@ -22,12 +22,30 @@ function TimerIcon() {
 // ── app ───────────────────────────────────────────────────────────────────
 export default function App() {
   const { user, loading, init, signOut } = useAuthStore()
-  const timerMode = useTimerStore(s => s.mode)
-  const running   = useTimerStore(s => s.running)
-  const dataMode  = DATA_MODE[timerMode] ?? 'focus'
+  const timerMode    = useTimerStore(s => s.mode)
+  const running      = useTimerStore(s => s.running)
+  const startTimer   = useTimerStore(s => s.start)
+  const setTimerMode = useTimerStore(s => s.setMode)
+  const dataMode     = DATA_MODE[timerMode] ?? 'focus'
+
+  const handleNewSession = useCallback(() => {
+    if (running && !window.confirm('A session is in progress. Start a new one?')) return
+    setTimerMode('work')
+    startTimer()
+  }, [running, setTimerMode, startTimer])
 
   // Restore Supabase session once on mount
   useEffect(() => { init() }, [init])
+
+  // Global keyboard shortcut: C → New session
+  useEffect(() => {
+    function onKey(e) {
+      if (e.target.matches('input, textarea')) return
+      if (e.key.toLowerCase() === 'c') handleNewSession()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleNewSession])
 
   // ── loading splash ──────────────────────────────────────────────────────
   if (loading) {
@@ -119,7 +137,7 @@ export default function App() {
         </button>
 
         {/* new session */}
-        <button className="top-btn primary">
+        <button className="top-btn primary" onClick={handleNewSession}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M12 5v14M5 12h14"/>
