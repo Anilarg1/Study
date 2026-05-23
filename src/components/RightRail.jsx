@@ -6,13 +6,28 @@ import { xpToLevel, xpProgress, xpToNextLevel, levelToXp } from '../utils/xp'
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
-const DAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const DAY_HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
-function getLast7() {
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86_400_000)
-    return { dateStr: toLocalDateStr(d), label: DAY_INITIALS[d.getDay()], isToday: i === 6 }
-  })
+function getMonthDays() {
+  const now    = new Date()
+  const year   = now.getFullYear()
+  const month  = now.getMonth()
+  const first  = new Date(year, month, 1)
+  const total  = new Date(year, month + 1, 0).getDate()
+  const offset = first.getDay()          // 0 = Sun
+  const today  = toLocalDateStr(now)
+
+  const cells = []
+  for (let i = 0; i < offset; i++) cells.push(null)
+  for (let d = 1; d <= total; d++) {
+    const date    = new Date(year, month, d)
+    const dateStr = toLocalDateStr(date)
+    cells.push({ dateStr, day: d, isToday: dateStr === today, isFuture: date > now })
+  }
+  return {
+    cells,
+    monthLabel: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+  }
 }
 
 function todayStr() { return toLocalDateStr() }
@@ -121,10 +136,11 @@ function StreakCard() {
   const longestStreak = useStreakStore(s => s.longestStreak)
   const currentStreak = useStreakStore(s => s.currentStreak)
   const dateSet = new Set(loginDates)
-  const last7   = getLast7()
+  const { cells, monthLabel } = getMonthDays()
 
   return (
     <div className="v2-card">
+      {/* header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', marginRight: 6, verticalAlign: -2, color: 'var(--streak)' }}>
@@ -137,6 +153,7 @@ function StreakCard() {
         )}
       </div>
 
+      {/* streak count */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 18, fontWeight: 500, color: 'var(--text)', lineHeight: 1 }}>
           {currentStreak}
@@ -151,26 +168,70 @@ function StreakCard() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
-        {last7.map(({ dateStr, label, isToday }) => {
+      {/* month label */}
+      <div style={{ fontSize: 10.5, fontFamily: 'Geist Mono, monospace', color: 'var(--text-mute)', marginBottom: 6, letterSpacing: '0.04em' }}>
+        {monthLabel.toUpperCase()}
+      </div>
+
+      {/* day-of-week headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 2 }}>
+        {DAY_HEADERS.map((d, i) => (
+          <div key={i} style={{ textAlign: 'center', fontFamily: 'Geist Mono, monospace', fontSize: 8.5, color: 'var(--text-faint)', paddingBottom: 1 }}>
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* day cells */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+        {cells.map((cell, i) => {
+          if (!cell) return <div key={i} />
+
+          const { dateStr, day, isToday, isFuture } = cell
           const logged = dateSet.has(dateStr)
+
           let bg, border, color
           if (isToday && logged) {
-            bg = 'color-mix(in oklab, var(--accent) 16%, var(--surface-3))'
+            bg     = 'color-mix(in oklab, var(--accent) 20%, var(--surface-3))'
             border = '1px solid var(--accent)'
-            color = 'var(--text)'
+            color  = 'var(--text)'
+          } else if (isToday) {
+            bg     = 'var(--surface-3)'
+            border = '1px solid var(--hairline-2)'
+            color  = 'var(--text)'
           } else if (logged) {
-            bg = 'color-mix(in oklab, var(--streak) 14%, var(--surface-3))'
-            border = '1px solid color-mix(in oklab, var(--streak) 28%, transparent)'
-            color = 'var(--text-mute)'
-          } else {
-            bg = 'var(--surface-3)'
+            bg     = 'color-mix(in oklab, var(--streak) 16%, var(--surface-3))'
+            border = '1px solid color-mix(in oklab, var(--streak) 30%, transparent)'
+            color  = 'var(--text-dim)'
+          } else if (isFuture) {
+            bg     = 'transparent'
             border = 'none'
-            color = 'var(--text-faint)'
+            color  = 'var(--text-faint)'
+          } else {
+            bg     = 'var(--surface-3)'
+            border = 'none'
+            color  = 'var(--text-faint)'
           }
+
           return (
-            <div key={dateStr} style={{ aspectRatio: 1, borderRadius: 4, background: bg, border, display: 'grid', placeItems: 'center', fontFamily: 'Geist Mono, monospace', fontSize: 9.5, color, transition: 'background 700ms, border-color 700ms' }}>
-              {label}
+            <div
+              key={dateStr}
+              title={dateStr}
+              style={{
+                aspectRatio: 1,
+                borderRadius: 3,
+                background: bg,
+                border,
+                display: 'grid',
+                placeItems: 'center',
+                fontFamily: 'Geist Mono, monospace',
+                fontSize: 9,
+                fontWeight: isToday ? 600 : 400,
+                color,
+                transition: 'background 700ms, border-color 700ms',
+              }}
+            >
+              {day}
             </div>
           )
         })}
