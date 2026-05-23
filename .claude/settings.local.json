@@ -12,7 +12,8 @@
       "Bash(npm install *)",
       "Bash(git restore *)",
       "Bash(git commit -m 'fixup! Step 5: settings panel floats \\(absolute\\) — no layout shift on open *)",
-      "Bash(git commit -m 'Step 5: timer ring + glow + text + dots follow active subject color *)"
+      "Bash(git commit -m 'Step 5: timer ring + glow + text + dots follow active subject color *)",
+      "WebFetch(domain:api.anthropic.com)"
     ]
   }
 }

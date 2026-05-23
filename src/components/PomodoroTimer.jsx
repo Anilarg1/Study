@@ -297,7 +297,7 @@ export default function PomodoroTimer() {
           Focus session
         </button>
         {activeSubject && (
-          <button className="filter-pill">
+          <button className="filter-pill" onClick={() => { setActiveId(null); setSubjectId(null) }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: activeSubject.color, display: 'inline-block', flexShrink: 0 }} />
             {activeSubject.name}
             <span style={{ color: 'var(--text-faint)', marginLeft: 2 }}>×</span>
