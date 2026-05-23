@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from 'react'
-import AuthForm         from './components/AuthForm'
+import LoginPage        from './components/LoginPage'
 import Sidebar          from './components/Sidebar'
 import PomodoroTimer    from './components/PomodoroTimer'
 import RightRail        from './components/RightRail'
@@ -84,21 +84,7 @@ export default function App() {
   }
 
   // ── auth gate ───────────────────────────────────────────────────────────
-  if (!user) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
-        <header style={{ marginBottom: '40px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
-            <div className="brand-logo" style={{ width: 28, height: 28, fontSize: 13 }}>N</div>
-            <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-              Notebook
-            </span>
-          </div>
-        </header>
-        <AuthForm />
-      </div>
-    )
-  }
+  if (!user) return <LoginPage />
 
   // ── derive user display info ────────────────────────────────────────────
   const email    = user.email ?? ''
