@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase-js'
-import type { Subject, SessionEntry } from '../types'
+import type { Subject, Tag, SessionEntry } from '../types'
 
 const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -41,6 +41,7 @@ export async function insertSession(userId: string, session: SessionEntry): Prom
     completed_at:  session.completedAt,
     xp:            session.xp,
     subject_id:    session.subjectId   ?? null,
+    tag_id:        session.tagId       ?? null,
     duration_secs: session.durationSecs ?? null,
   })
   return error
@@ -109,5 +110,39 @@ export async function removeSubject(subjectId: string): Promise<PostgrestError |
     .from('subjects')
     .delete()
     .eq('id', subjectId)
+  return error
+}
+
+// ─── Tags helpers ─────────────────────────────────────────────────────────────
+
+/** Fetch all tags for a user, ordered by creation time. */
+export async function fetchTags(userId: string): Promise<{ data: Tag[], error: PostgrestError | null }> {
+  const { data, error } = await supabase
+    .from('tags')
+    .select('id, name, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+  return { data: (data as Tag[]) ?? [], error }
+}
+
+/** Insert a new tag. Returns the created row. */
+export async function createTag(
+  userId: string,
+  { name }: { name: string },
+): Promise<{ data: Tag | null; error: PostgrestError | null }> {
+  const { data, error } = await supabase
+    .from('tags')
+    .insert({ user_id: userId, name })
+    .select()
+    .single()
+  return { data: data as Tag | null, error }
+}
+
+/** Delete a tag by id. Sessions referencing it will have tag_id set to null. */
+export async function removeTag(tagId: string): Promise<PostgrestError | null> {
+  const { error } = await supabase
+    .from('tags')
+    .delete()
+    .eq('id', tagId)
   return error
 }
