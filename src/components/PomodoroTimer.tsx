@@ -280,6 +280,9 @@ export default function PomodoroTimer() {
     function onOutside(e: MouseEvent) {
       if (tagPickerRef.current && !tagPickerRef.current.contains(e.target as Node)) {
         setShowTagPicker(false)
+        setShowAddTag(false)
+        setNewTagName('')
+        setTagAddError(null)
       }
     }
     document.addEventListener('mousedown', onOutside)
