@@ -661,6 +661,26 @@ export default function StatsPage() {
   // ── active subject filter display ─────────────────────────────────────────
   const activeSubject = subjects.find(s => s.id === subjectFilter)
 
+  // ── export ─────────────────────────────────────────────────────────────────
+  function handleExport() {
+    const rows = [
+      ['Date', 'Subject', 'Duration (min)', 'XP'].join(','),
+      ...workSessions.map(s => {
+        const subj = subjects.find(x => x.id === s.subjectId)?.name ?? ''
+        const mins = sessionMins(s)
+        const date = dateOf(s.completedAt)
+        return [date, subj, mins, s.xp].join(',')
+      }),
+    ]
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `study-sessions-${range}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   // ─── render ───────────────────────────────────────────────────────────────
 
   const rangeLabelMap: Record<Range, string> = {
@@ -709,7 +729,12 @@ export default function StatsPage() {
 
         <div className="s-filter-spacer" />
 
-        <span className="s-pill" style={{ color: 'var(--text-mute)', cursor: 'default' }}>
+        <span
+          className="s-pill"
+          style={{ cursor: 'pointer' }}
+          onClick={handleExport}
+          title={`Export ${workSessions.length} sessions as CSV`}
+        >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
           </svg>
