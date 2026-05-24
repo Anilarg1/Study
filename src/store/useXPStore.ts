@@ -48,7 +48,7 @@ const useXPStore = create<XPState>()(
           const multiplier    = getStreakMultiplier(streak)
           xp = Math.floor(calcSessionXP(durationSecs) * multiplier)
         } else {
-          // breaks stay flat
+          // break sessions stay flat; work sessions without durationSecs get 0 XP
           xp = XP_REWARDS[sessionType] ?? 0
         }
 
@@ -102,6 +102,8 @@ const useXPStore = create<XPState>()(
       },
 
       _importSessionsFromSupabase(sessions) {
+        // sessions arrive newest-first from Supabase; reverse to oldest-first to match
+        // the append order used by awardXP, then cap at MAX_LOCAL_SESSIONS
         const toStore = [...sessions].reverse().slice(0, MAX_LOCAL_SESSIONS)
         set({ sessions: toStore })
       },
@@ -113,10 +115,18 @@ const useXPStore = create<XPState>()(
     {
       name:    'notebook-xp',
       version: 2,   // bumped: formula changed, local XP reset on upgrade
-      partialize: (state): Partial<XPState> => ({
+      partialize: (state) => ({
         totalXP:  state.totalXP,
         sessions: state.sessions,
       }),
+      migrate: (persistedState: unknown, fromVersion: number) => {
+        // v1 → v2: formula changed, preserve totalXP but sessions may have stale XP
+        if (fromVersion === 1 && persistedState && typeof persistedState === 'object') {
+          const old = persistedState as { totalXP?: number; sessions?: SessionEntry[] }
+          return { totalXP: old.totalXP ?? 0, sessions: old.sessions ?? [] }
+        }
+        return { totalXP: 0, sessions: [] }
+      },
     }
   )
 )
