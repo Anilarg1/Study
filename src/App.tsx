@@ -5,6 +5,7 @@ import Sidebar          from './components/Sidebar'
 import PomodoroTimer    from './components/PomodoroTimer'
 import RightRail        from './components/RightRail'
 import NewSessionModal  from './components/NewSessionModal'
+import CommandPalette   from './components/CommandPalette'
 import Settings         from './components/Settings'
 import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
@@ -48,8 +49,9 @@ export default function App() {
   const sidebarCollapsed = useSettingsStore(s => s.sidebarCollapsed)
   const toggleSidebar    = useSettingsStore(s => s.toggle)
 
-  const [showNewSession, setShowNewSession] = useState(false)
-  const [view,           setView]           = useState<'timer' | 'settings'>('timer')
+  const [showNewSession,  setShowNewSession]  = useState(false)
+  const [showCmdPalette,  setShowCmdPalette]  = useState(false)
+  const [view,            setView]            = useState<'timer' | 'settings'>('timer')
 
   const handleNewSession = useCallback(() => {
     setShowNewSession(true)
@@ -70,6 +72,12 @@ export default function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Ctrl+K / ⌘K — toggle command palette (works even inside inputs)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowCmdPalette(p => !p)
+        return
+      }
       if ((e.target as HTMLElement).matches('input, textarea')) return
       if (e.key.toLowerCase() === 'c') handleNewSession()
       if (e.key === '[') toggleSidebar('sidebarCollapsed')
@@ -142,7 +150,7 @@ export default function App() {
 
         <div style={{ flex: 1 }} />
 
-        <button className="cmd-palette">
+        <button className="cmd-palette" onClick={() => setShowCmdPalette(true)}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
                style={{ color: 'var(--text-mute)', flexShrink: 0 }}>
@@ -200,6 +208,14 @@ export default function App() {
           onCancel={() => setShowNewSession(false)}
         />
       )}
+
+      {/* ── COMMAND PALETTE ── */}
+      <CommandPalette
+        open={showCmdPalette}
+        onClose={() => setShowCmdPalette(false)}
+        onNavigate={view => setView(view)}
+        onNewSession={() => { setShowCmdPalette(false); setShowNewSession(true) }}
+      />
 
     </div>
   )
