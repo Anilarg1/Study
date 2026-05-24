@@ -61,6 +61,9 @@ export default function CommandPalette({
 }: CommandPaletteProps) {
   const subjects    = useSubjectStore(s => s.subjects)
   const setActiveId = useSubjectStore(s => s.setActiveId)
+  const activeId    = useSubjectStore(s => s.activeId)
+
+  const activeSubject = subjects.find(s => s.id === activeId) ?? null
 
   const [query,   setQuery]   = useState('')
   const [focused, setFocused] = useState(0)
@@ -73,7 +76,7 @@ export default function CommandPalette({
   const actionCmds: CmdItem[] = [
     {
       id:     'new-session',
-      label:  'New session',
+      label:  activeSubject ? `New session · ${activeSubject.name}` : 'New session',
       hint:   'C',
       icon:   <IcPlus />,
       action: () => { onNewSession(); onClose() },
