@@ -6,6 +6,7 @@ import useTagStore      from '../store/useTagStore'
 import useSettingsStore from '../store/useSettingsStore'
 import { playChime }    from '../lib/chime'
 import type { TimerMode, TimerDurations, Subject } from '../types'
+import { useTagPicker, AddTagForm } from './TagPicker'
 
 // ── constants ─────────────────────────────────────────────────────────────
 
@@ -245,16 +246,18 @@ export default function PomodoroTimer() {
   const setActiveId   = useSubjectStore(s => s.setActiveId)
   const addSubject    = useSubjectStore(s => s.addSubject)
   const tags    = useTagStore(s => s.tags)
-  const addTag  = useTagStore(s => s.addTag)
   const activeSubject = subjects.find(s => s.id === activeId) ?? null
   const activeTag = tags.find(t => t.id === tagId) ?? null
 
   const [toast,        setToast]       = useState<{ msg: string; key: number } | null>(null)
   const [showSettings, setSettings]    = useState(false)
   const [showAddSubj,  setShowAddSubj] = useState(false)
-  const [showAddTag,  setShowAddTag]  = useState(false)
-  const [newTagName,  setNewTagName]  = useState('')
-  const [tagAddError, setTagAddError] = useState<string | null>(null)
+  const {
+    newTagName, setNewTagName,
+    tagAddError,
+    showAddTag, setShowAddTag,
+    handleAddTag, dismissAddTag,
+  } = useTagPicker(tagId => setTagId(tagId))
   const tickRef      = useRef<ReturnType<typeof setInterval> | null>(null)
   const chipsRef     = useRef<HTMLDivElement>(null)
   const settingsRef  = useRef<HTMLDivElement>(null)
@@ -280,9 +283,7 @@ export default function PomodoroTimer() {
     function onOutside(e: MouseEvent) {
       if (tagPickerRef.current && !tagPickerRef.current.contains(e.target as Node)) {
         setShowTagPicker(false)
-        setShowAddTag(false)
-        setNewTagName('')
-        setTagAddError(null)
+        dismissAddTag()
       }
     }
     document.addEventListener('mousedown', onOutside)
@@ -368,21 +369,6 @@ export default function PomodoroTimer() {
     return subj
   }
 
-  async function handleAddTag() {
-    const name = newTagName.trim()
-    if (!name) return
-    setTagAddError(null)
-    const tag = await addTag(name)
-    if (tag) {
-      setTagId(tag.id)
-      setNewTagName('')
-      setShowAddTag(false)
-      setShowTagPicker(false)
-    } else {
-      setTagAddError('Could not save — check your connection.')
-    }
-  }
-
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <main className="v2-main">
@@ -464,60 +450,39 @@ export default function PomodoroTimer() {
                 ))}
 
                 {/* Inline add tag */}
-                {showAddTag ? (
-                  <div style={{ padding: '8px 12px', borderTop: tags.length > 0 ? '1px solid var(--hairline)' : 'none' }}>
-                    <input
-                      autoFocus
-                      type="text"
+                <div style={{ borderTop: tags.length > 0 ? '1px solid var(--hairline)' : 'none' }}>
+                  <button
+                    onClick={() => setShowAddTag(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      width: '100%',
+                      padding: '7px 12px',
+                      fontSize: 12,
+                      color: 'var(--text-mute)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Add tag
+                  </button>
+                </div>
+                {showAddTag && (
+                  <div style={{ padding: '8px 10px', borderTop: '1px solid var(--hairline)' }}>
+                    <AddTagForm
                       value={newTagName}
-                      onChange={e => { setNewTagName(e.target.value); setTagAddError(null) }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter')  handleAddTag()
-                        if (e.key === 'Escape') { setShowAddTag(false); setNewTagName(''); setTagAddError(null) }
-                      }}
-                      placeholder="Tag name"
-                      maxLength={30}
-                      style={{
-                        width: '100%',
-                        background: 'var(--surface-3)',
-                        border: '1px solid var(--hairline-2)',
-                        borderRadius: 5,
-                        padding: '4px 8px',
-                        fontSize: 12,
-                        color: 'var(--text)',
-                        outline: 'none',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box',
-                      }}
+                      onChange={setNewTagName}
+                      onSubmit={handleAddTag}
+                      onDismiss={dismissAddTag}
+                      error={tagAddError}
                     />
-                    {tagAddError && (
-                      <p style={{ margin: '4px 0 0', fontSize: 11, color: '#f87171' }}>{tagAddError}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ borderTop: tags.length > 0 ? '1px solid var(--hairline)' : 'none' }}>
-                    <button
-                      onClick={() => setShowAddTag(true)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        width: '100%',
-                        padding: '7px 12px',
-                        fontSize: 12,
-                        color: 'var(--text-mute)',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M12 5v14M5 12h14"/>
-                      </svg>
-                      Add tag
-                    </button>
                   </div>
                 )}
 
