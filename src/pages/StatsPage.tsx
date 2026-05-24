@@ -243,6 +243,20 @@ function SubjectRadar({
   )
 }
 
+// ─── histogram buckets (module-level constant) ────────────────────────────────
+const HIST_BUCKETS = [
+  { label: '≤5',  max: 5        },
+  { label: '10',  max: 10       },
+  { label: '15',  max: 15       },
+  { label: '20',  max: 20       },
+  { label: '25',  max: 25       },
+  { label: '30',  max: 30       },
+  { label: '40',  max: 40       },
+  { label: '50',  max: 50       },
+  { label: '60',  max: 60       },
+  { label: '90+', max: Infinity },
+]
+
 // ─── main component ───────────────────────────────────────────────────────────
 
 export default function StatsPage() {
@@ -526,19 +540,6 @@ export default function StatsPage() {
   }, [hourDayRaw])
 
   // ── session length histogram ───────────────────────────────────────────────
-  const HIST_BUCKETS = [
-    { label: '≤5',  max: 5   },
-    { label: '10',  max: 10  },
-    { label: '15',  max: 15  },
-    { label: '20',  max: 20  },
-    { label: '25',  max: 25  },
-    { label: '30',  max: 30  },
-    { label: '40',  max: 40  },
-    { label: '50',  max: 50  },
-    { label: '60',  max: 60  },
-    { label: '90+', max: Infinity },
-  ]
-
   const histData = useMemo(() => {
     const counts = HIST_BUCKETS.map((b, i) => {
       const prev = i > 0 ? HIST_BUCKETS[i - 1].max : 0
