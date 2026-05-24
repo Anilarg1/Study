@@ -355,6 +355,14 @@
   border-radius: 6px;
 }
 
+.nav-user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
 .nav-signout {
   display: grid;
   place-items: center;

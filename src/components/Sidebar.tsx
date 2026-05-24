@@ -213,7 +213,7 @@ export default function Sidebar({
       {/* ── User row ── */}
       <div className="nav-user">
         <div className="avatar">{initials}</div>
-        <div className="nav-user-info" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+        <div className="nav-user-info">
           <span style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 500 }}>
             {email.split('@')[0]}
           </span>
