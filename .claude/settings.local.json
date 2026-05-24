@@ -16,7 +16,22 @@
       "WebFetch(domain:api.anthropic.com)",
       "Bash(node -e ' *)",
       "Bash(Start-Sleep -Seconds 3)",
-      "Bash(Get-Content \"C:\\\\Users\\\\shaai\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-shaai-Study\\\\2bdb5b54-4958-4c15-856d-bfd9260e72b7\\\\tasks\\\\bg80wk4c9.output\" -Raw)"
+      "Bash(Get-Content \"C:\\\\Users\\\\shaai\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-shaai-Study\\\\2bdb5b54-4958-4c15-856d-bfd9260e72b7\\\\tasks\\\\bg80wk4c9.output\" -Raw)",
+      "mcp__codegraph__codegraph_explore",
+      "Bash(git commit -m 'docs: spec — subjects inline add, filter bar tag picker, palette pre-fill *)",
+      "Bash(git commit -m 'docs: implementation plan — subjects inline add, filter bar tag picker, palette label *)",
+      "Bash(git commit *)",
+      "mcp__codegraph__codegraph_callers",
+      "mcp__codegraph__codegraph_files",
+      "mcp__codegraph__codegraph_search",
+      "mcp__codegraph__codegraph_context",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "Bash(npx tsc *)",
+      "Bash(git stash *)",
+      "mcp__codegraph__codegraph_status",
+      "Bash(git checkout *)"
     ]
   }
 }
