@@ -43,6 +43,7 @@ export default function App() {
   const setTimerMode     = useTimerStore(s => s.setMode)
   const setTimerDuration = useTimerStore(s => s.setDuration)
   const setTimerSubject  = useTimerStore(s => s.setSubjectId)
+  const setTimerTagId    = useTimerStore(s => s.setTagId)
   const setActiveId      = useSubjectStore(s => s.setActiveId)
   const dataMode         = DATA_MODE[timerMode] ?? 'focus'
 
@@ -57,14 +58,15 @@ export default function App() {
     setShowNewSession(true)
   }, [])
 
-  const handleStartSession = useCallback((subjectId: string | null, durationMins: number) => {
+  const handleStartSession = useCallback((subjectId: string | null, durationMins: number, tagId: string | null) => {
     setShowNewSession(false)
     setActiveId(subjectId)
     setTimerSubject(subjectId)
+    setTimerTagId(tagId)
     setTimerDuration('work', durationMins)
     setTimerMode('work')
     startTimer()
-  }, [setActiveId, setTimerSubject, setTimerDuration, setTimerMode, startTimer])
+  }, [setActiveId, setTimerSubject, setTimerTagId, setTimerDuration, setTimerMode, startTimer])
 
   // Restore Supabase session once on mount
   useEffect(() => { init() }, [init])
