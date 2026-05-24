@@ -1,6 +1,8 @@
+import { useState, useRef, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
+import { SUBJECT_COLORS } from '../lib/subjects'
 
 // ── icons ─────────────────────────────────────────────────────────────────
 
@@ -108,8 +110,45 @@ export default function Sidebar({
   user: _user, initials, email, onSignOut, activeView, onSettings, collapsed, onToggle,
 }: SidebarProps) {
   const subjects      = useSubjectStore(s => s.subjects)
+  const addSubject    = useSubjectStore(s => s.addSubject)
   const loginDates    = useStreakStore(s => s.loginDates)
   const currentStreak = calcCurrentStreak(new Set(loginDates))
+
+  const [showAddPanel, setShowAddPanel] = useState(false)
+  const [newName,      setNewName]      = useState('')
+  const [newColor,     setNewColor]     = useState(SUBJECT_COLORS[0])
+  const [addError,     setAddError]     = useState<string | null>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+
+  // Auto-focus the name input whenever the panel opens
+  useEffect(() => {
+    if (showAddPanel) nameRef.current?.focus()
+  }, [showAddPanel])
+
+  function toggleAddPanel() {
+    setShowAddPanel(p => !p)
+    setNewName('')
+    setNewColor(SUBJECT_COLORS[0])
+    setAddError(null)
+  }
+
+  async function handleAddSubject() {
+    if (!newName.trim()) return
+    setAddError(null)
+    const subject = await addSubject(newName.trim(), newColor)
+    if (subject) {
+      setShowAddPanel(false)
+      setNewName('')
+      setNewColor(SUBJECT_COLORS[0])
+    } else {
+      setAddError('Could not save — check your connection.')
+    }
+  }
+
+  function handleAddKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter')  handleAddSubject()
+    if (e.key === 'Escape') toggleAddPanel()
+  }
 
   return (
     <nav className="v2-nav">
@@ -181,7 +220,64 @@ export default function Sidebar({
       {!collapsed && (
         <div className="nav-section-hd">
           <span className="nav-section-label">Subjects</span>
-          <button className="nav-section-ic" title="New subject"><IcPlus /></button>
+          <button
+            className="nav-section-ic"
+            title={showAddPanel ? 'Cancel' : 'New subject'}
+            onClick={toggleAddPanel}
+          >
+            <IcPlus />
+          </button>
+        </div>
+      )}
+
+      {showAddPanel && !collapsed && (
+        <div style={{ padding: '6px 8px 8px', borderBottom: '1px solid var(--hairline)' }}>
+          <input
+            ref={nameRef}
+            type="text"
+            value={newName}
+            onChange={e => { setNewName(e.target.value); setAddError(null) }}
+            onKeyDown={handleAddKeyDown}
+            placeholder="Subject name"
+            maxLength={40}
+            style={{
+              width: '100%',
+              background: 'var(--surface-3)',
+              border: '1px solid var(--hairline-2)',
+              borderRadius: 6,
+              padding: '5px 8px',
+              fontSize: 12,
+              color: 'var(--text)',
+              outline: 'none',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
+            {SUBJECT_COLORS.map(c => (
+              <button
+                key={c}
+                onClick={() => setNewColor(c)}
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: '50%',
+                  background: c,
+                  border: newColor === c ? '2px solid var(--text)' : '2px solid transparent',
+                  outline: newColor === c ? '2px solid var(--surface-3)' : 'none',
+                  outlineOffset: 1,
+                  padding: 0,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+          {addError && (
+            <span style={{ display: 'block', marginTop: 4, fontSize: 11, color: '#f87171' }}>
+              {addError}
+            </span>
+          )}
         </div>
       )}
 
