@@ -25,6 +25,8 @@ const useSubjectMasteryStore = create<SubjectMasteryState>()(
       subjectXP: {},
 
       addSubjectXP(subjectId, xp) {
+        if (!subjectId || typeof subjectId !== 'string') return
+        if (!Number.isInteger(xp) || xp < 0) return
         const prev     = get().subjectXP[subjectId] ?? 0
         const newTotal = prev + xp
         set(state => ({
