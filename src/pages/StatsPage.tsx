@@ -312,30 +312,85 @@ export default function StatsPage() {
     })
   }, [sessions])
 
-  // ── daily bar chart ────────────────────────────────────────────────────────
-  const dailyBars = useMemo(() => {
-    const numDays = range === 'week' ? 7 : range === 'month' ? 30 : range === 'quarter' ? 90 : range === 'year' ? 180 : 30
-    return Array.from({ length: numDays }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (numDays - 1 - i))
-      const ds  = toLocalDateStr(d)
-      const daySessions = workSessions.filter(s => dateOf(s.completedAt) === ds)
-      const mins = daySessions.reduce((sum, s) => sum + sessionMins(s), 0)
-      return { ds, d: new Date(d), mins, isWeekend: isWeekendDate(d), isToday: i === numDays - 1 }
+  // ── chart bars (daily for week/month/quarter; weekly for year/all) ─────────
+  type ChartBar = {
+    label: string     // x-axis date label
+    mins:  number
+    isWeekend: boolean
+    isHighlight: boolean  // today (daily) or current week (weekly)
+    isWeekly: boolean
+  }
+
+  const chartBars = useMemo<ChartBar[]>(() => {
+    const useWeekly = range === 'year' || range === 'all'
+
+    if (!useWeekly) {
+      const numDays = range === 'week' ? 7 : range === 'month' ? 30 : 90
+      return Array.from({ length: numDays }, (_, i) => {
+        const d = new Date()
+        d.setDate(d.getDate() - (numDays - 1 - i))
+        const ds = toLocalDateStr(d)
+        const mins = workSessions
+          .filter(s => dateOf(s.completedAt) === ds)
+          .reduce((sum, s) => sum + sessionMins(s), 0)
+        return {
+          label:       `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`,
+          mins,
+          isWeekend:   isWeekendDate(d),
+          isHighlight: i === numDays - 1,
+          isWeekly:    false,
+        }
+      })
+    }
+
+    // Weekly aggregation: last 52 weeks (year) or since earliest session (all)
+    const WEEKS = range === 'year' ? 52 : (() => {
+      if (workSessions.length === 0) return 52
+      const earliest = workSessions.reduce(
+        (min, s) => Math.min(min, new Date(s.completedAt).getTime()),
+        Date.now()
+      )
+      const msAgo = Date.now() - earliest
+      return Math.min(260, Math.ceil(msAgo / (7 * 86_400_000)) + 1)
+    })()
+
+    // Find the Monday of the current week
+    const today = new Date()
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+    weekStart.setHours(0, 0, 0, 0)
+
+    return Array.from({ length: WEEKS }, (_, i) => {
+      const wStart = new Date(weekStart)
+      wStart.setDate(weekStart.getDate() - (WEEKS - 1 - i) * 7)
+      const wEnd = new Date(wStart)
+      wEnd.setDate(wStart.getDate() + 7)
+
+      const mins = workSessions
+        .filter(s => {
+          const t = new Date(s.completedAt)
+          return t >= wStart && t < wEnd
+        })
+        .reduce((sum, s) => sum + sessionMins(s), 0)
+
+      return {
+        label:       `${MONTH_NAMES[wStart.getMonth()]} ${wStart.getDate()}`,
+        mins,
+        isWeekend:   false,
+        isHighlight: i === WEEKS - 1,
+        isWeekly:    true,
+      }
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workSessions, range])
 
-  const maxDayMins = useMemo(() => Math.max(60, ...dailyBars.map(d => d.mins)), [dailyBars])
-  const avgDayMins = useMemo(() => {
-    const active = dailyBars.filter(d => d.mins > 0)
-    return active.length > 0 ? Math.round(active.reduce((s, d) => s + d.mins, 0) / active.length) : 0
-  }, [dailyBars])
-
-  // Y-axis labels (nice round hours)
-  const yMax = useMemo(() => {
-    const hours = Math.ceil(maxDayMins / 60)
-    return Math.max(1, hours)
-  }, [maxDayMins])
+  const maxBarMins = useMemo(() => Math.max(60, ...chartBars.map(d => d.mins)), [chartBars])
+  const avgBarMins = useMemo(() => {
+    const active = chartBars.filter(d => d.mins > 0)
+    return active.length > 0
+      ? Math.round(active.reduce((s, d) => s + d.mins, 0) / active.length)
+      : 0
+  }, [chartBars])
+  const yMax = useMemo(() => Math.max(1, Math.ceil(maxBarMins / 60)), [maxBarMins])
 
   // ── year heatmap (52 weeks) ────────────────────────────────────────────────
   const { heatWeeks, heatMonthLabels, activeDays, longestHeatStreak } = useMemo(() => {
@@ -750,15 +805,17 @@ export default function StatsPage() {
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div className="s-legend">
-                <span className="lg-key"><span className="lg-swatch"/> Weekday</span>
-                <span className="lg-key"><span className="lg-swatch muted"/> Weekend</span>
-                {avgDayMins > 0 && <span className="lg-key"><span className="lg-swatch line"/> avg</span>}
+                <span className="lg-key"><span className="lg-swatch"/> {chartBars[0]?.isWeekly ? 'Week' : 'Weekday'}</span>
+                {!chartBars[0]?.isWeekly && (
+                  <span className="lg-key"><span className="lg-swatch muted"/> Weekend</span>
+                )}
+                {avgBarMins > 0 && <span className="lg-key"><span className="lg-swatch line"/> avg</span>}
               </div>
               <span className="sc-meta">{rangeLabel.toUpperCase()}</span>
             </div>
           </div>
 
-          {dailyBars.length === 0 || totalMins === 0 ? (
+          {chartBars.length === 0 || totalMins === 0 ? (
             <div className="s-empty">No focus sessions in this period</div>
           ) : (
             <>
@@ -782,25 +839,23 @@ export default function StatsPage() {
                   ))}
 
                   {/* Avg line */}
-                  {avgDayMins > 0 && (
+                  {avgBarMins > 0 && (
                     <div
                       className="s-avg-line"
-                      style={{ top: `${(1 - avgDayMins / (yMax * 60)) * 100}%` }}
+                      style={{ top: `${(1 - avgBarMins / (yMax * 60)) * 100}%` }}
                     >
-                      <span className="lbl">avg {fmtMinsShort(avgDayMins)}</span>
+                      <span className="lbl">avg {fmtMinsShort(avgBarMins)}</span>
                     </div>
                   )}
 
                   <div className="s-bars">
-                    {dailyBars.map((day, i) => {
+                    {chartBars.map((day, i) => {
                       const heightPct = (day.mins / (yMax * 60)) * 100
-                      const cls = day.isToday ? 'today' : day.isWeekend ? 'weekend' : ''
-                      const label = `${MONTH_NAMES[day.d.getMonth()]} ${day.d.getDate()}`
-                      const dayName = DAY_NAMES[day.d.getDay()]
+                      const cls = day.isHighlight ? 'today' : day.isWeekend ? 'weekend' : ''
                       return (
                         <div key={i} className="s-bar-col">
                           <span className="s-bar-tip">
-                            {fmtMinsShort(day.mins)} · {dayName} {label}
+                            {fmtMinsShort(day.mins)} · {day.label}
                           </span>
                           <div
                             className={`s-bar${cls ? ' ' + cls : ''}`}
@@ -816,14 +871,13 @@ export default function StatsPage() {
               {/* X-axis ticks */}
               <div className="s-x-axis">
                 {(() => {
-                  const n = dailyBars.length
+                  const n = chartBars.length
                   const ticks = n <= 7  ? [0, n - 1]
                     : n <= 30 ? [0, Math.floor(n / 3), Math.floor(2 * n / 3), n - 1]
                     : [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor(3 * n / 4), n - 1]
-                  return ticks.map(i => {
-                    const d = dailyBars[i].d
-                    return <span key={i}>{MONTH_NAMES[d.getMonth()].toUpperCase()} {d.getDate()}</span>
-                  })
+                  return ticks.map(i => (
+                    <span key={i}>{chartBars[i].label.toUpperCase()}</span>
+                  ))
                 })()}
               </div>
             </>
