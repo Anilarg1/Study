@@ -22,6 +22,7 @@ interface TimerState {
   completedWork:   number
   expiresAt:       string | null
   subjectId:       string | null
+  tagId:           string | null
   customDurations: TimerDurations
 
   start(): void
@@ -29,6 +30,7 @@ interface TimerState {
   reset(): void
   setMode(mode: TimerMode): void
   setSubjectId(id: string | null): void
+  setTagId(id: string | null): void
   setDuration(mode: TimerMode, minutes: number): void
   tick(): boolean
   skip(): void
@@ -45,6 +47,7 @@ const useTimerStore = create<TimerState>()(
       completedWork:   0,
       expiresAt:       null,
       subjectId:       null,
+      tagId:           null,
       customDurations: { ...DEFAULT_DURATIONS },
 
       start() {
@@ -72,6 +75,10 @@ const useTimerStore = create<TimerState>()(
 
       setSubjectId(id) {
         set({ subjectId: id })
+      },
+
+      setTagId(id) {
+        set({ tagId: id })
       },
 
       setDuration(mode, minutes) {
@@ -133,7 +140,7 @@ const useTimerStore = create<TimerState>()(
     }),
     {
       name:    'notebook-timer',
-      version: 2,
+      version: 3,
       partialize: (state): Partial<TimerState> => ({
         mode:            state.mode,
         remaining:       state.running ? state._calcRemaining() : state.remaining,
@@ -141,6 +148,7 @@ const useTimerStore = create<TimerState>()(
         completedWork:   state.completedWork,
         expiresAt:       state.expiresAt,
         subjectId:       state.subjectId,
+        tagId:           state.tagId,
         customDurations: state.customDurations,
       }),
     }
