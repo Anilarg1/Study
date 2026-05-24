@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import type { User, AuthError } from '@supabase/supabase-js'
-import { supabase, fetchUserXP, fetchLoginDates, fetchSubjects } from '../lib/supabase'
+import { supabase, fetchUserXP, fetchLoginDates, fetchSubjects, fetchTags } from '../lib/supabase'
 import { setCurrentUserId } from '../lib/currentUser'
 import useXPStore      from './useXPStore'
 import useStreakStore  from './useStreakStore'
 import useSubjectStore from './useSubjectStore'
+import useTagStore     from './useTagStore'
 
 interface AuthState {
   user:    User | null
@@ -68,14 +69,16 @@ const useAuthStore = create<AuthState>()((set, get) => ({
     useXPStore.getState()._reset()
     useStreakStore.getState()._reset()
     useSubjectStore.getState()._reset()
+    useTagStore.getState()._reset()
     await supabase.auth.signOut()
   },
 
   async _syncFromSupabase(userId) {
-    const [xpResult, datesResult, subjectsResult] = await Promise.all([
+    const [xpResult, datesResult, subjectsResult, tagsResult] = await Promise.all([
       fetchUserXP(userId),
       fetchLoginDates(userId),
       fetchSubjects(userId),
+      fetchTags(userId),
     ])
 
     if (xpResult.data) {
@@ -86,6 +89,9 @@ const useAuthStore = create<AuthState>()((set, get) => ({
     }
     if (subjectsResult.data) {
       useSubjectStore.getState()._importFromSupabase(subjectsResult.data)
+    }
+    if (tagsResult.data) {
+      useTagStore.getState()._importFromSupabase(tagsResult.data)
     }
   },
 }))
