@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import useXPStore      from '../store/useXPStore'
 import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 import useSubjectStore from '../store/useSubjectStore'
@@ -274,6 +275,128 @@ function LevelCard() {
   )
 }
 
+// ── week card ─────────────────────────────────────────────────────────────
+
+function WeekCard({ sessions }: { sessions: SessionEntry[] }) {
+  const days = useMemo(() => {
+    const result: { label: string; dateStr: string; mins: number }[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = toLocalDateStr(d)
+      const label   = d.toLocaleDateString('en-US', { weekday: 'short' })
+      const daySessions = sessions.filter(
+        s => s.type === 'work' && dateOf(s.completedAt) === dateStr,
+      )
+      const mins = daySessions.reduce(
+        (sum, s) => sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0,
+      )
+      result.push({ label, dateStr, mins })
+    }
+    return result
+  }, [sessions])
+
+  const totalMins = days.reduce((sum, d) => sum + d.mins, 0)
+  const maxMins   = Math.max(1, ...days.map(d => d.mins))
+
+  return (
+    <div className="v2-card">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }}>
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 17V11M12 17V8M15 17v-4"/>
+          </svg>
+          This week
+        </span>
+        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-mute)' }}>
+          {totalMins === 0 ? '—' : fmtDuration(totalMins)} total
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 52, marginBottom: 6 }}>
+        {days.map(({ label, dateStr, mins }) => {
+          const height = Math.round((mins / maxMins) * 44) + 4
+          return (
+            <div key={dateStr} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{
+                width: '100%',
+                background: mins > 0 ? 'var(--accent)' : 'var(--surface-3)',
+                borderRadius: 3,
+                height,
+                minHeight: 4,
+                opacity: mins > 0 ? 0.85 : 0.3,
+                transition: 'height 300ms ease',
+              }} />
+              <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 8.5, color: 'var(--text-faint)' }}>
+                {label[0]}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {totalMins === 0 ? (
+        <div style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '8px 0' }}>
+          No focus sessions this week yet
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
+          <span>{days[0].label}</span>
+          <span>Today</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── all-time card ─────────────────────────────────────────────────────────
+
+function AllTimeCard({ sessions }: { sessions: SessionEntry[] }) {
+  const totalXP      = useXPStore(s => s.totalXP)
+  const workSessions = useMemo(() => sessions.filter(s => s.type === 'work'), [sessions])
+  const totalMins    = useMemo(() =>
+    workSessions.reduce((sum, s) =>
+      sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0,
+    ), [workSessions],
+  )
+
+  return (
+    <div className="v2-card">
+      <div style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500, marginBottom: 14 }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }}>
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        All time
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Focus time</span>
+          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>
+            {totalMins === 0 ? '—' : fmtDuration(totalMins)}
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Sessions</span>
+          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>
+            {workSessions.length}
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Total XP</span>
+          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13, color: 'var(--xp)', fontWeight: 500 }}>
+            {totalXP.toLocaleString()}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12, fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>
+        Showing last {sessions.length} sessions
+      </div>
+    </div>
+  )
+}
+
 // ── recent sessions ───────────────────────────────────────────────────────
 
 function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
@@ -357,16 +480,27 @@ export default function RightRail() {
         ))}
       </div>
 
-      <TodayCard sessions={sessions} />
-      <StreakCard />
-      <LevelCard />
+      {tab === 'today' && (
+        <>
+          <TodayCard sessions={sessions} />
+          <StreakCard />
+          <LevelCard />
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>Recent sessions</span>
-        <span style={{ fontSize: 11, color: 'var(--text-mute)', cursor: 'pointer' }}>View all →</span>
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
+            <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>Recent sessions</span>
+            <Link
+              to="/stats"
+              style={{ fontSize: 11, color: 'var(--text-mute)', textDecoration: 'none' }}
+            >
+              View all →
+            </Link>
+          </div>
+          <RecentSessions sessions={sessions} />
+        </>
+      )}
 
-      <RecentSessions sessions={sessions} />
+      {tab === 'week' && <WeekCard sessions={sessions} />}
+      {tab === 'all'  && <AllTimeCard sessions={sessions} />}
 
     </aside>
   )
