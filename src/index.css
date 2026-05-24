@@ -1,3 +1,4 @@
+@import './styles/pages.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -2073,3 +2074,16 @@
 @keyframes login-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Page placeholder (stub pages) ────────────────────────────────────────── */
+.page-placeholder {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.page-placeholder span { font-size: 28px; }

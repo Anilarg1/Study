@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import useSubjectStore from '../store/useSubjectStore'
 import useTagStore     from '../store/useTagStore'
+import { useTagPicker, AddTagForm } from './TagPicker'
 
 const PRESETS = [25, 50, 90]
 
@@ -14,21 +15,17 @@ export default function NewSessionModal({ running, onStart, onCancel }: NewSessi
   const subjects = useSubjectStore(s => s.subjects)
   const activeId = useSubjectStore(s => s.activeId)
   const tags     = useTagStore(s => s.tags)
-  const addTag   = useTagStore(s => s.addTag)
 
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(activeId)
   const [selectedTagId,     setSelectedTagId]     = useState<string | null>(null)
   const [duration,          setDuration]          = useState(25)
 
-  const [showAddTag,  setShowAddTag]  = useState(false)
-  const [newTagName,  setNewTagName]  = useState('')
-  const [tagAddError, setTagAddError] = useState<string | null>(null)
-  const tagInputRef = useRef<HTMLInputElement>(null)
-
-  // Focus tag input when panel opens
-  useEffect(() => {
-    if (showAddTag) tagInputRef.current?.focus()
-  }, [showAddTag])
+  const {
+    newTagName, setNewTagName,
+    tagAddError,
+    showAddTag, setShowAddTag,
+    handleAddTag, dismissAddTag,
+  } = useTagPicker(tagId => setSelectedTagId(tagId))
 
   // Close on Escape
   useEffect(() => {
@@ -41,20 +38,6 @@ export default function NewSessionModal({ running, onStart, onCancel }: NewSessi
 
   function adjust(delta: number) {
     setDuration(d => Math.max(1, Math.min(180, d + delta)))
-  }
-
-  async function handleAddTag() {
-    const name = newTagName.trim()
-    if (!name) return
-    setTagAddError(null)
-    const tag = await addTag(name)
-    if (tag) {
-      setSelectedTagId(tag.id)
-      setNewTagName('')
-      setShowAddTag(false)
-    } else {
-      setTagAddError('Could not save — check your connection.')
-    }
   }
 
   return (
@@ -170,48 +153,27 @@ export default function NewSessionModal({ running, onStart, onCancel }: NewSessi
               </button>
             ))}
 
-            {showAddTag ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%', marginTop: tags.length > 0 ? 4 : 0 }}>
-                <input
-                  ref={tagInputRef}
-                  type="text"
-                  value={newTagName}
-                  onChange={e => { setNewTagName(e.target.value); setTagAddError(null) }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter')  handleAddTag()
-                    if (e.key === 'Escape') { e.stopPropagation(); setShowAddTag(false); setNewTagName(''); setTagAddError(null) }
-                  }}
-                  placeholder="Tag name (e.g. revision)"
-                  maxLength={30}
-                  style={{
-                    background: 'var(--surface-3)',
-                    border: '1px solid var(--hairline-2)',
-                    borderRadius: 6,
-                    padding: '5px 8px',
-                    fontSize: 12,
-                    color: 'var(--text)',
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                  }}
-                />
-                {tagAddError && (
-                  <span style={{ fontSize: 11, color: '#f87171' }}>{tagAddError}</span>
-                )}
-              </div>
-            ) : (
-              <button
-                className="chip chip-add"
-                onClick={() => setShowAddTag(true)}
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
-                Add tag
-              </button>
-            )}
+            <button
+              className="chip chip-add"
+              onClick={() => setShowAddTag(!showAddTag)}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Add tag
+            </button>
           </div>
+          {showAddTag && (
+            <div style={{ marginTop: 8 }}>
+              <AddTagForm
+                value={newTagName}
+                onChange={setNewTagName}
+                onSubmit={handleAddTag}
+                onDismiss={dismissAddTag}
+                error={tagAddError}
+              />
+            </div>
+          )}
         </div>
 
         {/* ── duration ── */}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
@@ -96,20 +97,20 @@ function IcChevron({ right }: { right?: boolean }) {
 // ── component ─────────────────────────────────────────────────────────────
 
 interface SidebarProps {
-  user:       User
-  initials:   string
-  email:      string
-  onSignOut:  () => void
-  activeView: string
-  onSettings: () => void
-  collapsed:  boolean
-  onToggle:   () => void
+  user:      User
+  initials:  string
+  email:     string
+  onSignOut: () => void
+  collapsed: boolean
+  onToggle:  () => void
 }
 
 export default function Sidebar({
-  user, initials, email, onSignOut, activeView, onSettings, collapsed, onToggle,
+  user, initials, email, onSignOut, collapsed, onToggle,
 }: SidebarProps) {
   const displayName = (user.user_metadata?.display_name as string | undefined) || email.split('@')[0]
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const subjects      = useSubjectStore(s => s.subjects)
   const addSubject    = useSubjectStore(s => s.addSubject)
@@ -190,7 +191,11 @@ export default function Sidebar({
         </div>
       )}
 
-      <button className="nav-item active" title="Timer">
+      <button
+        className={`nav-item${location.pathname === '/' ? ' active' : ''}`}
+        title="Timer"
+        onClick={() => navigate('/')}
+      >
         <IcTimer />
         <span className="nav-label">Timer</span>
         <span className="ni-shortcut">G T</span>
@@ -317,8 +322,8 @@ export default function Sidebar({
 
       {/* ── Settings ── */}
       <button
-        className={`nav-item${activeView === 'settings' ? ' active' : ''}`}
-        onClick={onSettings}
+        className={`nav-item${location.pathname === '/settings' ? ' active' : ''}`}
+        onClick={() => navigate('/settings')}
         title="Settings"
       >
         <IcSettings />

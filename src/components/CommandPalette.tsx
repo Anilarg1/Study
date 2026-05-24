@@ -50,7 +50,7 @@ interface CmdItem {
 interface CommandPaletteProps {
   open:         boolean
   onClose:      () => void
-  onNavigate:   (view: 'timer' | 'settings') => void
+  onNavigate:   (path: string) => void
   onNewSession: () => void
 }
 
@@ -86,13 +86,13 @@ export default function CommandPalette({
       label:  'Go to Timer',
       hint:   'G T',
       icon:   <IcTimer />,
-      action: () => { onNavigate('timer'); onClose() },
+      action: () => { onNavigate('/');         onClose() },
     },
     {
       id:     'goto-settings',
       label:  'Go to Settings',
       icon:   <IcGear />,
-      action: () => { onNavigate('settings'); onClose() },
+      action: () => { onNavigate('/settings'); onClose() },
     },
   ]
 
