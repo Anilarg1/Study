@@ -118,6 +118,7 @@ export default function Sidebar({
   const [newName,      setNewName]      = useState('')
   const [newColor,     setNewColor]     = useState(SUBJECT_COLORS[0])
   const [addError,     setAddError]     = useState<string | null>(null)
+  const [submitting,   setSubmitting]   = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
   // Auto-focus the name input whenever the panel opens
@@ -125,17 +126,33 @@ export default function Sidebar({
     if (showAddPanel) nameRef.current?.focus()
   }, [showAddPanel])
 
+  useEffect(() => {
+    if (collapsed) {
+      setShowAddPanel(false)
+      setNewName('')
+      setNewColor(SUBJECT_COLORS[0])
+      setAddError(null)
+      setSubmitting(false)
+    }
+  }, [collapsed])
+
   function toggleAddPanel() {
-    setShowAddPanel(p => !p)
-    setNewName('')
-    setNewColor(SUBJECT_COLORS[0])
-    setAddError(null)
+    setShowAddPanel(p => {
+      if (p) {          // closing — reset form
+        setNewName('')
+        setNewColor(SUBJECT_COLORS[0])
+        setAddError(null)
+      }
+      return !p
+    })
   }
 
   async function handleAddSubject() {
-    if (!newName.trim()) return
+    if (!newName.trim() || submitting) return
+    setSubmitting(true)
     setAddError(null)
     const subject = await addSubject(newName.trim(), newColor)
+    setSubmitting(false)
     if (subject) {
       setShowAddPanel(false)
       setNewName('')
@@ -145,8 +162,8 @@ export default function Sidebar({
     }
   }
 
-  function handleAddKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter')  handleAddSubject()
+  async function handleAddKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter')  await handleAddSubject()
     if (e.key === 'Escape') toggleAddPanel()
   }
 
