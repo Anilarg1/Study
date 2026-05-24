@@ -1,0 +1,63 @@
+/*
+ * Page-level component styles
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Convention:
+ *   • Each feature page gets its own section in this file (or its own
+ *     src/styles/<feature>.css imported below).
+ *   • Use CSS classes, NOT inline style={} objects, for any rule that needs
+ *     a media query, hover state, or animation.
+ *   • CSS variable reference (defined in src/index.css):
+ *       Layout:    --bg, --surface-1, --surface-2, --surface-3
+ *       Text:      --text, --text-dim, --text-mute, --text-faint
+ *       Borders:   --hairline, --hairline-2
+ *       Accent:    --accent (focus mode: #8b85ff)
+ *       Mode:      --focus (#8b85ff), --short (#4cb782), --long (#5e9eea)
+ *       Gamified:  --xp, --streak
+ *   • Mobile breakpoint: max-width 900px
+ *       @media (max-width: 900px) { ... }
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Stats page (/stats) ─────────────────────────────────────────────────── */
+.stats-page {
+  grid-area: main;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+/* ── Notes page (/notes) ─────────────────────────────────────────────────── */
+.notes-page {
+  grid-area: main;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  overflow: hidden;
+}
+
+/* ── Flashcards page (/flashcards) ──────────────────────────────────────── */
+.flashcards-page {
+  grid-area: main;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+/* ── Timetable page (/timetable) ─────────────────────────────────────────── */
+.timetable-page {
+  grid-area: main;
+  overflow: auto;
+}
+
+/* ── Past Papers page (/past-papers) ─────────────────────────────────────── */
+.past-papers-page {
+  grid-area: main;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+/* ── Mobile overrides (< 900px) ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /*
+   * Mobile work goes here when the mobile UI task begins.
+   * At 900px: hide right rail, collapse sidebar, show bottom tab bar.
+   */
+}
