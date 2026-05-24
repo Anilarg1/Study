@@ -14,12 +14,19 @@ export interface Subject {
   created_at: string
 }
 
+export interface Tag {
+  id:         string
+  name:       string
+  created_at: string
+}
+
 export interface SessionEntry {
   id:           string
   type:         TimerMode
   completedAt:  string
   xp:           number
   subjectId:    string | null
+  tagId:        string | null
   durationSecs: number | null
 }
 
