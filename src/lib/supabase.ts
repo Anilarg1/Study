@@ -181,3 +181,38 @@ export async function removeTag(tagId: string): Promise<PostgrestError | null> {
     .eq('id', tagId)
   return error
 }
+
+// ─── Subject XP helpers ───────────────────────────────────────────────────────
+
+/** Fetch all subject XP rows for a user. */
+export async function fetchSubjectXP(
+  userId: string,
+): Promise<{ data: { subjectId: string; xp: number }[]; error: PostgrestError | null }> {
+  const { data, error } = await supabase
+    .from('subject_xp')
+    .select('subject_id, xp')
+    .eq('user_id', userId)
+  if (error || !data) return { data: [], error }
+  return {
+    data: data.map(r => ({ subjectId: r.subject_id as string, xp: r.xp as number })),
+    error: null,
+  }
+}
+
+/**
+ * Upsert the total XP for a subject (overwrites, does not increment).
+ * Call fire-and-forget after updating local state.
+ */
+export async function upsertSubjectXP(
+  userId: string,
+  subjectId: string,
+  totalXP: number,
+): Promise<PostgrestError | null> {
+  const { error } = await supabase
+    .from('subject_xp')
+    .upsert(
+      { user_id: userId, subject_id: subjectId, xp: totalXP, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,subject_id' },
+    )
+  return error
+}
