@@ -3,8 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
+import useXPStore from '../store/useXPStore'
+import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import { SUBJECT_COLORS } from '../lib/subjects'
 import GoalsPanel from './GoalsPanel'
+import RankBadge from './RankBadge'
+import MasteryBadge from './MasteryBadge'
+import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
 
 // ── icons ─────────────────────────────────────────────────────────────────
 
@@ -117,6 +122,12 @@ export default function Sidebar({
   const addSubject    = useSubjectStore(s => s.addSubject)
   const loginDates    = useStreakStore(s => s.loginDates)
   const currentStreak = calcCurrentStreak(new Set(loginDates))
+
+  const totalXP   = useXPStore(s => s.totalXP)
+  const subjectXP = useSubjectMasteryStore(s => s.subjectXP)
+  const rank      = getRankFromXP(totalXP)
+  const rankPct   = Math.round(getRankProgress(totalXP) * 100)
+  const xpToNext  = getXPToNextRank(totalXP)
 
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [newName,      setNewName]      = useState('')
@@ -316,12 +327,24 @@ export default function Sidebar({
         </span>
       )}
 
-      {subjects.map(s => (
-        <button key={s.id} className="nav-item" title={s.name}>
-          <span className="subj-dot" style={{ background: s.color }} />
-          <span className="nav-label">{s.name}</span>
-        </button>
-      ))}
+      {subjects.map(s => {
+        const sXP     = subjectXP[s.id] ?? 0
+        const mastery = sXP > 0 ? getMasteryFromXP(sXP) : null
+        return (
+          <button key={s.id} className="nav-item" title={s.name}>
+            <span className="subj-dot" style={{ background: s.color }} />
+            <span className="nav-label">{s.name}</span>
+            {!collapsed && mastery && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto' }}>
+                <MasteryBadge masteryIndex={mastery.index} size={14} />
+                <span style={{ fontSize: 9, color: mastery.color, fontWeight: 600, letterSpacing: '0.5px' }}>
+                  {mastery.name.toUpperCase()}
+                </span>
+              </span>
+            )}
+          </button>
+        )
+      })}
 
       {!collapsed && <GoalsPanel />}
 
@@ -336,6 +359,36 @@ export default function Sidebar({
         <IcSettings />
         <span className="nav-label">Settings</span>
       </button>
+
+      {/* ── Rank widget ── */}
+      {!collapsed && (
+        <div style={{
+          padding: '8px 10px 10px',
+          borderTop: '1px solid var(--hairline)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <RankBadge tierIndex={rank.tierIndex} size={32} subLevel={rank.subLevel} showPips={false} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: rank.color, lineHeight: 1.2 }}>
+                {rank.label}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>
+                {xpToNext > 0 ? `${xpToNext.toLocaleString()} XP to next rank` : 'Max rank'}
+              </div>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div style={{ marginTop: 6, height: 2, background: 'var(--surface-3)', borderRadius: 1 }}>
+            <div style={{
+              height: '100%',
+              width: `${rankPct}%`,
+              background: rank.color,
+              borderRadius: 1,
+              transition: 'width 600ms ease',
+            }} />
+          </div>
+        </div>
+      )}
 
       {/* ── User row ── */}
       <div className="nav-user">

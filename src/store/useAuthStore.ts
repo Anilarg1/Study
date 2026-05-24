@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 import type { User, AuthError } from '@supabase/supabase-js'
-import { supabase, fetchUserXP, fetchLoginDates, fetchSubjects, fetchTags, fetchSessions } from '../lib/supabase'
+import { supabase, fetchUserXP, fetchLoginDates, fetchSubjects, fetchTags, fetchSessions, fetchSubjectXP } from '../lib/supabase'
 import { setCurrentUserId } from '../lib/currentUser'
 import useXPStore      from './useXPStore'
 import useStreakStore  from './useStreakStore'
 import useSubjectStore from './useSubjectStore'
-import useTagStore     from './useTagStore'
+import useTagStore             from './useTagStore'
+import useSubjectMasteryStore from './useSubjectMasteryStore'
 
 interface AuthState {
   user:    User | null
@@ -74,16 +75,18 @@ const useAuthStore = create<AuthState>()((set, get) => ({
     useStreakStore.getState()._reset()
     useSubjectStore.getState()._reset()
     useTagStore.getState()._reset()
+    useSubjectMasteryStore.getState()._reset()
     await supabase.auth.signOut()
   },
 
   async _syncFromSupabase(userId) {
-    const [xpResult, datesResult, subjectsResult, tagsResult, sessionsResult] = await Promise.all([
+    const [xpResult, datesResult, subjectsResult, tagsResult, sessionsResult, subjectXPResult] = await Promise.all([
       fetchUserXP(userId),
       fetchLoginDates(userId),
       fetchSubjects(userId),
       fetchTags(userId),
       fetchSessions(userId, { limit: 200 }),
+      fetchSubjectXP(userId),
     ])
 
     if (xpResult.data) {
@@ -100,6 +103,9 @@ const useAuthStore = create<AuthState>()((set, get) => ({
     }
     if (sessionsResult.data.length > 0) {
       useXPStore.getState()._importSessionsFromSupabase(sessionsResult.data)
+    }
+    if (subjectXPResult.data.length > 0) {
+      useSubjectMasteryStore.getState()._importFromSupabase(subjectXPResult.data)
     }
   },
 }))

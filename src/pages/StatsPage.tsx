@@ -2,6 +2,10 @@ import { useState, useMemo } from 'react'
 import useXPStore         from '../store/useXPStore'
 import useSubjectStore    from '../store/useSubjectStore'
 import useStreakStore, { toLocalDateStr } from '../store/useStreakStore'
+import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
+import RankBadge    from '../components/RankBadge'
+import MasteryBadge from '../components/MasteryBadge'
+import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
 import type { SessionEntry, Subject } from '../types'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -255,6 +259,82 @@ const HIST_BUCKETS = [
   { label: '60',  max: 60       },
   { label: '90+', max: Infinity },
 ]
+
+// ─── progression card ─────────────────────────────────────────────────────────
+
+function ProgressionCard() {
+  const totalXP   = useXPStore(s => s.totalXP)
+  const sessions  = useXPStore(s => s.sessions)
+  const subjects  = useSubjectStore(s => s.subjects)
+  const subjectXP = useSubjectMasteryStore(s => s.subjectXP)
+
+  const rank     = getRankFromXP(totalXP)
+  const pct      = Math.round(getRankProgress(totalXP) * 100)
+  const toNext   = getXPToNextRank(totalXP)
+
+  // Total qualifying study hours (work sessions with durationSecs)
+  const totalHours = sessions
+    .filter(s => s.type === 'work' && s.durationSecs != null)
+    .reduce((sum, s) => sum + (s.durationSecs ?? 0) / 3600, 0)
+
+  return (
+    <div className="v2-card">
+      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', marginBottom: 14 }}>
+        Progression
+      </div>
+
+      {/* Global rank */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <RankBadge tierIndex={rank.tierIndex} size={64} subLevel={rank.subLevel} showPips={true} />
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: rank.color }}>{rank.label}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
+            {totalXP.toLocaleString()} XP · {totalHours.toFixed(1)}h studied
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>
+            {toNext > 0 ? `${toNext.toLocaleString()} XP to next rank` : 'Max rank reached'}
+          </div>
+        </div>
+      </div>
+
+      {/* Rank progress bar */}
+      <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginBottom: 20 }}>
+        <div style={{
+          height: '100%',
+          width:  `${pct}%`,
+          background: rank.color,
+          borderRadius: 2,
+          transition: 'width 600ms ease',
+        }} />
+      </div>
+
+      {/* Subject mastery table */}
+      {subjects.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 8 }}>
+            Subject Mastery
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {subjects.map(s => {
+              const sXP    = subjectXP[s.id] ?? 0
+              const mastery = getMasteryFromXP(sXP)
+              return (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="subj-dot" style={{ background: s.color, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 12, color: 'var(--text)' }}>{s.name}</span>
+                  <MasteryBadge masteryIndex={mastery.index} size={16} />
+                  <span style={{ fontSize: 11, color: mastery.color, fontWeight: 600, minWidth: 52, textAlign: 'right' }}>
+                    {mastery.name}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 // ─── main component ───────────────────────────────────────────────────────────
 
@@ -787,6 +867,9 @@ export default function StatsPage() {
             </div>
           </div>
         </section>
+
+        {/* ── PROGRESSION CARD ── */}
+        <ProgressionCard />
 
         {/* ── FOCUSED TIME BAR CHART ── */}
         <section className="sc" style={{ marginBottom: 12 }}>

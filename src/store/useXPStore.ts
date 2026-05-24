@@ -1,17 +1,21 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { xpToLevel } from '../utils/xp'
-import { XP_REWARDS } from '../utils/xp'
+import { calcSessionXP, getStreakMultiplier, XP_REWARDS } from '../utils/xp'
+import { getRankFromXP } from '../utils/progression'
 import { insertSession, upsertUserXP } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
+import useSubjectMasteryStore from './useSubjectMasteryStore'
+import useStreakStore, { calcCurrentStreak } from './useStreakStore'
 import type { TimerMode, SessionEntry } from '../types'
+import type { RankInfo } from '../utils/progression'
 
 const MAX_LOCAL_SESSIONS = 200
 
-interface AwardResult {
-  xp:       number
-  leveledUp: boolean
-  newLevel:  number
+export interface AwardResult {
+  xp:        number
+  leveledUp: boolean   // kept for backward compat — true when rank tier changes
+  newLevel:  number    // kept for backward compat — rankIndex of new rank
+  rankUp:    { previous: RankInfo; current: RankInfo } | null
 }
 
 interface XPState {
@@ -36,13 +40,28 @@ const useXPStore = create<XPState>()(
       sessions: [],
 
       awardXP(sessionType, subjectId = null, durationSecs = null, tagId = null) {
-        const xp        = XP_REWARDS[sessionType] ?? 0
-        const prevXP    = get().totalXP
-        const prevLevel = xpToLevel(prevXP)
-        const newXP     = prevXP + xp
-        const newLevel  = xpToLevel(newXP)
-        const leveledUp = newLevel > prevLevel
+        // ── Calculate XP ──────────────────────────────────────────────────
+        let xp: number
+        if (sessionType === 'work' && durationSecs != null) {
+          const loginDates    = useStreakStore.getState().loginDates
+          const streak        = calcCurrentStreak(new Set(loginDates))
+          const multiplier    = getStreakMultiplier(streak)
+          xp = Math.floor(calcSessionXP(durationSecs) * multiplier)
+        } else {
+          // break sessions stay flat; work sessions without durationSecs get 0 XP
+          xp = XP_REWARDS[sessionType] ?? 0
+        }
 
+        // ── Rank before / after ───────────────────────────────────────────
+        const prevXP   = get().totalXP
+        const newXP    = prevXP + xp
+        const prevRank = getRankFromXP(prevXP)
+        const newRank  = getRankFromXP(newXP)
+        const rankUp   = newRank.rankIndex > prevRank.rankIndex
+          ? { previous: prevRank, current: newRank }
+          : null
+
+        // ── Update local state ────────────────────────────────────────────
         const entry: SessionEntry = {
           id:           crypto.randomUUID(),
           type:         sessionType,
@@ -58,13 +77,24 @@ const useXPStore = create<XPState>()(
           sessions: [...state.sessions, entry].slice(-MAX_LOCAL_SESSIONS),
         }))
 
+        // ── Award subject mastery (work sessions with a subject only) ─────
+        if (sessionType === 'work' && subjectId) {
+          useSubjectMasteryStore.getState().addSubjectXP(subjectId, xp)
+        }
+
+        // ── Persist to Supabase ───────────────────────────────────────────
         const userId = getCurrentUserId()
         if (userId) {
           insertSession(userId, entry).catch(console.error)
           upsertUserXP(userId, newXP).catch(console.error)
         }
 
-        return { xp, leveledUp, newLevel }
+        return {
+          xp,
+          leveledUp: rankUp !== null && rankUp.current.tierIndex !== rankUp.previous.tierIndex,
+          newLevel:  newRank.rankIndex,
+          rankUp,
+        }
       },
 
       _importFromSupabase(xp) {
@@ -84,11 +114,19 @@ const useXPStore = create<XPState>()(
     }),
     {
       name:    'notebook-xp',
-      version: 1,
-      partialize: (state): Partial<XPState> => ({
+      version: 2,   // bumped: formula changed, local XP reset on upgrade
+      partialize: (state) => ({
         totalXP:  state.totalXP,
         sessions: state.sessions,
       }),
+      migrate: (persistedState: unknown, fromVersion: number) => {
+        // v1 → v2: formula changed, preserve totalXP but sessions may have stale XP
+        if (fromVersion === 1 && persistedState && typeof persistedState === 'object') {
+          const old = persistedState as { totalXP?: number; sessions?: SessionEntry[] }
+          return { totalXP: old.totalXP ?? 0, sessions: old.sessions ?? [] }
+        }
+        return { totalXP: 0, sessions: [] }
+      },
     }
   )
 )

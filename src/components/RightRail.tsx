@@ -4,7 +4,8 @@ import useXPStore      from '../store/useXPStore'
 import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 import useSubjectStore from '../store/useSubjectStore'
 import useTagStore     from '../store/useTagStore'
-import { xpToLevel, xpProgress, xpToNextLevel, levelToXp } from '../utils/xp'
+import RankBadge from './RankBadge'
+import { getRankFromXP, getRankProgress, getXPToNextRank } from '../utils/progression'
 import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -65,9 +66,6 @@ function relativeTime(iso: string): string {
   if (dateOf(iso) === yesterday) return `Yesterday · ${hm}`
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` · ${hm}`
 }
-
-const LEVEL_NAMES = ['Novice', 'Beginner', 'Student', 'Scholar', 'Expert', 'Master', 'Sage', 'Legend']
-function levelName(lv: number): string { return LEVEL_NAMES[Math.min(lv, LEVEL_NAMES.length - 1)] }
 
 // ── today stats ───────────────────────────────────────────────────────────
 
@@ -242,34 +240,35 @@ function StreakCard() {
   )
 }
 
-// ── level / xp card ───────────────────────────────────────────────────────
+// ── rank card ─────────────────────────────────────────────────────────────
 
-function LevelCard() {
+function RankCard() {
   const totalXP = useXPStore(s => s.totalXP)
-  const level   = xpToLevel(totalXP)
-  const pct     = xpProgress(totalXP)
-  const toNext  = xpToNextLevel(totalXP)
+  const rank    = getRankFromXP(totalXP)
+  const pct     = Math.round(getRankProgress(totalXP) * 100)
+  const toNext  = getXPToNextRank(totalXP)
 
   return (
     <div className="v2-card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 500 }}>
-          {levelName(level)}
-          <span className="lv-badge mono">LV {level}</span>
-        </div>
-        <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-dim)' }}>
-          <b style={{ color: 'var(--text)', fontWeight: 500 }}>{totalXP.toLocaleString()}</b>
-          {' '}/ {levelToXp(level + 1).toLocaleString()} XP
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <RankBadge tierIndex={rank.tierIndex} size={36} subLevel={rank.subLevel} showPips={true} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: rank.color }}>
+            {rank.label}
+          </div>
+          <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+            <b style={{ color: 'var(--text)', fontWeight: 500 }}>{totalXP.toLocaleString()}</b> XP total
+          </div>
         </div>
       </div>
 
       <div className="xp-track">
-        <div className="xp-fill" style={{ width: `${Math.round(pct * 100)}%` }} />
+        <div className="xp-fill" style={{ width: `${pct}%`, background: rank.color }} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)' }}>
-        <span>{toNext.toLocaleString()} XP to Lv {level + 1}</span>
-        <span style={{ color: 'var(--xp)' }}>+25 XP per session</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>
+        <span>{toNext > 0 ? `${toNext.toLocaleString()} XP to next rank` : 'Max rank reached'}</span>
+        <span style={{ color: 'var(--xp)' }}>{rank.tierName}</span>
       </div>
     </div>
   )
@@ -652,7 +651,7 @@ export default function RightRail() {
           <>
             <TodayCard sessions={sessions} />
             <StreakCard />
-            <LevelCard />
+            <RankCard />
           </>
         )}
         {statsTab === 'insights' && <InsightsRail sessions={sessions} />}
@@ -680,7 +679,7 @@ export default function RightRail() {
         <>
           <TodayCard sessions={sessions} />
           <StreakCard />
-          <LevelCard />
+          <RankCard />
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
             <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>Recent sessions</span>

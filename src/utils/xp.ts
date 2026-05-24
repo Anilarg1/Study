@@ -39,3 +39,31 @@ export function xpToNextLevel(xp: number): number {
   const level = xpToLevel(xp)
   return levelToXp(level + 1) - xp
 }
+
+/**
+ * Duration-proportional XP for a work session.
+ *   < 25 min  → 1 XP per minute (flat)
+ *   ≥ 25 min  → floor(mins^1.5 / 5)   (super-linear, continuous at threshold)
+ *
+ * Input: durationSecs (seconds). Returns integer XP.
+ */
+export function calcSessionXP(durationSecs: number): number {
+  if (durationSecs <= 0) return 0
+  const mins = durationSecs / 60
+  if (mins < 25) return Math.floor(mins)
+  return Math.floor(Math.pow(mins, 1.5) / 5)
+}
+
+/**
+ * Streak multiplier applied on top of calcSessionXP.
+ *   1–2  days → 1.0×
+ *   3–6  days → 1.2×
+ *   7–29 days → 1.5×
+ *   30+  days → 2.0×
+ */
+export function getStreakMultiplier(streakDays: number): number {
+  if (streakDays >= 30) return 2
+  if (streakDays >= 7)  return 1.5
+  if (streakDays >= 3)  return 1.2
+  return 1
+}

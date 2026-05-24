@@ -7,6 +7,7 @@ import useSettingsStore from '../store/useSettingsStore'
 import { playChime }    from '../lib/chime'
 import type { TimerMode, TimerDurations, Subject } from '../types'
 import { useTagPicker, AddTagForm } from './TagPicker'
+import RankUpToast, { type RankUpEvent } from './RankUpToast'
 
 // ── constants ─────────────────────────────────────────────────────────────
 
@@ -250,6 +251,7 @@ export default function PomodoroTimer() {
   const activeTag = tags.find(t => t.id === tagId) ?? null
 
   const [toast,        setToast]       = useState<{ msg: string; key: number } | null>(null)
+  const [rankUpEvent,  setRankUpEvent] = useState<RankUpEvent | null>(null)
   const [showSettings, setSettings]    = useState(false)
   const [showAddSubj,  setShowAddSubj] = useState(false)
   const {
@@ -296,11 +298,12 @@ export default function PomodoroTimer() {
     if (finished) {
       const result = awardXP(mode, subjectId, customDurations[mode], tagId)
       if (soundEnabled) playChime(mode)
-      const msg = result.leveledUp
-        ? `🎉 Level up! You're now Level ${result.newLevel}`
-        : `+${result.xp} XP`
+      const msg = `+${result.xp} XP`
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
+      if (result.rankUp) {
+        setRankUpEvent({ ...result.rankUp, key: Date.now() })
+      }
     }
   }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled])
 
@@ -698,6 +701,7 @@ export default function PomodoroTimer() {
       {toast && (
         <div key={toast.key} className="v2-toast">{toast.msg}</div>
       )}
+      <RankUpToast event={rankUpEvent} />
     </main>
   )
 }
