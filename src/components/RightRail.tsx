@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import useXPStore      from '../store/useXPStore'
 import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 import useSubjectStore from '../store/useSubjectStore'
+import useTagStore     from '../store/useTagStore'
 import { xpToLevel, xpProgress, xpToNextLevel, levelToXp } from '../utils/xp'
 import type { SessionEntry } from '../types'
 
@@ -277,6 +278,7 @@ function LevelCard() {
 
 function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
   const subjects = useSubjectStore(s => s.subjects)
+  const tags = useTagStore(s => s.tags)
 
   const recent = useMemo(() =>
     [...sessions].filter(s => s.type === 'work').reverse().slice(0, 8),
@@ -295,6 +297,7 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
     <>
       {recent.map(entry => {
         const subj = subjects.find(s => s.id === entry.subjectId)
+        const tag  = tags.find(t => t.id === entry.tagId)
         return (
           <div key={entry.id} className="session-row">
             <span
@@ -302,9 +305,23 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
               style={{ background: subj?.color ?? 'var(--text-faint)' }}
             />
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <span style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 450, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {subj ? subj.name : 'Focus session'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+                <span style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 450, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {subj ? subj.name : 'Focus session'}
+                </span>
+                {tag && (
+                  <span style={{
+                    fontSize: 10, color: 'var(--text-mute)',
+                    border: '1px solid var(--hairline)',
+                    borderRadius: 4,
+                    padding: '1px 5px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}>
+                    {tag.name}
+                  </span>
+                )}
+              </div>
               <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10.5, color: 'var(--text-mute)' }}>
                 {relativeTime(entry.completedAt)}
               </span>
