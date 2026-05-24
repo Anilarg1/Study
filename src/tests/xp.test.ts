@@ -14,6 +14,8 @@ describe('calcSessionXP', () => {
   })
 
   it('awards super-linear XP for sessions over 25 min', () => {
+    // Note: spec reference table shows 71/171/263, but those are rounded estimates.
+    // The correct values from floor(mins^1.5 / 5) are 70/170/262.
     expect(calcSessionXP(3000)).toBe(70)    // 50 min
     expect(calcSessionXP(5400)).toBe(170)   // 90 min
     expect(calcSessionXP(7200)).toBe(262)   // 120 min

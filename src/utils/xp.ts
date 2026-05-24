@@ -48,6 +48,7 @@ export function xpToNextLevel(xp: number): number {
  * Input: durationSecs (seconds). Returns integer XP.
  */
 export function calcSessionXP(durationSecs: number): number {
+  if (durationSecs <= 0) return 0
   const mins = durationSecs / 60
   if (mins < 25) return Math.floor(mins)
   return Math.floor(Math.pow(mins, 1.5) / 5)
