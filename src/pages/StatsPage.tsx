@@ -318,7 +318,6 @@ export default function StatsPage() {
     return Array.from({ length: numDays }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (numDays - 1 - i))
       const ds  = toLocalDateStr(d)
-      const idx = sessions.findIndex(s => dateOf(s.completedAt) === ds) // quick membership check
       const daySessions = workSessions.filter(s => dateOf(s.completedAt) === ds)
       const mins = daySessions.reduce((sum, s) => sum + sessionMins(s), 0)
       return { ds, d: new Date(d), mins, isWeekend: isWeekendDate(d), isToday: i === numDays - 1 }
@@ -552,14 +551,14 @@ export default function StatsPage() {
 
   // ── goals ──────────────────────────────────────────────────────────────────
   // Monthly focus goal (adjust based on recent avg)
-  const thisMonthStart = new Date()
-  thisMonthStart.setDate(1)
-  thisMonthStart.setHours(0, 0, 0, 0)
-  const thisMonthMins = useMemo(() =>
-    sessions.filter(s => s.type === 'work' && new Date(s.completedAt) >= thisMonthStart)
-      .reduce((sum, s) => sum + sessionMins(s), 0),
-    [sessions]
-  )
+  const thisMonthMins = useMemo(() => {
+    const start = new Date()
+    start.setDate(1)
+    start.setHours(0, 0, 0, 0)
+    return sessions
+      .filter(s => s.type === 'work' && new Date(s.completedAt) >= start)
+      .reduce((sum, s) => sum + sessionMins(s), 0)
+  }, [sessions])
   const monthGoalMins  = 60 * 40  // 40 hours goal
   const monthGoalPct   = Math.min(100, Math.round(thisMonthMins / monthGoalMins * 100))
 
