@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import useTimerStore    from '../store/useTimerStore'
 import useXPStore       from '../store/useXPStore'
 import useSubjectStore  from '../store/useSubjectStore'
+import useTagStore      from '../store/useTagStore'
 import useSettingsStore from '../store/useSettingsStore'
 import { playChime }    from '../lib/chime'
 import type { TimerMode, TimerDurations, Subject } from '../types'
@@ -232,8 +233,8 @@ function SettingsPanel({ customDurations, setDuration }: SettingsPanelProps) {
 
 export default function PomodoroTimer() {
   const {
-    mode, remaining, running, completedWork, subjectId, customDurations,
-    start, pause, reset, setMode, setDuration, tick, setSubjectId, skip,
+    mode, remaining, running, completedWork, subjectId, tagId, customDurations,
+    start, pause, reset, setMode, setDuration, tick, setSubjectId, setTagId, skip,
   } = useTimerStore()
 
   const awardXP      = useXPStore(s => s.awardXP)
@@ -243,11 +244,17 @@ export default function PomodoroTimer() {
   const activeId      = useSubjectStore(s => s.activeId)
   const setActiveId   = useSubjectStore(s => s.setActiveId)
   const addSubject    = useSubjectStore(s => s.addSubject)
+  const tags    = useTagStore(s => s.tags)
+  const addTag  = useTagStore(s => s.addTag)
   const activeSubject = subjects.find(s => s.id === activeId) ?? null
+  const activeTag = tags.find(t => t.id === tagId) ?? null
 
   const [toast,        setToast]       = useState<{ msg: string; key: number } | null>(null)
   const [showSettings, setSettings]    = useState(false)
   const [showAddSubj,  setShowAddSubj] = useState(false)
+  const [showAddTag,  setShowAddTag]  = useState(false)
+  const [newTagName,  setNewTagName]  = useState('')
+  const [tagAddError, setTagAddError] = useState<string | null>(null)
   const tickRef      = useRef<ReturnType<typeof setInterval> | null>(null)
   const chipsRef     = useRef<HTMLDivElement>(null)
   const settingsRef  = useRef<HTMLDivElement>(null)
@@ -283,7 +290,7 @@ export default function PomodoroTimer() {
   const handleTick = useCallback(() => {
     const finished = tick()
     if (finished) {
-      const result = awardXP(mode, subjectId, customDurations[mode])
+      const result = awardXP(mode, subjectId, customDurations[mode], tagId)
       if (soundEnabled) playChime(mode)
       const msg = result.leveledUp
         ? `🎉 Level up! You're now Level ${result.newLevel}`
@@ -291,7 +298,7 @@ export default function PomodoroTimer() {
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
     }
-  }, [tick, awardXP, mode, subjectId, customDurations, soundEnabled])
+  }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled])
 
   useEffect(() => {
     if (running) {
@@ -358,6 +365,21 @@ export default function PomodoroTimer() {
     return subj
   }
 
+  async function handleAddTag() {
+    const name = newTagName.trim()
+    if (!name) return
+    setTagAddError(null)
+    const tag = await addTag(name)
+    if (tag) {
+      setTagId(tag.id)
+      setNewTagName('')
+      setShowAddTag(false)
+      setShowTagPicker(false)
+    } else {
+      setTagAddError('Could not save — check your connection.')
+    }
+  }
+
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <main className="v2-main">
@@ -375,91 +397,153 @@ export default function PomodoroTimer() {
             <span style={{ color: 'var(--text-faint)', marginLeft: 2 }}>×</span>
           </button>
         )}
-        <div style={{ position: 'relative' }} ref={tagPickerRef}>
-          <button
-            className="filter-pill"
-            style={{ borderStyle: 'dashed', color: 'var(--text-mute)' }}
-            onClick={() => setShowTagPicker(p => !p)}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Tag
-          </button>
-
-          {showTagPicker && (
-            <div style={{
-              position: 'absolute',
-              top: 'calc(100% + 4px)',
-              right: 0,
-              background: 'var(--surface)',
-              border: '1px solid var(--hairline)',
-              borderRadius: 8,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-              minWidth: 160,
-              zIndex: 50,
-              overflow: 'hidden',
-            }}>
-              {subjects.length === 0 && (
-                <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-faint)', fontFamily: 'inherit' }}>
-                  No subjects yet
-                </div>
+          <div style={{ position: 'relative' }} ref={tagPickerRef}>
+            <button
+              className="filter-pill"
+              style={activeTag
+                ? { borderStyle: 'solid', color: 'var(--text)' }
+                : { borderStyle: 'dashed', color: 'var(--text-mute)' }
+              }
+              onClick={() => setShowTagPicker(p => !p)}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+              </svg>
+              {activeTag ? activeTag.name : 'Tag'}
+              {activeTag && (
+                <span
+                  style={{ color: 'var(--text-faint)', marginLeft: 2 }}
+                  onClick={e => { e.stopPropagation(); setTagId(null) }}
+                >×</span>
               )}
-              {subjects.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => { selectSubject(s.id); setShowTagPicker(false) }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    width: '100%',
-                    padding: '7px 12px',
-                    fontSize: 12,
-                    color: activeId === s.id ? 'var(--text)' : 'var(--text-dim)',
-                    background: activeId === s.id ? 'var(--surface-3)' : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  <span style={{
-                    width: 8, height: 8,
-                    borderRadius: '50%',
-                    background: s.color,
-                    flexShrink: 0,
-                    display: 'inline-block',
-                  }} />
-                  {s.name}
-                </button>
-              ))}
-              {activeId && (
-                <>
-                  <div style={{ borderTop: '1px solid var(--hairline)', margin: '2px 0' }} />
+            </button>
+
+            {showTagPicker && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                right: 0,
+                background: 'var(--surface)',
+                border: '1px solid var(--hairline)',
+                borderRadius: 8,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                minWidth: 180,
+                zIndex: 50,
+                overflow: 'hidden',
+              }}>
+                {tags.length === 0 && !showAddTag && (
+                  <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-faint)', fontFamily: 'inherit' }}>
+                    No tags yet
+                  </div>
+                )}
+                {tags.map(t => (
                   <button
-                    onClick={() => { selectSubject(null); setShowTagPicker(false) }}
+                    key={t.id}
+                    onClick={() => { setTagId(tagId === t.id ? null : t.id); setShowTagPicker(false) }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
+                      gap: 8,
                       width: '100%',
                       padding: '7px 12px',
                       fontSize: 12,
-                      color: 'var(--text-mute)',
-                      background: 'transparent',
+                      color: tagId === t.id ? 'var(--text)' : 'var(--text-dim)',
+                      background: tagId === t.id ? 'var(--surface-3)' : 'transparent',
                       border: 'none',
                       cursor: 'pointer',
                       textAlign: 'left',
                       fontFamily: 'inherit',
                     }}
                   >
-                    Clear
+                    {t.name}
                   </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                ))}
+
+                {/* Inline add tag */}
+                {showAddTag ? (
+                  <div style={{ padding: '8px 12px', borderTop: tags.length > 0 ? '1px solid var(--hairline)' : 'none' }}>
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newTagName}
+                      onChange={e => { setNewTagName(e.target.value); setTagAddError(null) }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter')  handleAddTag()
+                        if (e.key === 'Escape') { setShowAddTag(false); setNewTagName(''); setTagAddError(null) }
+                      }}
+                      placeholder="Tag name"
+                      maxLength={30}
+                      style={{
+                        width: '100%',
+                        background: 'var(--surface-3)',
+                        border: '1px solid var(--hairline-2)',
+                        borderRadius: 5,
+                        padding: '4px 8px',
+                        fontSize: 12,
+                        color: 'var(--text)',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    {tagAddError && (
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: '#f87171' }}>{tagAddError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ borderTop: tags.length > 0 ? '1px solid var(--hairline)' : 'none' }}>
+                    <button
+                      onClick={() => setShowAddTag(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        width: '100%',
+                        padding: '7px 12px',
+                        fontSize: 12,
+                        color: 'var(--text-mute)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M12 5v14M5 12h14"/>
+                      </svg>
+                      Add tag
+                    </button>
+                  </div>
+                )}
+
+                {tagId && (
+                  <>
+                    <div style={{ borderTop: '1px solid var(--hairline)', margin: '2px 0' }} />
+                    <button
+                      onClick={() => { setTagId(null); setShowTagPicker(false) }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: '100%',
+                        padding: '7px 12px',
+                        fontSize: 12,
+                        color: 'var(--text-mute)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         <div style={{ flex: 1 }} />
         <div className="view-toggle">
           <button className="view-btn active" title="Timer view">
