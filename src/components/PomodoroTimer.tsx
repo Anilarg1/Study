@@ -391,7 +391,7 @@ export default function PomodoroTimer() {
             <div style={{
               position: 'absolute',
               top: 'calc(100% + 4px)',
-              left: 0,
+              right: 0,
               background: 'var(--surface)',
               border: '1px solid var(--hairline)',
               borderRadius: 8,
