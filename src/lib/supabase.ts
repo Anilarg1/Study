@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase-js'
-import type { Subject, Tag, SessionEntry } from '../types'
+import type { Subject, Tag, SessionEntry, TimerMode } from '../types'
 
 const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -45,6 +45,41 @@ export async function insertSession(userId: string, session: SessionEntry): Prom
     duration_secs: session.durationSecs ?? null,
   })
   return error
+}
+
+/**
+ * Fetch completed sessions for a user, ordered newest-first.
+ * Pass `limit` to cap results (default: no cap).
+ * Pass `from` / `to` as ISO strings to filter by date range.
+ */
+export async function fetchSessions(
+  userId: string,
+  options: { limit?: number; from?: string; to?: string } = {},
+): Promise<{ data: SessionEntry[]; error: PostgrestError | null }> {
+  let query = supabase
+    .from('sessions')
+    .select('id, type, completed_at, xp, subject_id, tag_id, duration_secs')
+    .eq('user_id', userId)
+    .order('completed_at', { ascending: false })
+
+  if (options.from)  query = query.gte('completed_at', options.from)
+  if (options.to)    query = query.lte('completed_at', options.to)
+  if (options.limit) query = query.limit(options.limit)
+
+  const { data, error } = await query
+  if (error || !data) return { data: [], error }
+
+  const sessions: SessionEntry[] = data.map(r => ({
+    id:           r.id            as string,
+    type:         r.type          as TimerMode,
+    completedAt:  r.completed_at  as string,
+    xp:           r.xp            as number,
+    subjectId:    r.subject_id    as string | null,
+    tagId:        r.tag_id        as string | null,
+    durationSecs: r.duration_secs as number | null,
+  }))
+
+  return { data: sessions, error: null }
 }
 
 /** Fetch all login dates for the user as a string[] (YYYY-MM-DD). */

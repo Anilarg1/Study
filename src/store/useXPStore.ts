@@ -25,6 +25,7 @@ interface XPState {
     tagId?:        string | null,
   ): AwardResult
   _importFromSupabase(xp: number): void
+  _importSessionsFromSupabase(sessions: SessionEntry[]): void
   _reset(): void
 }
 
@@ -68,6 +69,13 @@ const useXPStore = create<XPState>()(
 
       _importFromSupabase(xp) {
         set(state => ({ totalXP: Math.max(state.totalXP, xp) }))
+      },
+
+      _importSessionsFromSupabase(sessions) {
+        // sessions arrive newest-first from Supabase; reverse to oldest-first to match
+        // the append order used by awardXP, then cap at MAX_LOCAL_SESSIONS
+        const toStore = [...sessions].reverse().slice(0, MAX_LOCAL_SESSIONS)
+        set({ sessions: toStore })
       },
 
       _reset() {
