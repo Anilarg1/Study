@@ -485,7 +485,7 @@ export default function StatsPage() {
   const subjectTotalMins = useMemo(() => Math.max(1, subjectStats.reduce((s, x) => s + x.mins, 0)), [subjectStats])
 
   const radarData = useMemo(() =>
-    subjectStats.slice(0, 5).map(s => ({
+    subjectStats.slice(0, 8).map(s => ({
       ...s,
       pct: Math.round(s.mins / subjectTotalMins * 100),
     })),
