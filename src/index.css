@@ -1088,8 +1088,10 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE / legacy Edge */
 }
-.v2-rail::-webkit-scrollbar { width: 0; }
+.v2-rail::-webkit-scrollbar { display: none; } /* Chrome / Safari / Edge */
 
 .rail-tabs {
   display: flex;

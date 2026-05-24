@@ -31,7 +31,9 @@
       "Bash(npx tsc *)",
       "Bash(git stash *)",
       "mcp__codegraph__codegraph_status",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "PowerShell(git -C \"C:\\\\Users\\\\shaai\\\\Study\" log -1 --oneline)",
+      "Bash(git pull *)"
     ]
   }
 }
