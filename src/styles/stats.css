@@ -83,13 +83,9 @@
   overflow-y: auto;
   padding: 16px 18px 32px;
 }
-.s-scroll::-webkit-scrollbar { width: 10px; }
-.s-scroll::-webkit-scrollbar-thumb {
-  background: var(--surface-3);
-  border-radius: 8px;
-  border: 2px solid var(--bg);
-}
-.s-scroll::-webkit-scrollbar-thumb:hover { background: var(--hairline-3); }
+/* Hidden scrollbar — scroll still works */
+.s-scroll { scrollbar-width: none; }           /* Firefox */
+.s-scroll::-webkit-scrollbar { display: none; } /* Webkit / Blink */
 
 /* ── Page head ─────────────────────────────────────────────────────────────── */
 .s-page-head {
