@@ -421,18 +421,22 @@ export default function StatsPage() {
     [subjectStats, subjectTotalMins]
   )
 
-  // ── hour × day heatmap ────────────────────────────────────────────────────
-  const hourDayGrid = useMemo(() => {
-    // grid[day=0..6 Mon..Sun][hour=0..23]
+  // ── hour × day raw grid (minutes per slot) ────────────────────────────────
+  const hourDayRaw = useMemo(() => {
     const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
     for (const s of workSessions) {
-      const d = new Date(s.completedAt)
-      const dow  = (d.getDay() + 6) % 7  // 0=Mon
+      const d    = new Date(s.completedAt)
+      const dow  = (d.getDay() + 6) % 7   // 0 = Mon
       const hour = d.getHours()
       grid[dow][hour] += sessionMins(s)
     }
-    const maxVal = Math.max(1, ...grid.flat())
-    return grid.map(row => row.map(v => {
+    return grid
+  }, [workSessions])
+
+  // ── quantised heat levels (0–4) for rendering ─────────────────────────────
+  const hourDayGrid = useMemo(() => {
+    const maxVal = Math.max(1, ...hourDayRaw.flat())
+    return hourDayRaw.map(row => row.map(v => {
       if (v === 0) return 0
       const n = v / maxVal
       if (n >= 0.75) return 4
@@ -440,30 +444,29 @@ export default function StatsPage() {
       if (n >= 0.25) return 2
       return 1
     }))
-  }, [workSessions])
+  }, [hourDayRaw])
 
+  // ── peak hour + best day summary ──────────────────────────────────────────
   const hourDaySummary = useMemo(() => {
-    // raw grid for peak computation
-    const raw: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
-    for (const s of workSessions) {
-      const d = new Date(s.completedAt)
-      raw[(d.getDay() + 6) % 7][d.getHours()] += sessionMins(s)
-    }
-    // peak hour
     let peakMins = 0, peakHour = -1
     for (let h = 0; h < 24; h++) {
-      const t = raw.reduce((s, row) => s + row[h], 0)
+      const t = hourDayRaw.reduce((s, row) => s + row[h], 0)
       if (t > peakMins) { peakMins = t; peakHour = h }
     }
-    // most focused day
-    const dayTotals = raw.map((row, i) => ({ day: DAY_LABELS[i], total: row.reduce((a, b) => a + b, 0) }))
-    const bestDay   = dayTotals.sort((a, b) => b.total - a.total)[0]
 
+    const dayTotals = hourDayRaw.map((row, i) => ({
+      day:   DAY_LABELS[i],
+      total: row.reduce((a, b) => a + b, 0),
+    }))
+    const bestDay = [...dayTotals].sort((a, b) => b.total - a.total)[0]
+
+    // Fix B4: hour 23 → "23:00 – 0:00", not "23:00 – 24:00"
+    const nextHour = peakHour >= 0 ? (peakHour + 1) % 24 : -1
     return {
-      peakHour:  peakHour >= 0 ? `${peakHour}:00 – ${peakHour + 1}:00` : '—',
-      bestDay:   bestDay?.total > 0 ? bestDay.day : '—',
+      peakHour: peakHour >= 0 ? `${peakHour}:00 – ${nextHour}:00` : '—',
+      bestDay:  bestDay?.total > 0 ? bestDay.day : '—',
     }
-  }, [workSessions])
+  }, [hourDayRaw])
 
   // ── session length histogram ───────────────────────────────────────────────
   const HIST_BUCKETS = [
