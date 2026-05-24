@@ -179,7 +179,7 @@ export default function NewSessionModal({ running, onStart, onCancel }: NewSessi
                   onChange={e => { setNewTagName(e.target.value); setTagAddError(null) }}
                   onKeyDown={e => {
                     if (e.key === 'Enter')  handleAddTag()
-                    if (e.key === 'Escape') { setShowAddTag(false); setNewTagName(''); setTagAddError(null) }
+                    if (e.key === 'Escape') { e.stopPropagation(); setShowAddTag(false); setNewTagName(''); setTagAddError(null) }
                   }}
                   placeholder="Tag name (e.g. revision)"
                   maxLength={30}
