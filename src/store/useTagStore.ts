@@ -29,7 +29,7 @@ const useTagStore = create<TagState>()(
         if (existing) return existing
 
         const { data, error } = await createTag(userId, { name })
-        if (error || !data) return null
+        if (error || !data) { console.error(error); return null }
         set(state => ({ tags: [...state.tags, data] }))
         return data
       },
@@ -37,7 +37,8 @@ const useTagStore = create<TagState>()(
       async deleteTag(id) {
         const userId = getCurrentUserId()
         if (!userId) return
-        await removeTag(id)
+        const error = await removeTag(id)
+        if (error) { console.error(error); return }
         set(state => ({ tags: state.tags.filter(t => t.id !== id) }))
       },
 
