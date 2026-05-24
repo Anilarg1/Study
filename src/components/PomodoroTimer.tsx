@@ -251,6 +251,9 @@ export default function PomodoroTimer() {
   const tickRef      = useRef<ReturnType<typeof setInterval> | null>(null)
   const chipsRef     = useRef<HTMLDivElement>(null)
   const settingsRef  = useRef<HTMLDivElement>(null)
+  const tagPickerRef = useRef<HTMLDivElement>(null)
+
+  const [showTagPicker, setShowTagPicker] = useState(false)
 
   // ── close settings on outside click ──────────────────────────────────────
   useEffect(() => {
@@ -263,6 +266,18 @@ export default function PomodoroTimer() {
     document.addEventListener('mousedown', onOutside)
     return () => document.removeEventListener('mousedown', onOutside)
   }, [showSettings])
+
+  // ── close tag picker on outside click ────────────────────────────────────
+  useEffect(() => {
+    if (!showTagPicker) return
+    function onOutside(e: MouseEvent) {
+      if (tagPickerRef.current && !tagPickerRef.current.contains(e.target as Node)) {
+        setShowTagPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [showTagPicker])
 
   // ── ticker ────────────────────────────────────────────────────────────────
   const handleTick = useCallback(() => {
@@ -360,12 +375,91 @@ export default function PomodoroTimer() {
             <span style={{ color: 'var(--text-faint)', marginLeft: 2 }}>×</span>
           </button>
         )}
-        <button className="filter-pill" style={{ borderStyle: 'dashed', color: 'var(--text-mute)' }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Tag
-        </button>
+        <div style={{ position: 'relative' }} ref={tagPickerRef}>
+          <button
+            className="filter-pill"
+            style={{ borderStyle: 'dashed', color: 'var(--text-mute)' }}
+            onClick={() => setShowTagPicker(p => !p)}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Tag
+          </button>
+
+          {showTagPicker && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 4px)',
+              left: 0,
+              background: 'var(--surface)',
+              border: '1px solid var(--hairline)',
+              borderRadius: 8,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+              minWidth: 160,
+              zIndex: 50,
+              overflow: 'hidden',
+            }}>
+              {subjects.length === 0 && (
+                <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-faint)', fontFamily: 'inherit' }}>
+                  No subjects yet
+                </div>
+              )}
+              {subjects.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => { selectSubject(s.id); setShowTagPicker(false) }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '7px 12px',
+                    fontSize: 12,
+                    color: activeId === s.id ? 'var(--text)' : 'var(--text-dim)',
+                    background: activeId === s.id ? 'var(--surface-3)' : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{
+                    width: 8, height: 8,
+                    borderRadius: '50%',
+                    background: s.color,
+                    flexShrink: 0,
+                    display: 'inline-block',
+                  }} />
+                  {s.name}
+                </button>
+              ))}
+              {activeId && (
+                <>
+                  <div style={{ borderTop: '1px solid var(--hairline)', margin: '2px 0' }} />
+                  <button
+                    onClick={() => { selectSubject(null); setShowTagPicker(false) }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      width: '100%',
+                      padding: '7px 12px',
+                      fontSize: 12,
+                      color: 'var(--text-mute)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Clear
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         <div style={{ flex: 1 }} />
         <div className="view-toggle">
           <button className="view-btn active" title="Timer view">
