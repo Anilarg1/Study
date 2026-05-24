@@ -397,6 +397,8 @@ export default function StatsPage() {
     const minsPerDay = new Map<string, number>()
     for (const s of sessions) {
       if (s.type !== 'work') continue
+      // Respect subject filter
+      if (subjectFilter !== null && s.subjectId !== subjectFilter) continue
       const ds = dateOf(s.completedAt)
       minsPerDay.set(ds, (minsPerDay.get(ds) ?? 0) + sessionMins(s))
     }
@@ -450,7 +452,7 @@ export default function StatsPage() {
     if (lastM !== -1) monthLabels.push({ label: MONTH_NAMES[lastM], width: runLen })
 
     return { heatWeeks: weeks, heatMonthLabels: monthLabels, activeDays, longestHeatStreak: maxStreak }
-  }, [sessions])
+  }, [sessions, subjectFilter])
 
   // ── subject breakdown ──────────────────────────────────────────────────────
   const subjectStats = useMemo(() => {
@@ -927,7 +929,7 @@ export default function StatsPage() {
 
           <div className="s-heat-foot">
             <span>
-              Longest streak in this period ·{' '}
+              Longest streak · last 12 months ·{' '}
               <b style={{ color: 'var(--text-dim)' }}>{longestHeatStreak > 0 ? `${longestHeatStreak} days` : '—'}</b>
             </span>
             <div className="s-heat-scale">
