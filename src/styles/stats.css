@@ -99,13 +99,6 @@
   margin-bottom: 14px;
   padding: 2px 2px 0;
 }
-.s-page-head h1 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.018em;
-  color: var(--text);
-}
 .s-head-sub {
   margin-top: 3px;
   font-size: 12px;

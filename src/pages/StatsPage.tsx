@@ -748,7 +748,6 @@ export default function StatsPage() {
         {/* Page head */}
         <div className="s-page-head">
           <div>
-            <h1>Stats</h1>
             <div className="s-head-sub">
               {rangeLabel}
               {timePct !== 0 && (
