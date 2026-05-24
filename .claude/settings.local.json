@@ -33,7 +33,11 @@
       "mcp__codegraph__codegraph_status",
       "Bash(git checkout *)",
       "PowerShell(git -C \"C:\\\\Users\\\\shaai\\\\Study\" log -1 --oneline)",
-      "Bash(git pull *)"
+      "Bash(git pull *)",
+      "Bash(ls \"c:\\\\Users\\\\shaai\\\\AppData\\\\Local\\\\Temp\\\\70f97830-4915-4231-a2df-fb11e86179f8_Study Productuvuty app-handoff\\(1\\).tar.gz.9f8\\\\\" -Recurse | Select-Object FullName)",
+      "Read(//c/Users/shaai/AppData/Local/Temp/**)",
+      "Bash(cd /mnt/c/Users/shaai/Study && npm run build 2>&1)",
+      "Read(//mnt/c/Users/shaai/**)"
     ]
   }
 }

@@ -210,10 +210,14 @@ export default function Sidebar({
         <span className="nav-label">Today</span>
         <span className="ni-shortcut">G D</span>
       </button>
-      <button className="nav-item muted" title="Stats — coming soon">
+      <button
+        className={`nav-item${location.pathname === '/stats' ? ' active' : ''}`}
+        title="Stats"
+        onClick={() => navigate('/stats')}
+      >
         <IcStats />
         <span className="nav-label">Stats</span>
-        <span className="ni-count">SOON</span>
+        <span className="ni-shortcut">G S</span>
       </button>
       <button className="nav-item muted" title="Timetable — coming soon">
         <IcTimetable />
