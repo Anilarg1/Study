@@ -64,7 +64,8 @@ function isWeekendDate(d: Date): boolean {
 
 function fmtDate(iso: string): string {
   if (!iso) return '—'
-  const d = new Date(iso)
+  // Append T00:00 so the browser parses as local midnight, not UTC midnight
+  const d = new Date(`${iso}T00:00`)
   return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
 }
 
