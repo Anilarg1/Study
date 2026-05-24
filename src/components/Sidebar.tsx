@@ -107,8 +107,10 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  user: _user, initials, email, onSignOut, activeView, onSettings, collapsed, onToggle,
+  user, initials, email, onSignOut, activeView, onSettings, collapsed, onToggle,
 }: SidebarProps) {
+  const displayName = (user.user_metadata?.display_name as string | undefined) || email.split('@')[0]
+
   const subjects      = useSubjectStore(s => s.subjects)
   const addSubject    = useSubjectStore(s => s.addSubject)
   const loginDates    = useStreakStore(s => s.loginDates)
@@ -328,7 +330,7 @@ export default function Sidebar({
         <div className="avatar">{initials}</div>
         <div className="nav-user-info">
           <span style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 500 }}>
-            {email.split('@')[0]}
+            {displayName}
           </span>
           <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {email}

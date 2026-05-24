@@ -48,6 +48,10 @@ const useAuthStore = create<AuthState>()((set, get) => ({
         useStreakStore.getState().clockIn()
       }
 
+      if (event === 'USER_UPDATED' && user) {
+        set({ user })
+      }
+
       if (event === 'SIGNED_OUT') {
         set({ user: null })
       }

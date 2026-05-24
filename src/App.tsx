@@ -103,10 +103,12 @@ export default function App() {
   if (!user) return <LoginPage />
 
   // ── derive user display info ────────────────────────────────────────────
-  const typedUser = user as User
-  const email    = typedUser.email ?? ''
-  const initials = email.slice(0, 2).toUpperCase()
-  const handle   = email.split('@')[0]
+  const typedUser    = user as User
+  const email        = typedUser.email ?? ''
+  const emailHandle  = email.split('@')[0]
+  const displayName  = (typedUser.user_metadata?.display_name as string | undefined) ?? ''
+  const handle       = displayName || emailHandle
+  const initials     = handle.slice(0, 2).toUpperCase()
 
   // ── main app — Linear-inspired 3-col shell ──────────────────────────────
   return (
