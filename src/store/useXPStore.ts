@@ -18,7 +18,12 @@ interface XPState {
   totalXP:  number
   sessions: SessionEntry[]
 
-  awardXP(sessionType: TimerMode, subjectId?: string | null, durationSecs?: number | null): AwardResult
+  awardXP(
+    sessionType:   TimerMode,
+    subjectId?:    string | null,
+    durationSecs?: number | null,
+    tagId?:        string | null,
+  ): AwardResult
   _importFromSupabase(xp: number): void
   _reset(): void
 }
@@ -29,7 +34,7 @@ const useXPStore = create<XPState>()(
       totalXP:  0,
       sessions: [],
 
-      awardXP(sessionType, subjectId = null, durationSecs = null) {
+      awardXP(sessionType, subjectId = null, durationSecs = null, tagId = null) {
         const xp        = XP_REWARDS[sessionType] ?? 0
         const prevXP    = get().totalXP
         const prevLevel = xpToLevel(prevXP)
@@ -42,7 +47,8 @@ const useXPStore = create<XPState>()(
           type:         sessionType,
           completedAt:  new Date().toISOString(),
           xp,
-          subjectId:    subjectId   ?? null,
+          subjectId:    subjectId    ?? null,
+          tagId:        tagId        ?? null,
           durationSecs: durationSecs ?? null,
         }
 
