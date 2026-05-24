@@ -1,21 +1,25 @@
 import { useEffect, useCallback, useState } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
-import LoginPage        from './components/LoginPage'
-import Sidebar          from './components/Sidebar'
-import PomodoroTimer    from './components/PomodoroTimer'
-import RightRail        from './components/RightRail'
-import NewSessionModal  from './components/NewSessionModal'
-import CommandPalette   from './components/CommandPalette'
-import Settings         from './components/Settings'
+import LoginPage       from './components/LoginPage'
+import Sidebar         from './components/Sidebar'
+import RightRail       from './components/RightRail'
+import NewSessionModal from './components/NewSessionModal'
+import CommandPalette  from './components/CommandPalette'
+import TimerPage       from './pages/TimerPage'
+import SettingsPage    from './pages/SettingsPage'
+import StatsPage       from './pages/StatsPage'
+import NotesPage       from './pages/NotesPage'
+import FlashcardsPage  from './pages/FlashcardsPage'
+import TimetablePage   from './pages/TimetablePage'
+import PastPapersPage  from './pages/PastPapersPage'
 import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
 import useSettingsStore from './store/useSettingsStore'
 
-// mode key map: store names → CSS data-mode values
 const DATA_MODE: Record<string, string> = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
 
-// ── breadcrumb icons ───────────────────────────────────────────────────────
 function TimerIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -34,8 +38,10 @@ function GearIcon() {
   )
 }
 
-// ── app ───────────────────────────────────────────────────────────────────
 export default function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const { user, loading, init, signOut } = useAuthStore()
   const timerMode        = useTimerStore(s => s.mode)
   const running          = useTimerStore(s => s.running)
@@ -50,15 +56,18 @@ export default function App() {
   const sidebarCollapsed = useSettingsStore(s => s.sidebarCollapsed)
   const toggleSidebar    = useSettingsStore(s => s.toggle)
 
-  const [showNewSession,  setShowNewSession]  = useState(false)
-  const [showCmdPalette,  setShowCmdPalette]  = useState(false)
-  const [view,            setView]            = useState<'timer' | 'settings'>('timer')
+  const [showNewSession, setShowNewSession] = useState(false)
+  const [showCmdPalette, setShowCmdPalette] = useState(false)
 
   const handleNewSession = useCallback(() => {
     setShowNewSession(true)
   }, [])
 
-  const handleStartSession = useCallback((subjectId: string | null, durationMins: number, tagId: string | null) => {
+  const handleStartSession = useCallback((
+    subjectId: string | null,
+    durationMins: number,
+    tagId: string | null,
+  ) => {
     setShowNewSession(false)
     setActiveId(subjectId)
     setTimerSubject(subjectId)
@@ -66,15 +75,13 @@ export default function App() {
     setTimerDuration('work', durationMins)
     setTimerMode('work')
     startTimer()
-  }, [setActiveId, setTimerSubject, setTimerTagId, setTimerDuration, setTimerMode, startTimer])
+    navigate('/')
+  }, [setActiveId, setTimerSubject, setTimerTagId, setTimerDuration, setTimerMode, startTimer, navigate])
 
-  // Restore Supabase session once on mount
   useEffect(() => { init() }, [init])
 
-  // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // Ctrl+K / ⌘K — toggle command palette (works even inside inputs)
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setShowCmdPalette(p => !p)
@@ -88,7 +95,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [handleNewSession, toggleSidebar])
 
-  // ── loading splash ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -99,23 +105,23 @@ export default function App() {
     )
   }
 
-  // ── auth gate ───────────────────────────────────────────────────────────
   if (!user) return <LoginPage />
 
-  // ── derive user display info ────────────────────────────────────────────
-  const typedUser    = user as User
-  const email        = typedUser.email ?? ''
-  const emailHandle  = email.split('@')[0]
-  const displayName  = (typedUser.user_metadata?.display_name as string | undefined) ?? ''
-  const handle       = displayName || emailHandle
-  const initials     = handle.slice(0, 2).toUpperCase()
+  const typedUser   = user as User
+  const email       = typedUser.email ?? ''
+  const emailHandle = email.split('@')[0]
+  const displayName = (typedUser.user_metadata?.display_name as string | undefined) ?? ''
+  const handle      = displayName || emailHandle
+  const initials    = handle.slice(0, 2).toUpperCase()
 
-  // ── main app — Linear-inspired 3-col shell ──────────────────────────────
+  const isSettings = location.pathname === '/settings'
+  const showRail   = !isSettings
+
   return (
     <div
       className="app-shell"
       data-mode={dataMode}
-      data-view={view}
+      data-view={isSettings ? 'settings' : 'timer'}
       {...(sidebarCollapsed ? { 'data-nav-collapsed': '' } : {})}
     >
 
@@ -138,17 +144,17 @@ export default function App() {
 
       {/* ── TOPBAR ── */}
       <div className="topbar">
-        {view === 'timer' ? (
+        {isSettings ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
+            <GearIcon />
+            <span style={{ color: 'var(--text)', fontWeight: 500 }}>Settings</span>
+          </div>
+        ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
             <TimerIcon />
             <span>Practice</span>
             <span style={{ color: 'var(--text-faint)' }}>/</span>
             <span style={{ color: 'var(--text)', fontWeight: 500 }}>Timer</span>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
-            <GearIcon />
-            <span style={{ color: 'var(--text)', fontWeight: 500 }}>Settings</span>
           </div>
         )}
 
@@ -191,20 +197,25 @@ export default function App() {
         initials={initials}
         email={email}
         onSignOut={signOut}
-        activeView={view}
-        onSettings={() => setView('settings')}
         collapsed={sidebarCollapsed}
         onToggle={() => toggleSidebar('sidebarCollapsed')}
       />
 
       {/* ── MAIN ── */}
-      {view === 'timer'    && <PomodoroTimer />}
-      {view === 'settings' && <Settings onBack={() => setView('timer')} />}
+      <Routes>
+        <Route path="/"            element={<TimerPage />} />
+        <Route path="/settings"    element={<SettingsPage />} />
+        <Route path="/stats"       element={<StatsPage />} />
+        <Route path="/notes"       element={<NotesPage />} />
+        <Route path="/flashcards"  element={<FlashcardsPage />} />
+        <Route path="/timetable"   element={<TimetablePage />} />
+        <Route path="/past-papers" element={<PastPapersPage />} />
+      </Routes>
 
-      {/* ── RAIL (hidden in settings view) ── */}
-      {view === 'timer' && <RightRail />}
+      {/* ── RAIL (hidden on non-timer routes) ── */}
+      {showRail && <RightRail />}
 
-      {/* ── NEW SESSION MODAL ── */}
+      {/* ── OVERLAYS ── */}
       {showNewSession && (
         <NewSessionModal
           running={running}
@@ -213,11 +224,10 @@ export default function App() {
         />
       )}
 
-      {/* ── COMMAND PALETTE ── */}
       <CommandPalette
         open={showCmdPalette}
         onClose={() => setShowCmdPalette(false)}
-        onNavigate={view => setView(view)}
+        onNavigate={path => navigate(path)}
         onNewSession={() => { setShowCmdPalette(false); setShowNewSession(true) }}
       />
 
