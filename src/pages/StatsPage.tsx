@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react'
 import useXPStore         from '../store/useXPStore'
 import useSubjectStore    from '../store/useSubjectStore'
-import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
-import { xpToLevel, levelToXp, xpProgress } from '../utils/xp'
+import useStreakStore, { toLocalDateStr } from '../store/useStreakStore'
 import type { SessionEntry, Subject } from '../types'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -600,38 +599,6 @@ export default function StatsPage() {
     return { bestDayMins, bestDayStr, bestWeekMins, bestWeekStart }
   }, [sessions])
 
-  // ── streak ─────────────────────────────────────────────────────────────────
-  const loginDateSet  = useMemo(() => new Set(loginDates), [loginDates])
-  const currentStreak = useMemo(() => calcCurrentStreak(loginDateSet), [loginDateSet])
-
-  // ── level / XP goal ───────────────────────────────────────────────────────
-  const level       = xpToLevel(totalXP)
-  const nextLevel   = level + 1
-  const xpProg      = xpProgress(totalXP)
-  const xpToNext    = levelToXp(nextLevel) - totalXP
-
-  // ── goals ──────────────────────────────────────────────────────────────────
-  // Monthly focus goal (adjust based on recent avg)
-  const thisMonthMins = useMemo(() => {
-    const start = new Date()
-    start.setDate(1)
-    start.setHours(0, 0, 0, 0)
-    return sessions
-      .filter(s => s.type === 'work' && new Date(s.completedAt) >= start)
-      .reduce((sum, s) => sum + sessionMins(s), 0)
-  }, [sessions])
-  const monthGoalMins  = 60 * 40  // 40 hours goal
-  const monthGoalPct   = Math.min(100, Math.round(thisMonthMins / monthGoalMins * 100))
-
-  // Streak goal (next 5-day milestone)
-  const streakGoal    = Math.ceil((currentStreak + 1) / 5) * 5
-  const streakGoalPct = Math.min(100, Math.round(currentStreak / streakGoal * 100))
-
-  // XP level goal
-  const xpGoalCurrent = levelToXp(level)
-  const xpGoalNext    = levelToXp(nextLevel)
-  const xpGoalPct     = Math.min(100, Math.round(xpProg * 100))
-
   // ── range label ────────────────────────────────────────────────────────────
   const rangeLabel = useMemo(() => {
     const now = new Date()
@@ -1115,123 +1082,19 @@ export default function StatsPage() {
             )}
           </div>
 
-          {/* Goals & Records */}
+          {/* Records */}
           <div className="sc">
             <div className="sc-head">
               <span className="sc-label">
                 <svg className="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9"/>
-                  <circle cx="12" cy="12" r="5"/>
-                  <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                  <path d="M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
                 </svg>
-                Goals
+                Records
               </span>
-              <span className="sc-meta">{MONTH_NAMES[new Date().getMonth()]} {new Date().getFullYear()}</span>
-            </div>
-
-            <div className="s-goals-list">
-
-              {/* Monthly hours goal */}
-              <div>
-                <div className="s-goal-wrap">
-                  <div
-                    className="s-goal-badge"
-                    style={{
-                      background: `linear-gradient(160deg, color-mix(in oklab, var(--focus) 24%, var(--surface-3)), var(--surface-3))`,
-                      border: `1px solid color-mix(in oklab, var(--focus) 26%, var(--hairline-2))`,
-                      color: 'var(--focus)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
-                    </svg>
-                  </div>
-                  <div className="s-goal-body">
-                    <div className="gtitle">Study {Math.round(monthGoalMins / 60)} hours this month</div>
-                    <div className="gsub">{monthGoalPct}% complete</div>
-                  </div>
-                  <div className="s-goal-val">
-                    <b>{fmtMins(thisMonthMins)}</b> / {Math.round(monthGoalMins / 60)}h
-                  </div>
-                </div>
-                <div className="s-progress" style={{ marginTop: 8 }}>
-                  <div
-                    className="s-progress-fill"
-                    style={{
-                      width: `${monthGoalPct}%`,
-                      background: `linear-gradient(90deg, color-mix(in oklab, var(--focus) 50%, transparent), var(--focus))`,
-                      boxShadow: `0 0 8px color-mix(in oklab, var(--focus) 30%, transparent)`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Streak goal */}
-              <div>
-                <div className="s-goal-wrap">
-                  <div
-                    className="s-goal-badge"
-                    style={{
-                      background: `linear-gradient(160deg, color-mix(in oklab, var(--streak) 24%, var(--surface-3)), var(--surface-3))`,
-                      border: `1px solid color-mix(in oklab, var(--streak) 26%, var(--hairline-2))`,
-                      color: 'var(--streak)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2s4 4 4 8a4 4 0 0 1-1.5 3c.5-.7.5-1.8 0-2.5-1-1.5-2.5-1-2.5-3 0 2-2 2.5-3 4.5a4 4 0 1 0 7.5 2C16.5 18 12 22 12 22s-7-3-7-9c0-7 7-11 7-11z"/>
-                    </svg>
-                  </div>
-                  <div className="s-goal-body">
-                    <div className="gtitle">{streakGoal}-day streak</div>
-                    <div className="gsub">{streakGoal - currentStreak} more {streakGoal - currentStreak === 1 ? 'day' : 'days'} to go</div>
-                  </div>
-                  <div className="s-goal-val"><b>{currentStreak}</b> / {streakGoal}</div>
-                </div>
-                <div className="s-progress" style={{ marginTop: 8 }}>
-                  <div
-                    className="s-progress-fill"
-                    style={{
-                      width: `${streakGoalPct}%`,
-                      background: `linear-gradient(90deg, color-mix(in oklab, var(--streak) 50%, transparent), var(--streak))`,
-                      boxShadow: `0 0 8px color-mix(in oklab, var(--streak) 30%, transparent)`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* XP level goal */}
-              <div>
-                <div className="s-goal-wrap">
-                  <div
-                    className="s-goal-badge"
-                    style={{
-                      background: `linear-gradient(160deg, color-mix(in oklab, var(--xp) 24%, var(--surface-3)), var(--surface-3))`,
-                      border: `1px solid color-mix(in oklab, var(--xp) 26%, var(--hairline-2))`,
-                      color: 'var(--xp)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>
-                    </svg>
-                  </div>
-                  <div className="s-goal-body">
-                    <div className="gtitle">Reach Level {nextLevel}</div>
-                    <div className="gsub">{xpToNext} XP to go</div>
-                  </div>
-                  <div className="s-goal-val"><b>{totalXP}</b> / {xpGoalNext} XP</div>
-                </div>
-                <div className="s-progress" style={{ marginTop: 8 }}>
-                  <div
-                    className="s-progress-fill"
-                    style={{
-                      width: `${xpGoalPct}%`,
-                      background: `linear-gradient(90deg, color-mix(in oklab, var(--xp) 50%, transparent), var(--xp))`,
-                      boxShadow: `0 0 8px color-mix(in oklab, var(--xp) 30%, transparent)`,
-                    }}
-                  />
-                </div>
-              </div>
-
             </div>
 
             {/* Records strip */}

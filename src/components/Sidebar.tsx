@@ -4,6 +4,7 @@ import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import { SUBJECT_COLORS } from '../lib/subjects'
+import GoalsPanel from './GoalsPanel'
 
 // ── icons ─────────────────────────────────────────────────────────────────
 
@@ -321,6 +322,8 @@ export default function Sidebar({
           <span className="nav-label">{s.name}</span>
         </button>
       ))}
+
+      {!collapsed && <GoalsPanel />}
 
       <div className="nav-spacer" />
 
