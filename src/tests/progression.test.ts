@@ -3,6 +3,7 @@ import {
   getRankFromXP,
   getMasteryFromXP,
   getXPToNextRank,
+  getRankProgress,
   RANK_TIERS,
   MASTERY_TIERS,
 } from '../utils/progression'
@@ -73,5 +74,23 @@ describe('getXPToNextRank', () => {
 
   it('returns 0 when already at Luminary III', () => {
     expect(getXPToNextRank(999_999_999)).toBe(0)
+  })
+})
+
+describe('getRankProgress', () => {
+  it('returns ~0 at the start of the first rank', () => {
+    expect(getRankProgress(0)).toBeCloseTo(0, 1)
+  })
+
+  it('returns 1 at max rank', () => {
+    expect(getRankProgress(999_999_999)).toBe(1)
+  })
+
+  it('returns value between 0-1 in mid-progression', () => {
+    const mid = RANK_TIERS[0].minXP + (RANK_TIERS[1].minXP - RANK_TIERS[0].minXP) / 2
+    const pct = getRankProgress(mid)
+    expect(pct).toBeGreaterThan(0)
+    expect(pct).toBeLessThan(1)
+    expect(pct).toBeCloseTo(0.5, 0)
   })
 })
