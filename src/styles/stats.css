@@ -710,26 +710,45 @@
 /* ── Goals panel in sidebar ─────────────────────────────────────────────────── */
 .sidebar-goals {
   margin: 0 8px 8px;
-  padding: 10px 10px 12px;
+  padding: 8px 10px 10px;
   border-top: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .sidebar-goals-head {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-dim);
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 .sidebar-goals-month {
   margin-left: auto;
   font-family: 'Geist Mono', monospace;
   font-size: 10px;
-  color: var(--text-mute);
+  color: var(--text-faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
 }
+
+/* minimal goal rows */
+.sg-list { display: flex; flex-direction: column; gap: 5px; }
+.sg-row  {
+  display: grid;
+  grid-template-columns: 7px 56px 1fr 52px;
+  align-items: center;
+  gap: 7px;
+}
+.sg-dot   { width: 5px; height: 5px; border-radius: 50%; }
+.sg-label { font-size: 11px; color: var(--text-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-bar   { height: 2px; background: var(--surface-3); border-radius: 1px; overflow: hidden; }
+.sg-fill  { height: 100%; border-radius: 1px; transition: width 600ms ease; }
+.sg-val   { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text-dim); text-align: right; white-space: nowrap; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 1320px) {
