@@ -1,17 +1,18 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, lazy, Suspense } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import LoginPage       from './components/LoginPage'
 import Sidebar         from './components/Sidebar'
 import RightRail       from './components/RightRail'
 import NewSessionModal from './components/NewSessionModal'
 import CommandPalette  from './components/CommandPalette'
-import TimerPage       from './pages/TimerPage'
-import SettingsPage    from './pages/SettingsPage'
-import StatsPage       from './pages/StatsPage'
-import NotesPage       from './pages/NotesPage'
-import FlashcardsPage  from './pages/FlashcardsPage'
-import TimetablePage   from './pages/TimetablePage'
-import PastPapersPage  from './pages/PastPapersPage'
+
+const TimerPage      = lazy(() => import('./pages/TimerPage'))
+const SettingsPage   = lazy(() => import('./pages/SettingsPage'))
+const StatsPage      = lazy(() => import('./pages/StatsPage'))
+const NotesPage      = lazy(() => import('./pages/NotesPage'))
+const FlashcardsPage = lazy(() => import('./pages/FlashcardsPage'))
+const TimetablePage  = lazy(() => import('./pages/TimetablePage'))
+const PastPapersPage = lazy(() => import('./pages/PastPapersPage'))
 import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
@@ -184,15 +185,23 @@ export default function App() {
       />
 
       {/* ── MAIN ── */}
-      <Routes>
-        <Route path="/"            element={<TimerPage />} />
-        <Route path="/settings"    element={<SettingsPage />} />
-        <Route path="/stats"       element={<StatsPage />} />
-        <Route path="/notes"       element={<NotesPage />} />
-        <Route path="/flashcards"  element={<FlashcardsPage />} />
-        <Route path="/timetable"   element={<TimetablePage />} />
-        <Route path="/past-papers" element={<PastPapersPage />} />
-      </Routes>
+      <Suspense fallback={
+        <div style={{ gridArea: 'main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: 'var(--text-mute)', fontSize: '12px', letterSpacing: '0.2em' }}>
+            loading…
+          </span>
+        </div>
+      }>
+        <Routes>
+          <Route path="/"            element={<TimerPage />} />
+          <Route path="/settings"    element={<SettingsPage />} />
+          <Route path="/stats"       element={<StatsPage />} />
+          <Route path="/notes"       element={<NotesPage />} />
+          <Route path="/flashcards"  element={<FlashcardsPage />} />
+          <Route path="/timetable"   element={<TimetablePage />} />
+          <Route path="/past-papers" element={<PastPapersPage />} />
+        </Routes>
+      </Suspense>
 
       {/* ── RAIL (hidden on non-timer routes) ── */}
       {showRail && <RightRail />}
