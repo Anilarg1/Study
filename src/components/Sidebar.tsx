@@ -72,25 +72,28 @@ function StreakDots() {
 // ── component ─────────────────────────────────────────────────────────────
 
 interface SidebarProps {
-  user:      User
-  initials:  string
-  email:     string
-  onSignOut: () => void
-  collapsed: boolean
-  onToggle:  () => void
+  user:        User
+  initials:    string
+  email:       string
+  displayName: string
+  onSignOut:   () => void
+  collapsed:   boolean
+  onToggle:    () => void
 }
 
 export default function Sidebar({
-  user, initials, email, onSignOut, collapsed, onToggle,
+  user: _user, initials, email, displayName, onSignOut, collapsed, onToggle,
 }: SidebarProps) {
-  const displayName = (user.user_metadata?.display_name as string | undefined) || email.split('@')[0]
   const navigate = useNavigate()
   const location = useLocation()
 
   const subjects      = useSubjectStore(s => s.subjects)
   const addSubject    = useSubjectStore(s => s.addSubject)
   const loginDates    = useStreakStore(s => s.loginDates)
-  const currentStreak = calcCurrentStreak(new Set(loginDates))
+  const currentStreak = useMemo(
+    () => calcCurrentStreak(new Set(loginDates)),
+    [loginDates],
+  )
 
   const totalXP   = useXPStore(s => s.totalXP)
   const subjectXP = useSubjectMasteryStore(s => s.subjectXP)

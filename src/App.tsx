@@ -177,6 +177,7 @@ export default function App() {
         user={user}
         initials={initials}
         email={email}
+        displayName={handle}
         onSignOut={signOut}
         collapsed={sidebarCollapsed}
         onToggle={() => toggleSidebar('sidebarCollapsed')}
