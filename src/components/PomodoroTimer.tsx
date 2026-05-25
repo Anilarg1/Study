@@ -254,6 +254,7 @@ export default function PomodoroTimer() {
   const [rankUpEvent,  setRankUpEvent] = useState<RankUpEvent | null>(null)
   const [showSettings, setSettings]    = useState(false)
   const [showAddSubj,  setShowAddSubj] = useState(false)
+  const [pendingMode,  setPendingMode] = useState<TimerMode | null>(null)
   const {
     newTagName, setNewTagName,
     tagAddError,
@@ -324,6 +325,22 @@ export default function PomodoroTimer() {
       : 'Notebook'
   }, [running, mm, ss, mode])
 
+  // ── mode-change guard ────────────────────────────────────────────────────
+  const requestModeChange = useCallback((m: TimerMode) => {
+    if (running && (m === 'shortBreak' || m === 'longBreak')) {
+      setPendingMode(m)
+    } else {
+      setMode(m)
+      setPendingMode(null)
+    }
+  }, [running, setMode])
+
+  const confirmModeChange = useCallback(() => {
+    setPendingMode(prev => { if (prev) setMode(prev); return null })
+  }, [setMode])
+
+  const cancelModeChange = useCallback(() => setPendingMode(null), [])
+
   // ── keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -335,13 +352,13 @@ export default function PomodoroTimer() {
         reset()
       } else if (e.key === 'ArrowRight') {
         skip()
-      } else if (e.key === '1') setMode('work')
-      else if (e.key === '2') setMode('shortBreak')
-      else if (e.key === '3') setMode('longBreak')
+      } else if (e.key === '1') requestModeChange('work')
+      else if (e.key === '2') requestModeChange('shortBreak')
+      else if (e.key === '3') requestModeChange('longBreak')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [running, start, pause, reset, setMode, skip])
+  }, [running, start, pause, reset, setMode, skip, requestModeChange])
 
   // ── ring ──────────────────────────────────────────────────────────────────
   const total      = customDurations[mode]
@@ -539,7 +556,7 @@ export default function PomodoroTimer() {
             <button
               key={m}
               className={`mode-tab${mode === m ? ' active' : ''}`}
-              onClick={() => setMode(m)}
+              onClick={() => requestModeChange(m)}
             >
               {MODE_LABELS[m]}
               <span className="kbd-mini">{MODE_KEYS[m]}</span>
@@ -559,6 +576,50 @@ export default function PomodoroTimer() {
           {showSettings && (
             <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
               <SettingsPanel customDurations={customDurations} setDuration={setDuration} />
+            </div>
+          )}
+
+          {/* mode-switch confirmation — absolutely positioned so it doesn't shift the timer */}
+          {pendingMode && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 60,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 10,
+              width: 'max-content', maxWidth: 360,
+              padding: '9px 14px',
+              background: 'var(--surface)',
+              border: '1px solid var(--hairline-2)',
+              borderRadius: 8,
+              boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+              fontSize: 12,
+              color: 'var(--text-dim)',
+            }}>
+              <span style={{ whiteSpace: 'nowrap' }}>
+                Switch to <strong style={{ color: 'var(--text)' }}>{MODE_LABELS[pendingMode]}</strong>?
+                {' '}Session won't be saved.
+              </span>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={confirmModeChange}
+                  style={{
+                    padding: '4px 12px', borderRadius: 5,
+                    background: 'var(--accent)', color: '#fff',
+                    border: 'none', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+                  }}
+                >Switch</button>
+                <button
+                  onClick={cancelModeChange}
+                  style={{
+                    padding: '4px 12px', borderRadius: 5,
+                    background: 'transparent', color: 'var(--text-dim)',
+                    border: '1px solid var(--hairline)', cursor: 'pointer',
+                    fontSize: 11, fontFamily: 'inherit',
+                  }}
+                >Cancel</button>
+              </div>
             </div>
           )}
         </div>

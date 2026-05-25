@@ -1,0 +1,236 @@
+<h2>Subject Mastery — Names & Badges</h2>
+<p class="subtitle">5 mastery tiers per subject. Should feel distinct from your global rank. Pick a theme.</p>
+
+<div class="options">
+
+  <!-- OPTION A: FLAME -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Flame — Knowledge as fire</h3>
+      <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;">You ignite a subject, then burn brighter as you go deeper. Ember → Kindled → Burning → Blazing → Inferno.</p>
+      <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs><linearGradient id="fa1" x1="30%" y1="10%" x2="70%" y2="90%"><stop offset="0%" stop-color="#78716c"/><stop offset="100%" stop-color="#292524"/></linearGradient></defs>
+            <polygon points="30,4 56,30 30,56 4,30" fill="#0d1117" stroke="#57534e" stroke-width="1.5"/>
+            <path d="M 30,20 Q 34,26 32,32 Q 36,28 34,35 Q 32,40 30,42 Q 28,40 26,35 Q 24,28 28,32 Q 26,26 30,20Z" fill="#78716c" opacity="0.7"/>
+          </svg>
+          <span style="font-size:10px; color:#78716c; font-weight:600;">EMBER</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs><linearGradient id="fa2" x1="30%" y1="10%" x2="70%" y2="90%"><stop offset="0%" stop-color="#fdba74"/><stop offset="100%" stop-color="#c2410c"/></linearGradient></defs>
+            <polygon points="30,4 56,30 30,56 4,30" fill="#0d1117" stroke="#c2410c" stroke-width="1.5"/>
+            <polygon points="30,12 48,30 30,48 12,30" fill="none" stroke="#ea580c" stroke-width="0.8" opacity="0.4"/>
+            <path d="M 30,18 Q 35,24 33,31 Q 38,26 35,34 Q 32,40 30,43 Q 28,40 25,34 Q 22,26 27,31 Q 25,24 30,18Z" fill="#fdba74" opacity="0.85"/>
+          </svg>
+          <span style="font-size:10px; color:#fb923c; font-weight:600;">KINDLED</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <linearGradient id="fa3" x1="30%" y1="10%" x2="70%" y2="90%"><stop offset="0%" stop-color="#fde68a"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+              <filter id="ff3"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="30,4 56,30 30,56 4,30" fill="#0d1117" stroke="#f59e0b" stroke-width="1.5" filter="url(#ff3)"/>
+            <polygon points="30,10 50,30 30,50 10,30" fill="none" stroke="#fcd34d" stroke-width="0.8" opacity="0.4"/>
+            <polygon points="30,18 42,30 30,42 18,30" fill="none" stroke="#fde68a" stroke-width="0.8" opacity="0.3"/>
+            <path d="M 30,16 Q 36,22 34,30 Q 40,24 36,33 Q 33,40 30,43 Q 27,40 24,33 Q 20,24 26,30 Q 24,22 30,16Z" fill="url(#fa3)" opacity="0.9" filter="url(#ff3)"/>
+          </svg>
+          <span style="font-size:10px; color:#fbbf24; font-weight:600;">BURNING</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <linearGradient id="fa4" x1="20%" y1="5%" x2="80%" y2="95%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#fde68a"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+              <filter id="ff4"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="30,2 52,14 58,38 44,56 16,56 2,38 8,14" fill="#0d1117" stroke="#f59e0b" stroke-width="1.5" filter="url(#ff4)"/>
+            <path d="M 30,13 Q 37,20 35,28 Q 42,22 38,32 Q 35,40 30,44 Q 25,40 22,32 Q 18,22 25,28 Q 23,20 30,13Z" fill="url(#fa4)" filter="url(#ff4)" opacity="0.95"/>
+            <path d="M 30,22 Q 33,26 32,30 Q 34,28 33,32 Q 31,36 30,38 Q 29,36 27,32 Q 26,28 28,30 Q 27,26 30,22Z" fill="#ffffff" opacity="0.8"/>
+          </svg>
+          <span style="font-size:10px; color:#fef08a; font-weight:600;">BLAZING</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <radialGradient id="fa5" cx="50%" cy="30%" r="55%"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="#fef08a"/><stop offset="100%" stop-color="#92400e"/></radialGradient>
+              <filter id="ff5"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="30,2 38,12 50,6 46,18 58,16 52,26 60,30 52,34 58,44 46,42 50,54 38,48 30,58 22,48 10,54 14,42 2,44 8,34 0,30 8,26 2,16 14,18 10,6 22,12" fill="#0d1117" stroke="#f59e0b" stroke-width="1" filter="url(#ff5)"/>
+            <path d="M 30,10 Q 38,18 36,27 Q 44,20 40,30 Q 37,38 30,43 Q 23,38 20,30 Q 16,20 24,27 Q 22,18 30,10Z" fill="url(#fa5)" filter="url(#ff5)"/>
+            <path d="M 30,19 Q 34,24 33,29 Q 36,26 34,31 Q 32,36 30,38 Q 28,36 26,31 Q 24,26 27,29 Q 26,24 30,19Z" fill="#ffffff" opacity="0.95"/>
+          </svg>
+          <span style="font-size:10px; color:#fff; font-weight:600; text-shadow:0 0 8px #f59e0b;">INFERNO</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B: CRYSTAL -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Crystal — Knowledge as a gem you cut</h3>
+      <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;">Raw material shaped into something refined and flawless. Rough → Shard → Cut → Refined → Flawless.</p>
+      <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <polygon points="30,10 44,24 44,44 30,50 16,44 16,24" fill="#0d1117" stroke="#44403c" stroke-width="1.5"/>
+            <polygon points="30,20 38,28 38,40 30,44 22,40 22,28" fill="#44403c" opacity="0.3"/>
+          </svg>
+          <span style="font-size:10px; color:#78716c; font-weight:600;">ROUGH</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs><linearGradient id="cb2" x1="20%" y1="10%" x2="80%" y2="90%"><stop offset="0%" stop-color="#bae6fd"/><stop offset="100%" stop-color="#0369a1"/></linearGradient></defs>
+            <polygon points="30,8 46,22 46,44 30,52 14,44 14,22" fill="#0d1117" stroke="#0284c7" stroke-width="1.5"/>
+            <polygon points="30,8 46,22 30,22" fill="#bae6fd" opacity="0.3"/>
+            <line x1="14" y1="22" x2="46" y2="22" stroke="#38bdf8" stroke-width="1" opacity="0.5"/>
+            <polygon points="30,20 40,30 30,48 20,30" fill="url(#cb2)" opacity="0.5"/>
+          </svg>
+          <span style="font-size:10px; color:#38bdf8; font-weight:600;">SHARD</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <linearGradient id="cb3" x1="20%" y1="5%" x2="80%" y2="95%"><stop offset="0%" stop-color="#c4b5fd"/><stop offset="100%" stop-color="#5b21b6"/></linearGradient>
+              <filter id="cf3"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="30,6 48,18 50,38 38,52 22,52 10,38 12,18" fill="#0d1117" stroke="#7c3aed" stroke-width="1.5" filter="url(#cf3)"/>
+            <polygon points="30,6 48,18 30,18" fill="#c4b5fd" opacity="0.25"/>
+            <polygon points="30,6 12,18 30,18" fill="#c4b5fd" opacity="0.15"/>
+            <line x1="12" y1="18" x2="48" y2="18" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+            <polygon points="30,16 42,28 38,46 22,46 18,28" fill="url(#cb3)" opacity="0.35"/>
+            <polygon points="30,22 38,30 30,46 22,30" fill="#ddd6fe" opacity="0.4"/>
+          </svg>
+          <span style="font-size:10px; color:#a78bfa; font-weight:600;">CUT</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <linearGradient id="cb4" x1="20%" y1="5%" x2="80%" y2="95%"><stop offset="0%" stop-color="#fbcfe8"/><stop offset="100%" stop-color="#9d174d"/></linearGradient>
+              <filter id="cf4"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="30,4 50,14 56,34 46,52 14,52 4,34 10,14" fill="#0d1117" stroke="#db2777" stroke-width="1.5" filter="url(#cf4)"/>
+            <line x1="10" y1="14" x2="50" y2="14" stroke="#f9a8d4" stroke-width="0.8" opacity="0.4"/>
+            <polygon points="30,4 50,14 30,14" fill="#fbcfe8" opacity="0.2"/>
+            <polygon points="30,4 10,14 30,14" fill="#fbcfe8" opacity="0.12"/>
+            <polygon points="30,12 46,26 42,46 18,46 14,26" fill="url(#cb4)" opacity="0.25"/>
+            <polygon points="30,18 42,28 30,50 18,28" fill="#fbcfe8" opacity="0.35"/>
+            <polygon points="30,24 36,30 30,44 24,30" fill="#fdf2f8" opacity="0.6"/>
+          </svg>
+          <span style="font-size:10px; color:#f472b6; font-weight:600;">REFINED</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <radialGradient id="cb5" cx="40%" cy="30%" r="60%"><stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#0369a1"/></radialGradient>
+              <filter id="cf5"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <polygon points="30,2 44,10 56,24 56,40 44,52 30,58 16,52 4,40 4,24 16,10" fill="#0d1117" stroke="#38bdf8" stroke-width="1.5" filter="url(#cf5)"/>
+            <polygon points="30,10 44,18 50,32 44,46 30,52 16,46 10,32 16,18" fill="url(#cb5)" opacity="0.15"/>
+            <polygon points="30,2 44,10 30,10" fill="#e0f2fe" opacity="0.3"/>
+            <polygon points="30,2 16,10 30,10" fill="#e0f2fe" opacity="0.2"/>
+            <line x1="4" y1="24" x2="56" y2="24" stroke="#7dd3fc" stroke-width="0.8" opacity="0.3"/>
+            <polygon points="30,10 44,24 56,40 30,52 4,40 16,24" fill="url(#cb5)" opacity="0.2"/>
+            <polygon points="30,16 40,26 40,40 30,46 20,40 20,26" fill="#bae6fd" opacity="0.3"/>
+            <polygon points="30,20 36,28 36,38 30,42 24,38 24,28" fill="#ffffff" opacity="0.5"/>
+          </svg>
+          <span style="font-size:10px; color:#fff; font-weight:600; text-shadow:0 0 8px #38bdf8;">FLAWLESS</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C: DEPTH -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Depth — Knowledge as excavation</h3>
+      <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;">You dig deeper into a subject over time. Surface → Foundation → Deep → Profound → Core.</p>
+      <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <circle cx="30" cy="30" r="24" fill="#0d1117" stroke="#44403c" stroke-width="1.5"/>
+            <circle cx="30" cy="30" r="16" fill="none" stroke="#44403c" stroke-width="1" opacity="0.4"/>
+            <line x1="6" y1="30" x2="54" y2="30" stroke="#57534e" stroke-width="1" opacity="0.4"/>
+          </svg>
+          <span style="font-size:10px; color:#78716c; font-weight:600;">SURFACE</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs><linearGradient id="dc2" x1="30%" y1="10%" x2="70%" y2="90%"><stop offset="0%" stop-color="#6ee7b7"/><stop offset="100%" stop-color="#065f46"/></linearGradient></defs>
+            <circle cx="30" cy="30" r="24" fill="#0d1117" stroke="#059669" stroke-width="1.5"/>
+            <circle cx="30" cy="30" r="16" fill="none" stroke="#34d399" stroke-width="1" opacity="0.4"/>
+            <circle cx="30" cy="30" r="8" fill="url(#dc2)" opacity="0.5"/>
+            <line x1="6" y1="30" x2="54" y2="30" stroke="#34d399" stroke-width="0.8" opacity="0.3"/>
+            <line x1="30" y1="6" x2="30" y2="54" stroke="#34d399" stroke-width="0.8" opacity="0.3"/>
+          </svg>
+          <span style="font-size:10px; color:#34d399; font-weight:600;">FOUNDATION</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <radialGradient id="dc3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#1e1b4b"/></radialGradient>
+              <filter id="dcf3"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="#0d1117" stroke="#4f46e5" stroke-width="1.5" filter="url(#dcf3)"/>
+            <circle cx="30" cy="30" r="18" fill="none" stroke="#818cf8" stroke-width="0.8" opacity="0.4"/>
+            <circle cx="30" cy="30" r="12" fill="none" stroke="#818cf8" stroke-width="0.8" opacity="0.3"/>
+            <circle cx="30" cy="30" r="6" fill="url(#dc3)" opacity="0.7"/>
+          </svg>
+          <span style="font-size:10px; color:#818cf8; font-weight:600;">DEEP</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <radialGradient id="dc4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#c084fc"/><stop offset="100%" stop-color="#4a044e"/></radialGradient>
+              <filter id="dcf4"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="#0d1117" stroke="#9333ea" stroke-width="1.5" filter="url(#dcf4)"/>
+            <circle cx="30" cy="30" r="18" fill="none" stroke="#c084fc" stroke-width="0.8" opacity="0.4"/>
+            <circle cx="30" cy="30" r="12" fill="none" stroke="#c084fc" stroke-width="0.8" opacity="0.35"/>
+            <circle cx="30" cy="30" r="6" fill="none" stroke="#e9d5ff" stroke-width="0.8" opacity="0.4"/>
+            <circle cx="30" cy="30" r="8" fill="url(#dc4)" opacity="0.8" filter="url(#dcf4)"/>
+          </svg>
+          <span style="font-size:10px; color:#c084fc; font-weight:600;">PROFOUND</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <svg viewBox="0 0 60 60" width="52" height="52">
+            <defs>
+              <radialGradient id="dc5" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#fef08a"/><stop offset="100%" stop-color="#78350f"/></radialGradient>
+              <filter id="dcf5"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="#0d1117" stroke="#d97706" stroke-width="1.5" filter="url(#dcf5)"/>
+            <circle cx="30" cy="30" r="18" fill="none" stroke="#fbbf24" stroke-width="0.8" opacity="0.4"/>
+            <circle cx="30" cy="30" r="12" fill="none" stroke="#fde68a" stroke-width="0.8" opacity="0.35"/>
+            <circle cx="30" cy="30" r="6" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.4"/>
+            <circle cx="30" cy="30" r="10" fill="url(#dc5)" filter="url(#dcf5)"/>
+          </svg>
+          <span style="font-size:10px; color:#fef08a; font-weight:600; text-shadow:0 0 8px #d97706;">CORE</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

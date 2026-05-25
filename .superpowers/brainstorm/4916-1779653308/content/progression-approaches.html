@@ -1,0 +1,83 @@
+<h2>Progression System Approaches</h2>
+<p class="subtitle">Three ways to layer MMO-style depth without over-gamifying</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Scholar's Path — One Global Rank</h3>
+      <p>XP feeds a single progression through 8 named tiers. You're always one rank, shown subtly in the sidebar. Clean, dignified, never in your face.</p>
+      <div style="margin-top:12px; background: #1a1a2e; border-radius: 8px; padding: 14px; font-size: 13px;">
+        <div style="color:#a78bfa; font-size:11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Your Rank</div>
+        <div style="color:#e2e8f0; font-size:18px; font-weight:600; margin-bottom:8px;">⚗️ Scholar</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1; height:4px; background:#2d2d4e; border-radius:2px;">
+            <div style="width:62%; height:100%; background: linear-gradient(90deg,#7c3aed,#a78bfa); border-radius:2px;"></div>
+          </div>
+          <span style="color:#64748b; font-size:11px;">→ Adept</span>
+        </div>
+      </div>
+      <div style="margin-top:10px; color:#94a3b8; font-size:12px;">
+        Tiers: Wanderer · Seeker · Apprentice · <strong style="color:#a78bfa">Scholar</strong> · Adept · Sage · Master · Luminary
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Dual Mastery — Global + Per-Subject ⭐ Recommended</h3>
+      <p>A global Scholar rank <em>plus</em> per-subject mastery tiers. Studying Math levels up your Math mastery. Studying everything levels up your Scholar rank. Two axes = genuine MMO feel.</p>
+      <div style="margin-top:12px; background: #1a1a2e; border-radius: 8px; padding: 14px; font-size: 13px;">
+        <div style="color:#a78bfa; font-size:11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Your Rank</div>
+        <div style="color:#e2e8f0; font-size:18px; font-weight:600; margin-bottom:10px;">⚗️ Scholar</div>
+        <div style="border-top: 1px solid #2d2d4e; padding-top:10px;">
+          <div style="color:#64748b; font-size:11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Subject Mastery</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="color:#e2e8f0;">Mathematics</span>
+              <span style="color:#f59e0b; font-size:13px;">★★★★☆ <span style="color:#64748b; font-size:11px;">Proficient</span></span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="color:#e2e8f0;">History</span>
+              <span style="color:#f59e0b; font-size:13px;">★★☆☆☆ <span style="color:#64748b; font-size:11px;">Familiar</span></span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="color:#e2e8f0;">Physics</span>
+              <span style="color:#f59e0b; font-size:13px;">★☆☆☆☆ <span style="color:#64748b; font-size:11px;">Novice</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; color:#94a3b8; font-size:12px;">
+        Subject tiers: Novice · Familiar · Practiced · Proficient · Mastered
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Prestige Path — Rank + Ascension</h3>
+      <p>A single global rank with a prestige layer — once you reach Luminary, you can "ascend" and restart with a prestige badge. Creates genuine long-term depth but leans more gamified.</p>
+      <div style="margin-top:12px; background: #1a1a2e; border-radius: 8px; padding: 14px; font-size: 13px;">
+        <div style="color:#a78bfa; font-size:11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;">Your Rank</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <div style="color:#e2e8f0; font-size:18px; font-weight:600;">⚗️ Scholar</div>
+          <div style="background:#7c3aed; border-radius:4px; padding:2px 7px; font-size:11px; color:#e2e8f0;">✦ Ascended II</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1; height:4px; background:#2d2d4e; border-radius:2px;">
+            <div style="width:62%; height:100%; background: linear-gradient(90deg,#7c3aed,#a78bfa); border-radius:2px;"></div>
+          </div>
+          <span style="color:#64748b; font-size:11px;">→ Adept</span>
+        </div>
+      </div>
+      <div style="margin-top:10px; color:#94a3b8; font-size:12px;">
+        Hit Luminary → choose to Ascend → prestige badge, fresh climb, bonus XP multiplier
+      </div>
+    </div>
+  </div>
+
+</div>
