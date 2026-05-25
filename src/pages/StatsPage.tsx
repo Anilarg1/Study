@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo, useDeferredValue } from 'react'
 import useXPStore         from '../store/useXPStore'
 import useSubjectStore    from '../store/useSubjectStore'
 import useStreakStore from '../store/useStreakStore'
@@ -69,7 +69,7 @@ function radarLabelPos(i: number, N: number, R: number, cx: number, cy: number, 
 // ─── sub-components ───────────────────────────────────────────────────────────
 
 // KPI delta badge
-function Delta({ pct, label = 'vs prev' }: { pct: number; label?: string }) {
+const Delta = memo(function Delta({ pct, label = 'vs prev' }: { pct: number; label?: string }) {
   if (pct === 0) return <span className="s-kpi-delta flat">—</span>
   const cls = pct > 0 ? 'up' : 'down'
   const arrow = (
@@ -86,10 +86,10 @@ function Delta({ pct, label = 'vs prev' }: { pct: number; label?: string }) {
       <span className="vs">{label}</span>
     </span>
   )
-}
+})
 
 // Sparkline built from real 14-day data
-function Sparkline({ data }: { data: number[] }) {
+const Sparkline = memo(function Sparkline({ data }: { data: number[] }) {
   const max = Math.max(1, ...data)
   return (
     <div className="s-spark">
@@ -106,10 +106,10 @@ function Sparkline({ data }: { data: number[] }) {
       })}
     </div>
   )
-}
+})
 
 // Radar chart — dynamic N subjects
-function SubjectRadar({
+const SubjectRadar = memo(function SubjectRadar({
   subjects,
   totalMins,
 }: {
@@ -221,7 +221,7 @@ function SubjectRadar({
       </div>
     </div>
   )
-}
+})
 
 // ─── histogram buckets (module-level constant) ────────────────────────────────
 const HIST_BUCKETS = [
@@ -239,7 +239,7 @@ const HIST_BUCKETS = [
 
 // ─── progression card ─────────────────────────────────────────────────────────
 
-function ProgressionCard() {
+const ProgressionCard = memo(function ProgressionCard() {
   const totalXP   = useXPStore(s => s.totalXP)
   const sessions  = useXPStore(s => s.sessions)
   const subjects  = useSubjectStore(s => s.subjects)
@@ -311,7 +311,7 @@ function ProgressionCard() {
       )}
     </div>
   )
-}
+})
 
 // ─── main component ───────────────────────────────────────────────────────────
 
@@ -323,18 +323,21 @@ export default function StatsPage() {
   const [range, setRange]               = useState<Range>('month')
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null)
 
+  const deferredRange         = useDeferredValue(range)
+  const deferredSubjectFilter = useDeferredValue(subjectFilter)
+
   // ── date range boundaries ──────────────────────────────────────────────────
-  const rangeStart = useMemo(() => getRangeStart(range), [range])
-  const prevStart  = useMemo(() => getPrevStart(range), [range])
+  const rangeStart = useMemo(() => getRangeStart(deferredRange), [deferredRange])
+  const prevStart  = useMemo(() => getPrevStart(deferredRange), [deferredRange])
 
   // ── filtered sessions ──────────────────────────────────────────────────────
   const workSessions = useMemo(() =>
     sessions.filter(s =>
       s.type === 'work' &&
       new Date(s.completedAt) >= rangeStart &&
-      (subjectFilter === null || s.subjectId === subjectFilter)
+      (deferredSubjectFilter === null || s.subjectId === deferredSubjectFilter)
     ),
-    [sessions, rangeStart, subjectFilter]
+    [sessions, rangeStart, deferredSubjectFilter]
   )
 
   const prevWorkSessions = useMemo(() =>
@@ -342,9 +345,9 @@ export default function StatsPage() {
       s.type === 'work' &&
       new Date(s.completedAt) >= prevStart &&
       new Date(s.completedAt) < rangeStart &&
-      (subjectFilter === null || s.subjectId === subjectFilter)
+      (deferredSubjectFilter === null || s.subjectId === deferredSubjectFilter)
     ),
-    [sessions, prevStart, rangeStart, subjectFilter]
+    [sessions, prevStart, rangeStart, deferredSubjectFilter]
   )
 
   // ── KPI totals ─────────────────────────────────────────────────────────────
@@ -390,10 +393,10 @@ export default function StatsPage() {
   }
 
   const chartBars = useMemo<ChartBar[]>(() => {
-    const useWeekly = range === 'year' || range === 'all'
+    const useWeekly = deferredRange === 'year' || deferredRange === 'all'
 
     if (!useWeekly) {
-      const numDays = range === 'week' ? 7 : range === 'month' ? 30 : 90
+      const numDays = deferredRange === 'week' ? 7 : deferredRange === 'month' ? 30 : 90
       return Array.from({ length: numDays }, (_, i) => {
         const d = new Date()
         d.setDate(d.getDate() - (numDays - 1 - i))
@@ -412,7 +415,7 @@ export default function StatsPage() {
     }
 
     // Weekly aggregation: last 52 weeks (year) or since earliest session (all)
-    const WEEKS = range === 'year' ? 52 : (() => {
+    const WEEKS = deferredRange === 'year' ? 52 : (() => {
       if (workSessions.length === 0) return 52
       const earliest = workSessions.reduce(
         (min, s) => Math.min(min, new Date(s.completedAt).getTime()),
@@ -449,7 +452,7 @@ export default function StatsPage() {
         isWeekly:    true,
       }
     })
-  }, [workSessions, range])
+  }, [workSessions, deferredRange])
 
   const maxBarMins = useMemo(() => Math.max(60, ...chartBars.map(d => d.mins)), [chartBars])
   const avgBarMins = useMemo(() => {
@@ -466,7 +469,7 @@ export default function StatsPage() {
     for (const s of sessions) {
       if (s.type !== 'work') continue
       // Respect subject filter
-      if (subjectFilter !== null && s.subjectId !== subjectFilter) continue
+      if (deferredSubjectFilter !== null && s.subjectId !== deferredSubjectFilter) continue
       const ds = dateOf(s.completedAt)
       minsPerDay.set(ds, (minsPerDay.get(ds) ?? 0) + sessionMins(s))
     }
@@ -522,7 +525,7 @@ export default function StatsPage() {
     if (lastM !== -1) monthLabels.push({ label: MONTH_NAMES[lastM] ?? '', width: runLen })
 
     return { heatWeeks: weeks, heatMonthLabels: monthLabels, activeDays, longestHeatStreak: maxStreak }
-  }, [sessions, subjectFilter])
+  }, [sessions, deferredSubjectFilter])
 
   // ── subject breakdown ──────────────────────────────────────────────────────
   const subjectStats = useMemo(() => {
@@ -662,11 +665,11 @@ export default function StatsPage() {
   // ── range label ────────────────────────────────────────────────────────────
   const rangeLabel = useMemo(() => {
     const now = new Date()
-    const start = getRangeStart(range)
+    const start = getRangeStart(deferredRange)
     const fmt = (d: Date) => `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`
-    if (range === 'all') return 'All time'
+    if (deferredRange === 'all') return 'All time'
     return `${fmt(start)} – ${fmt(now)}, ${now.getFullYear()}`
-  }, [range])
+  }, [deferredRange])
 
   // ── last session ───────────────────────────────────────────────────────────
   const lastSession = useMemo(() => {
