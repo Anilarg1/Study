@@ -8,10 +8,10 @@ export default function StreakDots() {
   const loginDates = useStreakStore(s => s.loginDates)
   const dateSet    = useMemo(() => new Set(loginDates), [loginDates])
 
-  const last7 = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+  const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() - (6 - i) * 86_400_000)
     return { dateStr: toLocalDateStr(d), label: DAY_LETTERS[d.getDay()]!, isToday: i === 6 }
-  }), [])
+  })
 
   return (
     <svg width="100%" viewBox="0 0 154 34" style={{ display: 'block', overflow: 'visible' }}>
