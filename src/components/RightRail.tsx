@@ -4,8 +4,6 @@ import useXPStore      from '../store/useXPStore'
 import useStreakStore, { toLocalDateStr, calcCurrentStreak } from '../store/useStreakStore'
 import useSubjectStore from '../store/useSubjectStore'
 import useTagStore     from '../store/useTagStore'
-import RankBadge from './RankBadge'
-import { getRankFromXP, getRankProgress, getXPToNextRank } from '../utils/progression'
 import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -99,194 +97,6 @@ function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 9.5, color: 'var(--text-faint)' }}>
         <span>6 AM</span><span>NOON</span><span>6 PM</span><span>12</span>
-      </div>
-    </div>
-  )
-}
-
-// ── streak card ───────────────────────────────────────────────────────────
-
-function StreakCard() {
-  const loginDates    = useStreakStore(s => s.loginDates)
-  const longestStreak = useStreakStore(s => s.longestStreak)
-  const dateSet       = useMemo(() => new Set(loginDates), [loginDates])
-  const currentStreak = useMemo(() => calcCurrentStreak(dateSet), [dateSet])
-  const clockedIn     = dateSet.has(toLocalDateStr())
-
-  return (
-    <div className="v2-card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>
-          Streak
-        </span>
-        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 18, fontWeight: 600, color: currentStreak > 0 ? 'var(--streak)' : 'var(--text-dim)', lineHeight: 1 }}>
-          {currentStreak}
-          <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-dim)', marginLeft: 3, fontFamily: 'Inter, sans-serif' }}>
-            {currentStreak === 1 ? 'day' : 'days'}
-          </span>
-        </span>
-        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: clockedIn ? 'var(--short)' : 'var(--text-faint)' }}>
-          {clockedIn ? '✓ today' : '○ not yet'}
-        </span>
-        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)' }}>
-          best: {longestStreak}d
-        </span>
-      </div>
-    </div>
-  )
-}
-
-// ── rank card ─────────────────────────────────────────────────────────────
-
-function RankCard() {
-  const totalXP = useXPStore(s => s.totalXP)
-  const rank    = getRankFromXP(totalXP)
-  const pct     = Math.round(getRankProgress(totalXP) * 100)
-  const toNext  = getXPToNextRank(totalXP)
-
-  return (
-    <div className="v2-card">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <RankBadge tierIndex={rank.tierIndex} size={36} subLevel={rank.subLevel} showPips={true} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: rank.color }}>
-            {rank.label}
-          </div>
-          <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
-            <b style={{ color: 'var(--text)', fontWeight: 500 }}>{totalXP.toLocaleString()}</b> XP total
-          </div>
-        </div>
-      </div>
-
-      <div className="xp-track">
-        <div className="xp-fill" style={{ width: `${pct}%`, background: rank.color }} />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>
-        <span>{toNext > 0 ? `${toNext.toLocaleString()} XP to next rank` : 'Max rank reached'}</span>
-        <span style={{ color: 'var(--xp)' }}>{rank.tierName}</span>
-      </div>
-    </div>
-  )
-}
-
-// ── week card ─────────────────────────────────────────────────────────────
-
-function WeekCard({ sessions }: { sessions: SessionEntry[] }) {
-  const days = useMemo(() => {
-    const result: { label: string; dateStr: string; mins: number }[] = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const dateStr = toLocalDateStr(d)
-      const label   = d.toLocaleDateString('en-US', { weekday: 'short' })
-      const daySessions = sessions.filter(
-        s => s.type === 'work' && dateOf(s.completedAt) === dateStr,
-      )
-      const mins = daySessions.reduce(
-        (sum, s) => sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0,
-      )
-      result.push({ label, dateStr, mins })
-    }
-    return result
-  }, [sessions])
-
-  const totalMins = days.reduce((sum, d) => sum + d.mins, 0)
-  const maxMins   = Math.max(1, ...days.map(d => d.mins))
-
-  return (
-    <div className="v2-card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }}>
-            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 17V11M12 17V8M15 17v-4"/>
-          </svg>
-          This week
-        </span>
-        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-mute)' }}>
-          {totalMins === 0 ? '—' : fmtDuration(totalMins)} total
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 52, marginBottom: 6 }}>
-        {days.map(({ label, dateStr, mins }) => {
-          const height = Math.round((mins / maxMins) * 44) + 4
-          return (
-            <div key={dateStr} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <div style={{
-                width: '100%',
-                background: mins > 0 ? 'var(--accent)' : 'var(--surface-3)',
-                borderRadius: 3,
-                height,
-                minHeight: 4,
-                opacity: mins > 0 ? 0.85 : 0.3,
-                transition: 'height 300ms ease',
-              }} />
-              <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 8.5, color: 'var(--text-faint)' }}>
-                {label[0]}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      {totalMins === 0 ? (
-        <div style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '8px 0' }}>
-          No focus sessions this week yet
-        </div>
-      ) : (
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
-          <span>{days[0].label}</span>
-          <span>Today</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── all-time card ─────────────────────────────────────────────────────────
-
-function AllTimeCard({ sessions }: { sessions: SessionEntry[] }) {
-  const totalXP      = useXPStore(s => s.totalXP)
-  const workSessions = useMemo(() => sessions.filter(s => s.type === 'work'), [sessions])
-  const totalMins    = useMemo(() =>
-    workSessions.reduce((sum, s) =>
-      sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0,
-    ), [workSessions],
-  )
-
-  return (
-    <div className="v2-card">
-      <div style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500, marginBottom: 14 }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }}>
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        All time
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Focus time</span>
-          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>
-            {totalMins === 0 ? '—' : fmtDuration(totalMins)}
-          </span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Sessions</span>
-          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>
-            {workSessions.length}
-          </span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-mute)' }}>Total XP</span>
-          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13, color: 'var(--xp)', fontWeight: 500 }}>
-            {totalXP.toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 12, fontSize: 10, color: 'var(--text-faint)', textAlign: 'right' }}>
-        Showing last {sessions.length} sessions
       </div>
     </div>
   )
@@ -506,7 +316,6 @@ function InsightsRail({ sessions }: { sessions: SessionEntry[] }) {
 export default function RightRail() {
   const location            = useLocation()
   const isStats             = location.pathname === '/stats'
-  const [tab, setTab]       = useState('today')
   const [statsTab, setStatsTab] = useState<'today' | 'insights'>('insights')
   const sessions            = useXPStore(s => s.sessions)
 
@@ -528,13 +337,7 @@ export default function RightRail() {
           </div>
         </div>
 
-        {statsTab === 'today' && (
-          <>
-            <StreakCard />
-            <TodayCard sessions={sessions} />
-            <RankCard />
-          </>
-        )}
+        {statsTab === 'today' && <TodayCard sessions={sessions} />}
         {statsTab === 'insights' && <InsightsRail sessions={sessions} />}
       </aside>
     )
@@ -543,43 +346,18 @@ export default function RightRail() {
   // ── timer / default rail ──────────────────────────────────────────────────
   return (
     <aside className="v2-rail">
+      <TodayCard sessions={sessions} />
 
-      <div className="rail-tabs">
-        <div className="rail-tabs-buttons">
-          {(['today', 'week', 'all'] as const).map(t => (
-            <button
-              key={t}
-              className={`rail-tab${tab === t ? ' active' : ''}`}
-              onClick={() => setTab(t)}
-            >
-              {t === 'today' ? 'Today' : t === 'week' ? 'Week' : 'All time'}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
+        <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>Recent sessions</span>
+        <Link
+          to="/stats"
+          style={{ fontSize: 11, color: 'var(--text-mute)', textDecoration: 'none' }}
+        >
+          View all →
+        </Link>
       </div>
-
-      {tab === 'today' && (
-        <>
-          <StreakCard />
-          <TodayCard sessions={sessions} />
-          <RankCard />
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
-            <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>Recent sessions</span>
-            <Link
-              to="/stats"
-              style={{ fontSize: 11, color: 'var(--text-mute)', textDecoration: 'none' }}
-            >
-              View all →
-            </Link>
-          </div>
-          <RecentSessions sessions={sessions} />
-        </>
-      )}
-
-      {tab === 'week' && <WeekCard sessions={sessions} />}
-      {tab === 'all'  && <AllTimeCard sessions={sessions} />}
-
+      <RecentSessions sessions={sessions} />
     </aside>
   )
 }
