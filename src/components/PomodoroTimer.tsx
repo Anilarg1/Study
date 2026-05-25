@@ -273,8 +273,9 @@ export default function PomodoroTimer() {
     showAddTag, setShowAddTag,
     handleAddTag, dismissAddTag,
   } = useTagPicker(tagId => setTagId(tagId))
-  const tickRef      = useRef<ReturnType<typeof setInterval> | null>(null)
-  const chipsRef     = useRef<HTMLDivElement>(null)
+  const tickRef       = useRef<ReturnType<typeof setInterval> | null>(null)
+  const handleTickRef = useRef<() => void>(() => {})
+  const chipsRef      = useRef<HTMLDivElement>(null)
   const settingsRef  = useRef<HTMLDivElement>(null)
   const tagPickerRef = useRef<HTMLDivElement>(null)
 
@@ -319,15 +320,17 @@ export default function PomodoroTimer() {
       }
     }
   }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled])
+  // Keep ref in sync so the interval always calls the latest closure
+  handleTickRef.current = handleTick
 
   useEffect(() => {
     if (running) {
-      tickRef.current = setInterval(handleTick, 1000)
+      tickRef.current = setInterval(() => handleTickRef.current(), 1000)
     } else {
       if (tickRef.current !== null) clearInterval(tickRef.current)
     }
     return () => { if (tickRef.current !== null) clearInterval(tickRef.current) }
-  }, [running, handleTick])
+  }, [running])
 
   // ── document title ────────────────────────────────────────────────────────
   const [mm, ss] = fmt(remaining)
