@@ -366,22 +366,26 @@ export default function StatsPage() {
     : 0
 
   // ── sparklines (14-day rolling) ────────────────────────────────────────────
-  const sparkTime = useMemo(() => {
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (13 - i))
-      const ds = toLocalDateStr(d)
-      return sessions
-        .filter(s => s.type === 'work' && dateOf(s.completedAt) === ds)
-        .reduce((sum, s) => sum + sessionMins(s), 0)
-    })
-  }, [sessions])
+  const { sparkTime, sparkSessions } = useMemo(() => {
+    // Single pass over sessions — build a date → {mins, count} map
+    const byDate = new Map<string, { mins: number; count: number }>()
+    for (const s of sessions) {
+      if (s.type !== 'work') continue
+      const ds  = dateOf(s.completedAt)
+      const cur = byDate.get(ds) ?? { mins: 0, count: 0 }
+      byDate.set(ds, { mins: cur.mins + sessionMins(s), count: cur.count + 1 })
+    }
 
-  const sparkSessions = useMemo(() => {
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (13 - i))
-      const ds = toLocalDateStr(d)
-      return sessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === ds).length
-    })
+    const time: number[]  = []
+    const count: number[] = []
+    for (let i = 0; i < 14; i++) {
+      const d = new Date()
+      d.setDate(d.getDate() - (13 - i))
+      const entry = byDate.get(toLocalDateStr(d))
+      time.push(entry?.mins  ?? 0)
+      count.push(entry?.count ?? 0)
+    }
+    return { sparkTime: time, sparkSessions: count }
   }, [sessions])
 
   // ── chart bars (daily for week/month/quarter; weekly for year/all) ─────────

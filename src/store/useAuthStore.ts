@@ -95,7 +95,7 @@ const useAuthStore = create<AuthState>()((set, get) => ({
       fetchLoginDates(userId),
       fetchSubjects(userId),
       fetchTags(userId),
-      fetchSessions(userId, { limit: 200 }),
+      fetchSessions(userId, { limit: 2000 }),
       fetchSubjectXP(userId),
     ])
 
