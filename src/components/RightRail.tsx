@@ -82,6 +82,15 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
   const subjects = useSubjectStore(s => s.subjects)
   const tags = useTagStore(s => s.tags)
 
+  const subjectMap = useMemo(
+    () => new Map(subjects.map(s => [s.id, s])),
+    [subjects],
+  )
+  const tagMap = useMemo(
+    () => new Map(tags.map(t => [t.id, t])),
+    [tags],
+  )
+
   const recent = useMemo(() =>
     [...sessions].filter(s => s.type === 'work').reverse().slice(0, 8),
     [sessions]
@@ -98,8 +107,8 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
   return (
     <>
       {recent.map(entry => {
-        const subj = subjects.find(s => s.id === entry.subjectId)
-        const tag  = tags.find(t => t.id === entry.tagId)
+        const subj = subjectMap.get(entry.subjectId ?? '')
+        const tag  = tagMap.get(entry.tagId ?? '')
         return (
           <div key={entry.id} className="session-row">
             <span className="session-dot" style={{ background: subj?.color ?? 'var(--text-faint)' }} />
