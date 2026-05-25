@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
-import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
+import useStreakStore, { calcCurrentStreak, toLocalDateStr } from '../store/useStreakStore'
 import useXPStore from '../store/useXPStore'
 import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import { SUBJECT_COLORS } from '../lib/subjects'
@@ -22,8 +22,8 @@ function IcTimer() {
 }
 function IcStreak() {
   return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>
+    <svg className="ni-icon" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2s4 4 4 8a4 4 0 0 1-1.5 3c.5-.7.5-1.8 0-2.5-1-1.5-2.5-1-2.5-3 0 2-2 2.5-3 4.5a4 4 0 1 0 7.5 2C16.5 18 12 22 12 22s-7-3-7-9c0-7 7-11 7-11z"/>
     </svg>
   )
 }
@@ -96,6 +96,60 @@ function IcChevron({ right }: { right?: boolean }) {
          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
          style={{ transition: 'transform 220ms cubic-bezier(.4,0,.2,1)', transform: right ? 'rotate(180deg)' : 'none' }}>
       <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  )
+}
+
+// ── streak dots ────────────────────────────────────────────────────────────
+
+const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+function StreakDots() {
+  const loginDates = useStreakStore(s => s.loginDates)
+  const dateSet    = useMemo(() => new Set(loginDates), [loginDates])
+
+  const last7 = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86_400_000)
+    return {
+      dateStr: toLocalDateStr(d),
+      label:   DAY_LETTERS[d.getDay()],
+      isToday: i === 6,
+    }
+  }), [])
+
+  return (
+    <svg width="100%" viewBox="0 0 154 34" style={{ display: 'block', overflow: 'visible' }}>
+      {last7.map(({ dateStr, label, isToday }, i) => {
+        const logged = dateSet.has(dateStr)
+        const cx = 11 + i * 22
+        const cy = 11
+        return (
+          <g key={dateStr}>
+            <circle
+              cx={cx} cy={cy} r={isToday ? 8.5 : 7}
+              fill={logged ? 'var(--streak)' : 'var(--surface-3)'}
+              stroke={isToday && !logged ? 'var(--hairline-2)' : 'none'}
+              strokeWidth={1.5}
+              opacity={logged ? (isToday ? 1 : 0.72) : 0.45}
+            />
+            {logged && (
+              <path
+                d={`M${cx - 3.5} ${cy} L${cx - 1} ${cy + 2.5} L${cx + 3.5} ${cy - 3}`}
+                stroke="white" strokeWidth="1.5"
+                strokeLinecap="round" strokeLinejoin="round" fill="none"
+              />
+            )}
+            <text
+              x={cx} y={30}
+              textAnchor="middle" fontSize={8}
+              fill={isToday ? 'var(--text-dim)' : 'var(--text-faint)'}
+              fontFamily="Geist Mono, monospace"
+            >
+              {label}
+            </text>
+          </g>
+        )
+      })}
     </svg>
   )
 }
@@ -217,6 +271,11 @@ export default function Sidebar({
         <span className="nav-label">Streak</span>
         <span className="ni-count">{currentStreak > 0 ? currentStreak : '—'}</span>
       </button>
+      {!collapsed && (
+        <div style={{ padding: '2px 10px 10px' }}>
+          <StreakDots />
+        </div>
+      )}
       <button className="nav-item" title="Today">
         <IcToday />
         <span className="nav-label">Today</span>

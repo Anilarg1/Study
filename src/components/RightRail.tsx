@@ -10,36 +10,6 @@ import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
-const DAY_HEADERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
-interface CalendarCell {
-  dateStr:  string
-  day:      number
-  isToday:  boolean
-  isFuture: boolean
-}
-
-function getMonthDays(): { cells: (CalendarCell | null)[]; monthLabel: string } {
-  const now    = new Date()
-  const year   = now.getFullYear()
-  const month  = now.getMonth()
-  const first  = new Date(year, month, 1)
-  const total  = new Date(year, month + 1, 0).getDate()
-  const offset = first.getDay()
-  const today  = toLocalDateStr(now)
-
-  const cells: (CalendarCell | null)[] = []
-  for (let i = 0; i < offset; i++) cells.push(null)
-  for (let d = 1; d <= total; d++) {
-    const date    = new Date(year, month, d)
-    const dateStr = toLocalDateStr(date)
-    cells.push({ dateStr, day: d, isToday: dateStr === today, isFuture: date > now })
-  }
-  return {
-    cells,
-    monthLabel: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-  }
-}
 
 function todayStr(): string { return toLocalDateStr() }
 
@@ -141,100 +111,26 @@ function StreakCard() {
   const longestStreak = useStreakStore(s => s.longestStreak)
   const dateSet       = useMemo(() => new Set(loginDates), [loginDates])
   const currentStreak = useMemo(() => calcCurrentStreak(dateSet), [dateSet])
-  const { cells, monthLabel } = getMonthDays()
+  const clockedIn     = dateSet.has(toLocalDateStr())
 
   return (
     <div className="v2-card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 11.5, color: 'var(--text-dim)', fontWeight: 500 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', marginRight: 6, verticalAlign: -2, color: 'var(--streak)' }}>
-            <path d="M12 2s4 4 4 8a4 4 0 0 1-1.5 3c.5-.7.5-1.8 0-2.5-1-1.5-2.5-1-2.5-3 0 2-2 2.5-3 4.5a4 4 0 1 0 7.5 2C16.5 18 12 22 12 22s-7-3-7-9c0-7 7-11 7-11z"/>
-          </svg>
           Streak
         </span>
-        {longestStreak > 0 && currentStreak >= longestStreak && (
-          <span style={{ fontSize: 10.5, fontFamily: 'Geist Mono, monospace', color: 'var(--streak)' }}>↑ Personal best</span>
-        )}
-      </div>
-
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 18, fontWeight: 500, color: 'var(--text)', lineHeight: 1 }}>
+        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 18, fontWeight: 600, color: currentStreak > 0 ? 'var(--streak)' : 'var(--text-dim)', lineHeight: 1 }}>
           {currentStreak}
-          <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 450, marginLeft: 4, fontFamily: 'Inter, sans-serif' }}>
-            {currentStreak === 1 ? 'day in a row' : 'days in a row'}
+          <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-dim)', marginLeft: 3, fontFamily: 'Inter, sans-serif' }}>
+            {currentStreak === 1 ? 'day' : 'days'}
           </span>
-        </div>
-        {longestStreak > 0 && (
-          <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 3 }}>
-            Best: {longestStreak} day{longestStreak !== 1 ? 's' : ''}
-          </div>
-        )}
-      </div>
-
-      <div style={{ fontSize: 10.5, fontFamily: 'Geist Mono, monospace', color: 'var(--text-mute)', marginBottom: 6, letterSpacing: '0.04em' }}>
-        {monthLabel.toUpperCase()}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 2 }}>
-        {DAY_HEADERS.map((d, i) => (
-          <div key={i} style={{ textAlign: 'center', fontFamily: 'Geist Mono, monospace', fontSize: 8.5, color: 'var(--text-faint)', paddingBottom: 1 }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-        {cells.map((cell, i) => {
-          if (!cell) return <div key={i} />
-
-          const { dateStr, day, isToday, isFuture } = cell
-          const logged = dateSet.has(dateStr)
-
-          let bg: string, border: string, color: string
-          if (isToday && logged) {
-            bg     = 'color-mix(in oklab, var(--accent) 20%, var(--surface-3))'
-            border = '1px solid var(--accent)'
-            color  = 'var(--text)'
-          } else if (isToday) {
-            bg     = 'var(--surface-3)'
-            border = '1px solid var(--hairline-2)'
-            color  = 'var(--text)'
-          } else if (logged) {
-            bg     = 'color-mix(in oklab, var(--streak) 16%, var(--surface-3))'
-            border = '1px solid color-mix(in oklab, var(--streak) 30%, transparent)'
-            color  = 'var(--text-dim)'
-          } else if (isFuture) {
-            bg     = 'transparent'
-            border = 'none'
-            color  = 'var(--text-faint)'
-          } else {
-            bg     = 'var(--surface-3)'
-            border = 'none'
-            color  = 'var(--text-faint)'
-          }
-
-          return (
-            <div
-              key={dateStr}
-              title={dateStr}
-              style={{
-                aspectRatio: 1,
-                borderRadius: 3,
-                background: bg,
-                border,
-                display: 'grid',
-                placeItems: 'center',
-                fontFamily: 'Geist Mono, monospace',
-                fontSize: 9,
-                fontWeight: isToday ? 600 : 400,
-                color,
-                transition: 'background 700ms, border-color 700ms',
-              }}
-            >
-              {day}
-            </div>
-          )
-        })}
+        </span>
+        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: clockedIn ? 'var(--short)' : 'var(--text-faint)' }}>
+          {clockedIn ? '✓ today' : '○ not yet'}
+        </span>
+        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)' }}>
+          best: {longestStreak}d
+        </span>
       </div>
     </div>
   )
@@ -422,33 +318,16 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
         const tag  = tags.find(t => t.id === entry.tagId)
         return (
           <div key={entry.id} className="session-row">
-            <span
-              className="session-dot"
-              style={{ background: subj?.color ?? 'var(--text-faint)' }}
-            />
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-                <span style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 450, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {subj ? subj.name : 'Focus session'}
-                </span>
-                {tag && (
-                  <span style={{
-                    fontSize: 10, color: 'var(--text-mute)',
-                    border: '1px solid var(--hairline)',
-                    borderRadius: 4,
-                    padding: '1px 5px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}>
-                    {tag.name}
-                  </span>
-                )}
-              </div>
-              <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10.5, color: 'var(--text-mute)' }}>
-                {relativeTime(entry.completedAt)}
+            <span className="session-dot" style={{ background: subj?.color ?? 'var(--text-faint)' }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, color: 'var(--text)', fontWeight: 450, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {subj ? subj.name : 'Focus'}
+            </span>
+            {tag && (
+              <span style={{ fontSize: 9.5, color: 'var(--text-mute)', border: '1px solid var(--hairline)', borderRadius: 3, padding: '0 4px', lineHeight: '14px', flexShrink: 0 }}>
+                {tag.name}
               </span>
-            </div>
-            <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: 'var(--text-dim)' }}>
+            )}
+            <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
               {entry.durationSecs ? `${Math.round(entry.durationSecs / 60)}m` : '25m'}
             </span>
           </div>
@@ -636,21 +515,23 @@ export default function RightRail() {
     return (
       <aside className="v2-rail">
         <div className="rail-tabs">
-          {(['today', 'insights'] as const).map(t => (
-            <button
-              key={t}
-              className={`rail-tab${statsTab === t ? ' active' : ''}`}
-              onClick={() => setStatsTab(t)}
-            >
-              {t === 'today' ? 'Today' : 'Insights'}
-            </button>
-          ))}
+          <div className="rail-tabs-buttons">
+            {(['today', 'insights'] as const).map(t => (
+              <button
+                key={t}
+                className={`rail-tab${statsTab === t ? ' active' : ''}`}
+                onClick={() => setStatsTab(t)}
+              >
+                {t === 'today' ? 'Today' : 'Insights'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {statsTab === 'today' && (
           <>
-            <TodayCard sessions={sessions} />
             <StreakCard />
+            <TodayCard sessions={sessions} />
             <RankCard />
           </>
         )}
@@ -664,21 +545,23 @@ export default function RightRail() {
     <aside className="v2-rail">
 
       <div className="rail-tabs">
-        {(['today', 'week', 'all'] as const).map(t => (
-          <button
-            key={t}
-            className={`rail-tab${tab === t ? ' active' : ''}`}
-            onClick={() => setTab(t)}
-          >
-            {t === 'today' ? 'Today' : t === 'week' ? 'Week' : 'All time'}
-          </button>
-        ))}
+        <div className="rail-tabs-buttons">
+          {(['today', 'week', 'all'] as const).map(t => (
+            <button
+              key={t}
+              className={`rail-tab${tab === t ? ' active' : ''}`}
+              onClick={() => setTab(t)}
+            >
+              {t === 'today' ? 'Today' : t === 'week' ? 'Week' : 'All time'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === 'today' && (
         <>
-          <TodayCard sessions={sessions} />
           <StreakCard />
+          <TodayCard sessions={sessions} />
           <RankCard />
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 4px 6px' }}>
