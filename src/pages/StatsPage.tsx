@@ -2,12 +2,19 @@ import { useState, useMemo, memo, useDeferredValue } from 'react'
 import useXPStore         from '../store/useXPStore'
 import useSubjectStore    from '../store/useSubjectStore'
 import useStreakStore from '../store/useStreakStore'
-import { dateOf, fmtMins, fmtMinsShort, sessionMins, toLocalDateStr } from '../utils/date'
+import { dateOf, fmtMins, sessionMins, toLocalDateStr } from '../utils/date'
 import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
 import { bestWeek } from '../utils/stats'
+import { Delta, Sparkline, SubjectRadar }   from '../components/stats/KPIRow'
+import { FocusTimeChart }                   from '../components/stats/FocusTimeChart'
+import type { ChartBar }                    from '../components/stats/FocusTimeChart'
+import { ActivityHeatmap }                  from '../components/stats/ActivityHeatmap'
+import { SubjectBreakdown }                 from '../components/stats/SubjectBreakdown'
+import { SessionHistogram, HIST_BUCKETS }   from '../components/stats/SessionHistogram'
+import { Records }                          from '../components/stats/Records'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -42,201 +49,6 @@ function isWeekendDate(d: Date): boolean {
   const day = d.getDay()
   return day === 0 || day === 6
 }
-
-function fmtDate(iso: string): string {
-  if (!iso) return '—'
-  // Append T00:00 so the browser parses as local midnight, not UTC midnight
-  const d = new Date(`${iso}T00:00`)
-  return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
-}
-
-function radarPts(N: number, R: number, cx: number, cy: number, values?: number[]): string {
-  return Array.from({ length: N }, (_, i) => {
-    const angle = -Math.PI / 2 + (i / N) * 2 * Math.PI
-    const v = values ? (values[i] ?? 0) : 1
-    return `${(cx + R * v * Math.cos(angle)).toFixed(2)},${(cy + R * v * Math.sin(angle)).toFixed(2)}`
-  }).join(' ')
-}
-
-function radarLabelPos(i: number, N: number, R: number, cx: number, cy: number, pad = 9) {
-  const angle = -Math.PI / 2 + (i / N) * 2 * Math.PI
-  return {
-    x: cx + (R + pad) * Math.cos(angle),
-    y: cy + (R + pad) * Math.sin(angle),
-    anchor: (Math.cos(angle) < -0.3 ? 'end' : Math.cos(angle) > 0.3 ? 'start' : 'middle') as 'end' | 'start' | 'middle',
-  }
-}
-
-// ─── sub-components ───────────────────────────────────────────────────────────
-
-// KPI delta badge
-const Delta = memo(function Delta({ pct, label = 'vs prev' }: { pct: number; label?: string }) {
-  if (pct === 0) return <span className="s-kpi-delta flat">—</span>
-  const cls = pct > 0 ? 'up' : 'down'
-  const arrow = (
-    <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor">
-      {pct > 0
-        ? <path d="M6 2 2 8h8z"/>
-        : <path d="M6 10 2 4h8z"/>}
-    </svg>
-  )
-  return (
-    <span className={`s-kpi-delta ${cls}`}>
-      {arrow}
-      {pct > 0 ? '+' : ''}{pct}%
-      <span className="vs">{label}</span>
-    </span>
-  )
-})
-
-// Sparkline built from real 14-day data
-const Sparkline = memo(function Sparkline({ data }: { data: number[] }) {
-  const max = Math.max(1, ...data)
-  return (
-    <div className="s-spark">
-      {data.map((v, i) => {
-        const norm = v / max
-        const cls  = norm >= 0.7 ? 'f' : norm >= 0.35 ? 'f2' : norm > 0 ? 'f3' : ''
-        return (
-          <div
-            key={i}
-            className={`b${cls ? ' ' + cls : ''}`}
-            style={{ height: `${Math.max(8, Math.round(norm * 100))}%` }}
-          />
-        )
-      })}
-    </div>
-  )
-})
-
-// Radar chart — dynamic N subjects
-const SubjectRadar = memo(function SubjectRadar({
-  subjects,
-  totalMins,
-}: {
-  subjects: { id: string; name: string; color: string; mins: number; pct: number }[]
-  totalMins: number
-}) {
-  const N  = subjects.length
-  const R  = 32
-  const cx = 50
-  const cy = 50
-
-  if (N === 0) {
-    return (
-      <div className="s-radar-wrap">
-        <div className="s-empty" style={{ gridColumn: '1/-1' }}>No subject data yet</div>
-      </div>
-    )
-  }
-
-  const maxMins  = subjects[0]?.mins || 1
-  const normVals = subjects.map(s => s.mins / maxMins)
-
-  // Grid rings at 33%, 66%, 100%
-  const rings = [0.33, 0.66, 1]
-
-  return (
-    <div className="s-radar-wrap">
-      <svg className="s-radar" viewBox="0 0 100 100" aria-hidden="true">
-        {/* grid rings */}
-        {rings.map(scale => (
-          <polygon
-            key={scale}
-            points={radarPts(N, R * scale, cx, cy)}
-            fill="none"
-            stroke="rgba(255,255,255,0.085)"
-            strokeWidth="0.4"
-          />
-        ))}
-        {/* axis lines */}
-        {Array.from({ length: N }, (_, i) => {
-          const angle = -Math.PI / 2 + (i / N) * 2 * Math.PI
-          return (
-            <line
-              key={i}
-              x1={cx} y1={cy}
-              x2={(cx + R * Math.cos(angle)).toFixed(2)}
-              y2={(cy + R * Math.sin(angle)).toFixed(2)}
-              stroke="rgba(255,255,255,0.055)"
-              strokeWidth="0.4"
-            />
-          )
-        })}
-        {/* data shape */}
-        <polygon
-          points={radarPts(N, R, cx, cy, normVals)}
-          fill="color-mix(in oklab, var(--accent) 22%, transparent)"
-          stroke="var(--accent)"
-          strokeWidth="0.9"
-          strokeLinejoin="round"
-          style={{ filter: 'drop-shadow(0 0 4px var(--accent-soft))' }}
-        />
-        {/* dots */}
-        {subjects.map((s, i) => {
-          const angle = -Math.PI / 2 + (i / N) * 2 * Math.PI
-          const v = normVals[i] ?? 0
-          const px = (cx + R * v * Math.cos(angle)).toFixed(2)
-          const py = (cy + R * v * Math.sin(angle)).toFixed(2)
-          return (
-            <circle key={s.id} cx={px} cy={py} r="2.4" fill={s.color} />
-          )
-        })}
-        {/* labels */}
-        {subjects.map((s, i) => {
-          const pos = radarLabelPos(i, N, R, cx, cy, 10)
-          return (
-            <text
-              key={s.id}
-              x={pos.x.toFixed(1)}
-              y={pos.y.toFixed(1)}
-              textAnchor={pos.anchor}
-              dominantBaseline="middle"
-              style={{
-                fontFamily: "'Geist Mono', monospace",
-                fontSize: '3.4px',
-                fill: 'var(--text-mute)',
-                letterSpacing: '0.04em',
-              }}
-            >
-              {s.name.slice(0, 6).toUpperCase()}
-            </text>
-          )
-        })}
-      </svg>
-
-      <div className="s-radar-legend">
-        {subjects.map(s => (
-          <div key={s.id} className="s-radar-legend-row">
-            <span className="dot" style={{ background: s.color }} />
-            <span className="name">{s.name}</span>
-            <span className="val">{s.pct}<sup>%</sup></span>
-          </div>
-        ))}
-        {subjects.length > 0 && (
-          <div className="s-radar-legend-foot">
-            <span className="lead"><b>{subjects[0]?.name}</b> leads</span>
-            <span className="cmp">{fmtMins(totalMins)} total</span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-})
-
-// ─── histogram buckets (module-level constant) ────────────────────────────────
-const HIST_BUCKETS = [
-  { label: '≤5',  max: 5        },
-  { label: '10',  max: 10       },
-  { label: '15',  max: 15       },
-  { label: '20',  max: 20       },
-  { label: '25',  max: 25       },
-  { label: '30',  max: 30       },
-  { label: '40',  max: 40       },
-  { label: '50',  max: 50       },
-  { label: '60',  max: 60       },
-  { label: '90+', max: Infinity },
-]
 
 // ─── progression card ─────────────────────────────────────────────────────────
 
@@ -389,14 +201,6 @@ export default function StatsPage() {
   }, [sessions])
 
   // ── chart bars (daily for week/month/quarter; weekly for year/all) ─────────
-  type ChartBar = {
-    label: string     // x-axis date label
-    mins:  number
-    isWeekend: boolean
-    isHighlight: boolean  // today (daily) or current week (weekly)
-    isWeekly: boolean
-  }
-
   const chartBars = useMemo<ChartBar[]>(() => {
     const useWeekly = deferredRange === 'year' || deferredRange === 'all'
 
@@ -846,205 +650,34 @@ export default function StatsPage() {
         <ProgressionCard />
 
         {/* ── FOCUSED TIME BAR CHART ── */}
-        <section className="sc" style={{ marginBottom: 12 }}>
-          <div className="sc-head">
-            <span className="sc-label">
-              <svg className="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <path d="M3 21h18M6 17v-6M11 17V9M16 17v-4M21 17V6"/>
-              </svg>
-              Focused time per day
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div className="s-legend">
-                <span className="lg-key"><span className="lg-swatch"/> {chartBars[0]?.isWeekly ? 'Week' : 'Weekday'}</span>
-                {!chartBars[0]?.isWeekly && (
-                  <span className="lg-key"><span className="lg-swatch muted"/> Weekend</span>
-                )}
-                {avgBarMins > 0 && <span className="lg-key"><span className="lg-swatch line"/> avg</span>}
-              </div>
-              <span className="sc-meta">{rangeLabel.toUpperCase()}</span>
-            </div>
-          </div>
-
-          {chartBars.length === 0 || totalMins === 0 ? (
-            <div className="s-empty">No focus sessions in this period</div>
-          ) : (
-            <>
-              <div className="s-chart-wrap">
-                {/* Y-axis */}
-                <div className="s-y-axis">
-                  {Array.from({ length: yMax + 1 }, (_, i) => {
-                    const pct = (1 - i / yMax) * 100
-                    return (
-                      <span key={i} style={{ top: `${pct}%` }}>
-                        {i > 0 ? <>{i}<sup>h</sup></> : '0'}
-                      </span>
-                    )
-                  })}
-                </div>
-
-                {/* Plot */}
-                <div className="s-plot">
-                  {Array.from({ length: yMax + 1 }, (_, i) => (
-                    <div key={i} className="s-grid-line" style={{ top: `${(1 - i / yMax) * 100}%` }} />
-                  ))}
-
-                  {/* Avg line */}
-                  {avgBarMins > 0 && (
-                    <div
-                      className="s-avg-line"
-                      style={{ top: `${(1 - avgBarMins / (yMax * 60)) * 100}%` }}
-                    >
-                      <span className="lbl">avg {fmtMinsShort(avgBarMins)}</span>
-                    </div>
-                  )}
-
-                  <div className="s-bars">
-                    {chartBars.map((day, i) => {
-                      const heightPct = (day.mins / (yMax * 60)) * 100
-                      const cls = day.isHighlight ? 'today' : day.isWeekend ? 'weekend' : ''
-                      return (
-                        <div key={i} className="s-bar-col">
-                          <span className="s-bar-tip">
-                            {fmtMinsShort(day.mins)} · {day.label}
-                          </span>
-                          <div
-                            className={`s-bar${cls ? ' ' + cls : ''}`}
-                            style={{ height: `${Math.max(0, heightPct)}%` }}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* X-axis ticks */}
-              <div className="s-x-axis">
-                {(() => {
-                  const n = chartBars.length
-                  const ticks = n <= 7  ? [0, n - 1]
-                    : n <= 30 ? [0, Math.floor(n / 3), Math.floor(2 * n / 3), n - 1]
-                    : [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor(3 * n / 4), n - 1]
-                  return ticks.map(i => (
-                    <span key={i}>{chartBars[i]?.label.toUpperCase()}</span>
-                  ))
-                })()}
-              </div>
-            </>
-          )}
-        </section>
+        <FocusTimeChart
+          chartBars={chartBars}
+          maxBarMins={maxBarMins}
+          avgBarMins={avgBarMins}
+          yMax={yMax}
+          totalMins={totalMins}
+          rangeLabel={rangeLabel}
+        />
 
         {/* ── YEAR HEATMAP ── */}
-        <section className="sc" style={{ marginBottom: 12 }}>
-          <div className="sc-head">
-            <span className="sc-label">
-              <svg className="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>
-              </svg>
-              Activity
-              <span style={{ color: 'var(--text-mute)', fontWeight: 400, marginLeft: 4 }}>— last 12 months</span>
-            </span>
-            <span className="sc-meta">
-              <b>{activeDays}</b> active days
-            </span>
-          </div>
-
-          {/* Month labels */}
-          <div className="s-heatmap-months">
-            {heatMonthLabels.map((m, i) => (
-              <span key={i} style={{ width: `${m.width * 14}px` }}>{m.label}</span>
-            ))}
-          </div>
-
-          <div className="s-heatmap-wrap">
-            <div className="s-heatmap-days">
-              <span/><span>Mon</span><span/><span>Wed</span><span/><span>Fri</span><span/>
-            </div>
-            <div className="s-heatmap">
-              {heatWeeks.map((week, wi) => (
-                <div key={wi} className="s-week-col">
-                  {week.map((cell, di) => (
-                    <div
-                      key={di}
-                      className={`s-h-cell${cell.future ? ' empty' : cell.lvl ? ` l${cell.lvl}` : ''}`}
-                      title={cell.future ? '' : `${cell.ds}${cell.mins ? ` · ${fmtMinsShort(cell.mins)}` : ''}`}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="s-heat-foot">
-            <span>
-              Longest streak · last 12 months ·{' '}
-              <b style={{ color: 'var(--text-dim)' }}>{longestHeatStreak > 0 ? `${longestHeatStreak} days` : '—'}</b>
-            </span>
-            <div className="s-heat-scale">
-              <span>Less</span>
-              <div className="s-h-cell" />
-              <div className="s-h-cell l1" />
-              <div className="s-h-cell l2" />
-              <div className="s-h-cell l3" />
-              <div className="s-h-cell l4" />
-              <span>More</span>
-            </div>
-          </div>
-        </section>
+        <ActivityHeatmap
+          heatWeeks={heatWeeks}
+          heatMonthLabels={heatMonthLabels}
+          activeDays={activeDays}
+          longestHeatStreak={longestHeatStreak}
+        />
 
         {/* ── ROW: SUBJECTS + HOUR×DAY ── */}
         <section className="s-row-2-narrow">
 
           {/* Subjects breakdown */}
-          <div className="sc">
-            <div className="sc-head">
-              <span className="sc-label">
-                <svg className="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  <path d="M3.3 7 12 12l8.7-5M12 22V12"/>
-                </svg>
-                Subjects
-              </span>
-              <span className="sc-meta"><b>{fmtMins(totalMins)}</b> total</span>
-            </div>
-
-            {subjectStats.length === 0 ? (
-              <div className="s-empty">No sessions with subjects yet</div>
-            ) : (
-              <>
-                {/* Stacked bar */}
-                <div className="s-stack-bar" title="Subject time mix">
-                  {subjectStats.map(s => (
-                    <div
-                      key={s.id}
-                      className="s-seg-piece"
-                      style={{ background: s.color, flex: s.mins }}
-                      title={`${s.name}: ${fmtMins(s.mins)}`}
-                    />
-                  ))}
-                </div>
-
-                {/* Subject rows */}
-                {subjectStats.map(s => {
-                  const pct = Math.round(s.mins / subjectTotalMins * 100)
-                  return (
-                    <div
-                      key={s.id}
-                      className="s-subj-row"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSubjectFilter(s.id === subjectFilter ? null : s.id)}
-                    >
-                      <span className="dot" style={{ background: s.color }} />
-                      <span className="name">{s.name}</span>
-                      <span className="time">{fmtMins(s.mins)}</span>
-                      <span className="pct">{pct}%</span>
-                    </div>
-                  )
-                })}
-              </>
-            )}
-          </div>
+          <SubjectBreakdown
+            subjectStats={subjectStats}
+            subjectTotalMins={subjectTotalMins}
+            totalMins={totalMins}
+            subjectFilter={subjectFilter}
+            onFilterChange={setSubjectFilter}
+          />
 
           {/* Hour × Day heatmap */}
           <div className="sc">
@@ -1093,96 +726,21 @@ export default function StatsPage() {
           </div>
         </section>
 
-        {/* ── ROW: HISTOGRAM + GOALS ── */}
+        {/* ── ROW: HISTOGRAM + RECORDS ── */}
         <section className="s-row-2">
 
           {/* Session length distribution */}
-          <div className="sc">
-            <div className="sc-head">
-              <span className="sc-label">
-                <svg className="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M3 21h18M6 17V13M10 17V9M14 17V11M18 17V7"/>
-                </svg>
-                Session length distribution
-              </span>
-              <span className="sc-meta">{workSessions.length} sessions</span>
-            </div>
-
-            {workSessions.length === 0 ? (
-              <div className="s-empty">No sessions yet</div>
-            ) : (
-              <>
-                <div className="s-hist">
-                  {histData.map((b, i) => (
-                    <div
-                      key={i}
-                      className={`s-hist-col${b.isPeak ? ' peak' : ''}`}
-                      style={{ height: `${b.height}%` }}
-                    >
-                      <span className="label">{b.count}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="s-hist-x">
-                  {HIST_BUCKETS.map(b => <span key={b.label}>{b.label}</span>)}
-                </div>
-                <div className="s-hist-foot">
-                  <div><span className="lbl">Median</span><span className="val">{histStats.median} min</span></div>
-                  <div><span className="lbl">Mean</span><span className="val">{histStats.mean} min</span></div>
-                  <div><span className="lbl">Longest</span><span className="val">{fmtMins(histStats.longest)}</span></div>
-                  <div>
-                    <span className="lbl">Completed</span>
-                    <span className="val">{histStats.completed} / {workSessions.length}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <SessionHistogram
+            histData={histData}
+            histStats={histStats}
+            sessionCount={workSessions.length}
+          />
 
           {/* Records */}
-          <div className="sc">
-            <div className="sc-head">
-              <span className="sc-label">
-                <svg className="ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
-                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
-                  <path d="M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
-                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
-                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-                </svg>
-                Records
-              </span>
-            </div>
-
-            {/* Records strip */}
-            <div className="s-records">
-              <div>
-                <div className="lbl">Best day</div>
-                <div className="val">
-                  {records.bestDayMins >= 60
-                    ? <>{Math.floor(records.bestDayMins / 60)}<sup>h</sup> {records.bestDayMins % 60}<sup>m</sup></>
-                    : <>{records.bestDayMins}<sup>m</sup></>
-                  }
-                </div>
-                <div className="when">{records.bestDayStr ? fmtDate(records.bestDayStr) : '—'}</div>
-              </div>
-              <div>
-                <div className="lbl">Best week</div>
-                <div className="val">
-                  {records.bestWeekMins >= 60
-                    ? <>{Math.floor(records.bestWeekMins / 60)}<sup>h</sup> {records.bestWeekMins % 60}<sup>m</sup></>
-                    : <>{records.bestWeekMins}<sup>m</sup></>
-                  }
-                </div>
-                <div className="when">{records.bestWeekStart ? fmtDate(records.bestWeekStart) : '—'}</div>
-              </div>
-              <div>
-                <div className="lbl">Longest streak</div>
-                <div className="val">{longestStreak > 0 ? <>{longestStreak}<sup>d</sup></> : '—'}</div>
-                <div className="when">{longestStreak > 0 ? 'all time' : ''}</div>
-              </div>
-            </div>
-          </div>
+          <Records
+            records={records}
+            longestStreak={longestStreak}
+          />
         </section>
 
       </div>{/* /s-scroll */}
