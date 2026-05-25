@@ -8,6 +8,9 @@ import useSubjectStore from './useSubjectStore'
 import useTagStore             from './useTagStore'
 import useSubjectMasteryStore from './useSubjectMasteryStore'
 
+// Tracks the active Supabase auth subscription so init() can dedup it.
+let _authSub: { unsubscribe: () => void } | null = null
+
 interface AuthState {
   user:    User | null
   loading: boolean
@@ -24,6 +27,11 @@ const useAuthStore = create<AuthState>()((set, get) => ({
   loading: true,
 
   async init() {
+    // Cancel any previously-registered listener before creating a new one.
+    // This prevents React StrictMode from stacking two listeners in development.
+    _authSub?.unsubscribe()
+    _authSub = null
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -39,7 +47,7 @@ const useAuthStore = create<AuthState>()((set, get) => ({
       set({ loading: false })
     }
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null
 
       if (event === 'SIGNED_IN' && user) {
@@ -57,6 +65,8 @@ const useAuthStore = create<AuthState>()((set, get) => ({
         set({ user: null })
       }
     })
+
+    _authSub = subscription
   },
 
   async signUp(email, password) {
