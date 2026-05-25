@@ -2,16 +2,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { upsertDailyLogin } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
+import { toLocalDateStr } from '../utils/date'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-/** 'YYYY-MM-DD' in the user's local timezone (avoids UTC-offset surprises) */
-export function toLocalDateStr(date: Date = new Date()): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+export { toLocalDateStr } from '../utils/date'
 
 /**
  * Consecutive-day streak ending on today (if clocked in) or yesterday
@@ -48,7 +43,10 @@ function calcLongestStreak(dates: string[]): number {
   const sorted = [...new Set(dates)].sort()
   let longest = 1, run = 1
   for (let i = 1; i < sorted.length; i++) {
-    const diff = (new Date(sorted[i]).getTime() - new Date(sorted[i - 1]).getTime()) / 86_400_000
+    const cur  = sorted[i]
+    const prev = sorted[i - 1]
+    if (!cur || !prev) continue
+    const diff = (new Date(cur).getTime() - new Date(prev).getTime()) / 86_400_000
     if      (diff === 1) { run++; if (run > longest) longest = run }
     else if (diff  > 1) { run = 1 }
     // diff === 0 → duplicate date, skip

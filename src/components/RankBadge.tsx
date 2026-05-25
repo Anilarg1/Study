@@ -190,7 +190,7 @@ const BADGE_COMPONENTS = [
 
 export default function RankBadge({ tierIndex, size = 40, subLevel = 1, showPips = true }: RankBadgeProps) {
   const clamped      = Math.max(0, Math.min(9, tierIndex))
-  const BadgeContent = BADGE_COMPONENTS[clamped]
+  const BadgeContent = BADGE_COMPONENTS[clamped] ?? WandererBadge
 
   return (
     <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>

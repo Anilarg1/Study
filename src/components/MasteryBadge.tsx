@@ -47,11 +47,18 @@ function FlameShape({ fillColor, strokeColor, glowId, innerColor }: {
   )
 }
 
-const BADGE_CONFIGS = [
+interface BadgeConfig {
+  strokeColor: string
+  fillColor:   string
+  glowId?:     string
+  innerColor?: string
+}
+
+const BADGE_CONFIGS: BadgeConfig[] = [
   // Ember — grey, minimal
-  { strokeColor: '#57534e', fillColor: '#78716c', glowId: undefined, innerColor: undefined },
+  { strokeColor: '#57534e', fillColor: '#78716c' },
   // Kindled — orange
-  { strokeColor: '#c2410c', fillColor: '#fdba74', glowId: 'kf',      innerColor: undefined },
+  { strokeColor: '#c2410c', fillColor: '#fdba74', glowId: 'kf' },
   // Burning — gold with white inner
   { strokeColor: '#f59e0b', fillColor: '#fde68a', glowId: 'bf',      innerColor: '#ffffff' },
   // Blazing — bright gold, heptagon
@@ -62,7 +69,7 @@ const BADGE_CONFIGS = [
 
 export default function MasteryBadge({ masteryIndex, size = 20 }: MasteryBadgeProps) {
   const idx    = Math.max(0, Math.min(4, masteryIndex))
-  const config = BADGE_CONFIGS[idx]
+  const config = BADGE_CONFIGS[idx] ?? BADGE_CONFIGS[0]!
 
   return (
     <svg viewBox="0 0 60 60" width={size} height={size} style={{ overflow: 'visible', flexShrink: 0 }}>

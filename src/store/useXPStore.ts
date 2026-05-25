@@ -9,7 +9,10 @@ import useStreakStore, { calcCurrentStreak } from './useStreakStore'
 import type { TimerMode, SessionEntry } from '../types'
 import type { RankInfo } from '../utils/progression'
 
-const MAX_LOCAL_SESSIONS = 200
+// Keep only the most-recent N sessions in localStorage to avoid unbounded growth.
+// Supabase is the source of truth — older sessions are loaded via fetchSessions() on login.
+// Raise this limit (or migrate to cursor-based Supabase pagination) if users report stats gaps.
+const MAX_LOCAL_SESSIONS = 500
 
 export interface AwardResult {
   xp:        number

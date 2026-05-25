@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { fetchSubjectXP, upsertSubjectXP } from '../lib/supabase'
+import { upsertSubjectXP } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
 
 interface SubjectMasteryState {

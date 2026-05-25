@@ -1,3 +1,7 @@
+// TODO: Replace `data as Subject[]` / `data as Tag` manual casts with generated types.
+// Run: npx supabase gen types typescript --project-id <your-project-id> > src/types/supabase.ts
+// Then use Database['public']['Tables']['subjects']['Row'] etc. for full type safety.
+
 import { createClient } from '@supabase/supabase-js'
 import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase-js'
 import type { Subject, Tag, SessionEntry, TimerMode } from '../types'
@@ -10,7 +14,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // ─── User / XP helpers ────────────────────────────────────────────────────────
 
 /** Fetch the user's current XP from the users table. */
-export function fetchUserXP(userId: string): Promise<PostgrestSingleResponse<{ xp: number }>> {
+export async function fetchUserXP(userId: string): Promise<PostgrestSingleResponse<{ xp: number }>> {
   return supabase
     .from('users')
     .select('xp')

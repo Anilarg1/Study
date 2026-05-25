@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { fetchTags, createTag, removeTag } from '../lib/supabase'
+import { createTag, removeTag } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
 import type { Tag } from '../types'
 

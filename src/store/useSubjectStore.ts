@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { fetchSubjects, createSubject, patchSubject, removeSubject } from '../lib/supabase'
+import { createSubject, patchSubject, removeSubject } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
 import type { Subject } from '../types'
 

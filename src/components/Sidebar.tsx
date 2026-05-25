@@ -2,180 +2,45 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import useSubjectStore from '../store/useSubjectStore'
-import useStreakStore, { calcCurrentStreak, toLocalDateStr } from '../store/useStreakStore'
+import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import useXPStore from '../store/useXPStore'
 import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import { SUBJECT_COLORS } from '../lib/subjects'
 import GoalsPanel from './GoalsPanel'
 import RankBadge from './RankBadge'
 import MasteryBadge from './MasteryBadge'
+import StreakDots from './StreakDots'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
-
-// ── icons ─────────────────────────────────────────────────────────────────
-
-function IcTimer() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/>
-    </svg>
-  )
-}
-function IcStreak() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2s4 4 4 8a4 4 0 0 1-1.5 3c.5-.7.5-1.8 0-2.5-1-1.5-2.5-1-2.5-3 0 2-2 2.5-3 4.5a4 4 0 1 0 7.5 2C16.5 18 12 22 12 22s-7-3-7-9c0-7 7-11 7-11z"/>
-    </svg>
-  )
-}
-function IcToday() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <rect x="4" y="4" width="16" height="16" rx="3"/>
-      <path d="M9 17V11M12 17V8M15 17v-4"/>
-    </svg>
-  )
-}
-function IcStats() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M3 21h18"/><path d="M6 17v-6M11 17V9M16 17v-4M21 17V6"/>
-    </svg>
-  )
-}
-function IcTimetable() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <rect x="3" y="5" width="18" height="16" rx="2"/>
-      <path d="M3 9h18M8 3v4M16 3v4"/>
-    </svg>
-  )
-}
-function IcNotes() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4z"/>
-      <path d="M4 4v12a4 4 0 0 0 4 4"/>
-    </svg>
-  )
-}
-function IcFlash() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-    </svg>
-  )
-}
-function IcPlus() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M12 5v14M5 12h14"/>
-    </svg>
-  )
-}
-function IcSignOut() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/>
-      <line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
-  )
-}
-function IcSettings() {
-  return (
-    <svg className="ni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-  )
-}
-/** Chevron pointing left (collapse) or right (expand) */
-function IcChevron({ right }: { right?: boolean }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-         style={{ transition: 'transform 220ms cubic-bezier(.4,0,.2,1)', transform: right ? 'rotate(180deg)' : 'none' }}>
-      <path d="M15 18l-6-6 6-6"/>
-    </svg>
-  )
-}
-
-// ── streak dots ────────────────────────────────────────────────────────────
-
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
-function StreakDots() {
-  const loginDates = useStreakStore(s => s.loginDates)
-  const dateSet    = useMemo(() => new Set(loginDates), [loginDates])
-
-  const last7 = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86_400_000)
-    return {
-      dateStr: toLocalDateStr(d),
-      label:   DAY_LETTERS[d.getDay()],
-      isToday: i === 6,
-    }
-  }), [])
-
-  return (
-    <svg width="100%" viewBox="0 0 154 34" style={{ display: 'block', overflow: 'visible' }}>
-      {last7.map(({ dateStr, label, isToday }, i) => {
-        const logged = dateSet.has(dateStr)
-        const cx = 11 + i * 22
-        const cy = 11
-        return (
-          <g key={dateStr}>
-            <circle
-              cx={cx} cy={cy} r={isToday ? 8.5 : 7}
-              fill={logged ? 'var(--streak)' : 'var(--surface-3)'}
-              stroke={isToday && !logged ? 'var(--hairline-2)' : 'none'}
-              strokeWidth={1.5}
-              opacity={logged ? (isToday ? 1 : 0.72) : 0.45}
-            />
-            {logged && (
-              <path
-                d={`M${cx - 3.5} ${cy} L${cx - 1} ${cy + 2.5} L${cx + 3.5} ${cy - 3}`}
-                stroke="white" strokeWidth="1.5"
-                strokeLinecap="round" strokeLinejoin="round" fill="none"
-              />
-            )}
-            <text
-              x={cx} y={30}
-              textAnchor="middle" fontSize={8}
-              fill={isToday ? 'var(--text-dim)' : 'var(--text-faint)'}
-              fontFamily="Geist Mono, monospace"
-            >
-              {label}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
+import {
+  IcTimer, IcStreak, IcToday, IcStats, IcTimetable, IcNotes,
+  IcFlash, IcPlus, IcSignOut, IcChevron, IcGear as IcSettings,
+} from './icons'
 
 // ── component ─────────────────────────────────────────────────────────────
 
 interface SidebarProps {
-  user:      User
-  initials:  string
-  email:     string
-  onSignOut: () => void
-  collapsed: boolean
-  onToggle:  () => void
+  user:        User
+  initials:    string
+  email:       string
+  displayName: string
+  onSignOut:   () => void
+  collapsed:   boolean
+  onToggle:    () => void
 }
 
 export default function Sidebar({
-  user, initials, email, onSignOut, collapsed, onToggle,
+  user: _user, initials, email, displayName, onSignOut, collapsed, onToggle,
 }: SidebarProps) {
-  const displayName = (user.user_metadata?.display_name as string | undefined) || email.split('@')[0]
   const navigate = useNavigate()
   const location = useLocation()
 
   const subjects      = useSubjectStore(s => s.subjects)
   const addSubject    = useSubjectStore(s => s.addSubject)
   const loginDates    = useStreakStore(s => s.loginDates)
-  const currentStreak = calcCurrentStreak(new Set(loginDates))
+  const currentStreak = useMemo(
+    () => calcCurrentStreak(new Set(loginDates)),
+    [loginDates],
+  )
 
   const totalXP   = useXPStore(s => s.totalXP)
   const subjectXP = useSubjectMasteryStore(s => s.subjectXP)
@@ -185,7 +50,7 @@ export default function Sidebar({
 
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [newName,      setNewName]      = useState('')
-  const [newColor,     setNewColor]     = useState(SUBJECT_COLORS[0])
+  const [newColor,     setNewColor]     = useState(SUBJECT_COLORS[0] ?? '#7c6af0')
   const [addError,     setAddError]     = useState<string | null>(null)
   const [submitting,   setSubmitting]   = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -199,7 +64,7 @@ export default function Sidebar({
     if (collapsed) {
       setShowAddPanel(false)
       setNewName('')
-      setNewColor(SUBJECT_COLORS[0])
+      setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
       setAddError(null)
       setSubmitting(false)
     }
@@ -209,7 +74,7 @@ export default function Sidebar({
     setShowAddPanel(p => {
       if (p) {          // closing — reset form
         setNewName('')
-        setNewColor(SUBJECT_COLORS[0])
+        setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
         setAddError(null)
       }
       return !p
@@ -225,7 +90,7 @@ export default function Sidebar({
     if (subject) {
       setShowAddPanel(false)
       setNewName('')
-      setNewColor(SUBJECT_COLORS[0])
+      setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
     } else {
       setAddError('Could not save — check your connection.')
     }

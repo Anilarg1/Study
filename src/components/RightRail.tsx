@@ -1,60 +1,34 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import useXPStore      from '../store/useXPStore'
-import { toLocalDateStr } from '../store/useStreakStore'
+import { dateOf, fmtMins as fmtDuration, sessionMins, toLocalDateStr } from '../utils/date'
 import useSubjectStore from '../store/useSubjectStore'
 import useTagStore     from '../store/useTagStore'
 import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
-
 function todayStr(): string { return toLocalDateStr() }
-
-function dateOf(iso: string): string { return toLocalDateStr(new Date(iso)) }
-
-function fmtDuration(totalMins: number): string {
-  if (totalMins === 0) return '0m'
-  const h = Math.floor(totalMins / 60)
-  const m = totalMins % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
-
-function relativeTime(iso: string): string {
-  const d    = new Date(iso)
-  const now  = Date.now()
-  const diff = Math.floor((now - d.getTime()) / 1000)
-  if (diff < 60)   return 'Just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  const hm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-  if (dateOf(iso) === todayStr()) return `Today · ${hm}`
-  const yesterday = toLocalDateStr(new Date(now - 86_400_000))
-  if (dateOf(iso) === yesterday) return `Yesterday · ${hm}`
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` · ${hm}`
-}
 
 // ── today stats ───────────────────────────────────────────────────────────
 
 function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
   const today    = todayStr()
   const todaySes = sessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === today)
-  const totalMin = todaySes.reduce((sum, s) =>
-    sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0
-  )
+  const totalMin = todaySes.reduce((sum, s) => sum + sessionMins(s), 0)
 
   const hourCounts = Array(24).fill(0) as number[]
   todaySes.forEach(s => {
     const h = new Date(s.completedAt).getHours()
-    hourCounts[h]++
+    hourCounts[h] = (hourCounts[h] ?? 0) + 1
   })
   const maxH    = Math.max(1, ...hourCounts)
   const curHour = new Date().getHours()
 
   function hClass(i: number): string {
-    if (i === curHour && hourCounts[i] > 0) return 'h-cell now'
-    const ratio = hourCounts[i] / maxH
+    const count = hourCounts[i] ?? 0
+    if (i === curHour && count > 0) return 'h-cell now'
+    const ratio = count / maxH
     if (ratio === 0) return 'h-cell'
     if (ratio < 0.4) return 'h-cell s1'
     if (ratio < 0.8) return 'h-cell s2'
@@ -108,6 +82,15 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
   const subjects = useSubjectStore(s => s.subjects)
   const tags = useTagStore(s => s.tags)
 
+  const subjectMap = useMemo(
+    () => new Map(subjects.map(s => [s.id, s])),
+    [subjects],
+  )
+  const tagMap = useMemo(
+    () => new Map(tags.map(t => [t.id, t])),
+    [tags],
+  )
+
   const recent = useMemo(() =>
     [...sessions].filter(s => s.type === 'work').reverse().slice(0, 8),
     [sessions]
@@ -124,8 +107,8 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
   return (
     <>
       {recent.map(entry => {
-        const subj = subjects.find(s => s.id === entry.subjectId)
-        const tag  = tags.find(t => t.id === entry.tagId)
+        const subj = subjectMap.get(entry.subjectId ?? '')
+        const tag  = tagMap.get(entry.tagId ?? '')
         return (
           <div key={entry.id} className="session-row">
             <span className="session-dot" style={{ background: subj?.color ?? 'var(--text-faint)' }} />
@@ -138,7 +121,7 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
               </span>
             )}
             <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
-              {entry.durationSecs ? `${Math.round(entry.durationSecs / 60)}m` : '25m'}
+              {fmtDuration(sessionMins(entry))}
             </span>
           </div>
         )

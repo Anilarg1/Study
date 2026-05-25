@@ -10,7 +10,6 @@ function useDotCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>): voi
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
     const GAP    = 38
     const R_BASE = 1.1
     const R_MAX  = 2.5
@@ -27,8 +26,8 @@ function useDotCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>): voi
     let coolPos  = { ...center }
 
     function resize() {
-      canvas.width  = window.innerWidth
-      canvas.height = window.innerHeight
+      canvas!.width  = window.innerWidth
+      canvas!.height = window.innerHeight
     }
     resize()
 
@@ -45,10 +44,10 @@ function useDotCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>): voi
       coolPos.x += (target.x - coolPos.x) * 0.04
       coolPos.y += (target.y - coolPos.y) * 0.04
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx!.clearRect(0, 0, canvas!.width, canvas!.height)
 
-      const cols = Math.ceil(canvas.width  / GAP) + 1
-      const rows = Math.ceil(canvas.height / GAP) + 1
+      const cols = Math.ceil(canvas!.width  / GAP) + 1
+      const rows = Math.ceil(canvas!.height / GAP) + 1
 
       for (let c = 0; c < cols; c++) {
         for (let r = 0; r < rows; r++) {
@@ -70,12 +69,12 @@ function useDotCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>): voi
           const alpha  = ALPHA + t * (0.55 - ALPHA)
           const radius = R_BASE + t * (R_MAX - R_BASE)
 
-          ctx.beginPath()
-          ctx.arc(x + pushX, y + pushY, radius, 0, Math.PI * 2)
-          ctx.fillStyle = t > 0
+          ctx!.beginPath()
+          ctx!.arc(x + pushX, y + pushY, radius, 0, Math.PI * 2)
+          ctx!.fillStyle = t > 0
             ? `rgba(${ACC_R},${ACC_G},${ACC_B},${alpha.toFixed(3)})`
             : `rgba(180,185,200,${ALPHA})`
-          ctx.fill()
+          ctx!.fill()
         }
       }
 
