@@ -234,10 +234,22 @@ function SettingsPanel({ customDurations, setDuration }: SettingsPanelProps) {
 // ── main component ────────────────────────────────────────────────────────
 
 export default function PomodoroTimer() {
-  const {
-    mode, remaining, running, completedWork, subjectId, tagId, customDurations,
-    start, pause, reset, setMode, setDuration, tick, setSubjectId, setTagId, skip,
-  } = useTimerStore()
+  const mode            = useTimerStore(s => s.mode)
+  const remaining       = useTimerStore(s => s.remaining)
+  const running         = useTimerStore(s => s.running)
+  const completedWork   = useTimerStore(s => s.completedWork)
+  const subjectId       = useTimerStore(s => s.subjectId)
+  const tagId           = useTimerStore(s => s.tagId)
+  const customDurations = useTimerStore(s => s.customDurations)
+  const start           = useTimerStore(s => s.start)
+  const pause           = useTimerStore(s => s.pause)
+  const reset           = useTimerStore(s => s.reset)
+  const setMode         = useTimerStore(s => s.setMode)
+  const setDuration     = useTimerStore(s => s.setDuration)
+  const tick            = useTimerStore(s => s.tick)
+  const setSubjectId    = useTimerStore(s => s.setSubjectId)
+  const setTagId        = useTimerStore(s => s.setTagId)
+  const skip            = useTimerStore(s => s.skip)
 
   const awardXP      = useXPStore(s => s.awardXP)
   const soundEnabled = useSettingsStore(s => s.soundEnabled)
