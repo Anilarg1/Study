@@ -10,7 +10,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // ─── User / XP helpers ────────────────────────────────────────────────────────
 
 /** Fetch the user's current XP from the users table. */
-export function fetchUserXP(userId: string): Promise<PostgrestSingleResponse<{ xp: number }>> {
+export async function fetchUserXP(userId: string): Promise<PostgrestSingleResponse<{ xp: number }>> {
   return supabase
     .from('users')
     .select('xp')

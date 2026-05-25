@@ -16,7 +16,7 @@ export default function SubjectPicker({ onSubjectChange }: SubjectPickerProps) {
   const [open,     setOpen]     = useState(false)
   const [adding,   setAdding]   = useState(false)
   const [newName,  setNewName]  = useState('')
-  const [newColor, setNewColor] = useState(SUBJECT_COLORS[0])
+  const [newColor, setNewColor] = useState(SUBJECT_COLORS[0] ?? '#7c6af0')
   const [addError, setAddError] = useState<string | null>(null)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -62,7 +62,7 @@ export default function SubjectPicker({ onSubjectChange }: SubjectPickerProps) {
     if (subject) {
       setActiveId(subject.id)
       setNewName('')
-      setNewColor(SUBJECT_COLORS[0])
+      setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
       setAdding(false)
       setOpen(false)
     } else {

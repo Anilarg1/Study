@@ -185,7 +185,7 @@ export default function Sidebar({
 
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [newName,      setNewName]      = useState('')
-  const [newColor,     setNewColor]     = useState(SUBJECT_COLORS[0])
+  const [newColor,     setNewColor]     = useState(SUBJECT_COLORS[0] ?? '#7c6af0')
   const [addError,     setAddError]     = useState<string | null>(null)
   const [submitting,   setSubmitting]   = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -199,7 +199,7 @@ export default function Sidebar({
     if (collapsed) {
       setShowAddPanel(false)
       setNewName('')
-      setNewColor(SUBJECT_COLORS[0])
+      setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
       setAddError(null)
       setSubmitting(false)
     }
@@ -209,7 +209,7 @@ export default function Sidebar({
     setShowAddPanel(p => {
       if (p) {          // closing — reset form
         setNewName('')
-        setNewColor(SUBJECT_COLORS[0])
+        setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
         setAddError(null)
       }
       return !p
@@ -225,7 +225,7 @@ export default function Sidebar({
     if (subject) {
       setShowAddPanel(false)
       setNewName('')
-      setNewColor(SUBJECT_COLORS[0])
+      setNewColor(SUBJECT_COLORS[0] ?? '#7c6af0')
     } else {
       setAddError('Could not save — check your connection.')
     }

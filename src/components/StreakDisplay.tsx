@@ -16,7 +16,7 @@ function getLast7(): DayInfo[] {
     const d = new Date(Date.now() - (6 - i) * 86_400_000)
     return {
       dateStr: toLocalDateStr(d),
-      label:   DAY_INITIALS[d.getDay()],
+      label:   DAY_INITIALS[d.getDay()] ?? '',
       isToday: i === 6,
     }
   })

@@ -22,19 +22,6 @@ function fmtDuration(totalMins: number): string {
   return `${h}h ${m}m`
 }
 
-function relativeTime(iso: string): string {
-  const d    = new Date(iso)
-  const now  = Date.now()
-  const diff = Math.floor((now - d.getTime()) / 1000)
-  if (diff < 60)   return 'Just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  const hm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-  if (dateOf(iso) === todayStr()) return `Today · ${hm}`
-  const yesterday = toLocalDateStr(new Date(now - 86_400_000))
-  if (dateOf(iso) === yesterday) return `Yesterday · ${hm}`
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` · ${hm}`
-}
-
 // ── today stats ───────────────────────────────────────────────────────────
 
 function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
@@ -47,14 +34,15 @@ function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
   const hourCounts = Array(24).fill(0) as number[]
   todaySes.forEach(s => {
     const h = new Date(s.completedAt).getHours()
-    hourCounts[h]++
+    hourCounts[h] = (hourCounts[h] ?? 0) + 1
   })
   const maxH    = Math.max(1, ...hourCounts)
   const curHour = new Date().getHours()
 
   function hClass(i: number): string {
-    if (i === curHour && hourCounts[i] > 0) return 'h-cell now'
-    const ratio = hourCounts[i] / maxH
+    const count = hourCounts[i] ?? 0
+    if (i === curHour && count > 0) return 'h-cell now'
+    const ratio = count / maxH
     if (ratio === 0) return 'h-cell'
     if (ratio < 0.4) return 'h-cell s1'
     if (ratio < 0.8) return 'h-cell s2'

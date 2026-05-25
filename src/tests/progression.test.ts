@@ -14,12 +14,12 @@ describe('RANK_TIERS', () => {
   })
 
   it('first rank starts at 0 XP', () => {
-    expect(RANK_TIERS[0].minXP).toBe(0)
+    expect(RANK_TIERS[0]?.minXP).toBe(0)
   })
 
   it('thresholds are strictly ascending', () => {
     for (let i = 1; i < RANK_TIERS.length; i++) {
-      expect(RANK_TIERS[i].minXP).toBeGreaterThan(RANK_TIERS[i - 1].minXP)
+      expect(RANK_TIERS[i]?.minXP).toBeGreaterThan(RANK_TIERS[i - 1]?.minXP ?? -1)
     }
   })
 })
@@ -30,7 +30,7 @@ describe('MASTERY_TIERS', () => {
   })
 
   it('first mastery tier starts at 0 XP', () => {
-    expect(MASTERY_TIERS[0].minXP).toBe(0)
+    expect(MASTERY_TIERS[0]?.minXP).toBe(0)
   })
 })
 
@@ -43,7 +43,7 @@ describe('getRankFromXP', () => {
   })
 
   it('returns correct rank at exact threshold', () => {
-    const threshold = RANK_TIERS[1].minXP
+    const threshold = RANK_TIERS[1]?.minXP ?? 0
     const r = getRankFromXP(threshold)
     expect(r.rankIndex).toBe(1)
   })
@@ -87,7 +87,7 @@ describe('getRankProgress', () => {
   })
 
   it('returns value between 0-1 in mid-progression', () => {
-    const mid = RANK_TIERS[0].minXP + (RANK_TIERS[1].minXP - RANK_TIERS[0].minXP) / 2
+    const mid = (RANK_TIERS[0]?.minXP ?? 0) + ((RANK_TIERS[1]?.minXP ?? 0) - (RANK_TIERS[0]?.minXP ?? 0)) / 2
     const pct = getRankProgress(mid)
     expect(pct).toBeGreaterThan(0)
     expect(pct).toBeLessThan(1)

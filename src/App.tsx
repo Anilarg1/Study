@@ -1,6 +1,5 @@
 import { useEffect, useCallback, useState } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import type { User } from '@supabase/supabase-js'
 import LoginPage       from './components/LoginPage'
 import Sidebar         from './components/Sidebar'
 import RightRail       from './components/RightRail'
@@ -107,10 +106,9 @@ export default function App() {
 
   if (!user) return <LoginPage />
 
-  const typedUser   = user as User
-  const email       = typedUser.email ?? ''
-  const emailHandle = email.split('@')[0]
-  const displayName = (typedUser.user_metadata?.display_name as string | undefined) ?? ''
+  const email       = user.email ?? ''
+  const emailHandle = email.split('@')[0] ?? ''
+  const displayName = (user.user_metadata?.display_name as string | undefined) ?? ''
   const handle      = displayName || emailHandle
   const initials    = handle.slice(0, 2).toUpperCase()
 
@@ -193,7 +191,7 @@ export default function App() {
 
       {/* ── NAV ── */}
       <Sidebar
-        user={typedUser}
+        user={user}
         initials={initials}
         email={email}
         onSignOut={signOut}

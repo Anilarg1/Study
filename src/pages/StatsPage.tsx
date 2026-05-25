@@ -6,7 +6,7 @@ import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
-import type { SessionEntry, Subject } from '../types'
+import type { SessionEntry } from '../types'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,6 @@ type Range = 'week' | 'month' | 'quarter' | 'year' | 'all'
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
 function getRangeStart(range: Range): Date {
@@ -85,7 +84,7 @@ function radarLabelPos(i: number, N: number, R: number, cx: number, cy: number, 
   return {
     x: cx + (R + pad) * Math.cos(angle),
     y: cy + (R + pad) * Math.sin(angle),
-    anchor: Math.cos(angle) < -0.3 ? 'end' : Math.cos(angle) > 0.3 ? 'start' : 'middle',
+    anchor: (Math.cos(angle) < -0.3 ? 'end' : Math.cos(angle) > 0.3 ? 'start' : 'middle') as 'end' | 'start' | 'middle',
   }
 }
 
@@ -152,7 +151,7 @@ function SubjectRadar({
     )
   }
 
-  const maxMins  = subjects[0].mins || 1
+  const maxMins  = subjects[0]?.mins || 1
   const normVals = subjects.map(s => s.mins / maxMins)
 
   // Grid rings at 33%, 66%, 100%
@@ -197,7 +196,7 @@ function SubjectRadar({
         {/* dots */}
         {subjects.map((s, i) => {
           const angle = -Math.PI / 2 + (i / N) * 2 * Math.PI
-          const v = normVals[i]
+          const v = normVals[i] ?? 0
           const px = (cx + R * v * Math.cos(angle)).toFixed(2)
           const py = (cy + R * v * Math.sin(angle)).toFixed(2)
           return (
@@ -237,7 +236,7 @@ function SubjectRadar({
         ))}
         {subjects.length > 0 && (
           <div className="s-radar-legend-foot">
-            <span className="lead"><b>{subjects[0].name}</b> leads</span>
+            <span className="lead"><b>{subjects[0]?.name}</b> leads</span>
             <span className="cmp">{fmtMins(totalMins)} total</span>
           </div>
         )}
@@ -340,9 +339,7 @@ function ProgressionCard() {
 
 export default function StatsPage() {
   const sessions      = useXPStore(s => s.sessions)
-  const totalXP       = useXPStore(s => s.totalXP)
   const subjects      = useSubjectStore(s => s.subjects)
-  const loginDates    = useStreakStore(s => s.loginDates)
   const longestStreak = useStreakStore(s => s.longestStreak)
 
   const [range, setRange]               = useState<Range>('month')
@@ -505,7 +502,7 @@ export default function StatsPage() {
 
     const weeks: { ds: string; lvl: 0 | 1 | 2 | 3 | 4; future: boolean; mins: number }[][] = []
     let activeDays = 0
-    let curStreak = 0, maxStreak = 0, runStreak = 0
+    let maxStreak = 0, runStreak = 0
 
     for (let w = 0; w <= WEEKS; w++) {
       const week = []
@@ -536,13 +533,15 @@ export default function StatsPage() {
     const monthLabels: { label: string; width: number }[] = []
     let lastM = -1, runLen = 0
     weeks.forEach(week => {
-      const m = new Date(week[0].ds).getMonth()
+      const firstDay = week[0]
+      if (!firstDay) return
+      const m = new Date(firstDay.ds).getMonth()
       if (m !== lastM) {
-        if (lastM !== -1) monthLabels.push({ label: MONTH_NAMES[lastM], width: runLen })
+        if (lastM !== -1) monthLabels.push({ label: MONTH_NAMES[lastM] ?? '', width: runLen })
         lastM = m; runLen = 1
       } else { runLen++ }
     })
-    if (lastM !== -1) monthLabels.push({ label: MONTH_NAMES[lastM], width: runLen })
+    if (lastM !== -1) monthLabels.push({ label: MONTH_NAMES[lastM] ?? '', width: runLen })
 
     return { heatWeeks: weeks, heatMonthLabels: monthLabels, activeDays, longestHeatStreak: maxStreak }
   }, [sessions, subjectFilter])
@@ -578,7 +577,8 @@ export default function StatsPage() {
       const d    = new Date(s.completedAt)
       const dow  = (d.getDay() + 6) % 7   // 0 = Mon
       const hour = d.getHours()
-      grid[dow][hour] += sessionMins(s)
+      const row = grid[dow]
+      if (row) row[hour] = (row[hour] ?? 0) + sessionMins(s)
     }
     return grid
   }, [workSessions])
@@ -600,28 +600,28 @@ export default function StatsPage() {
   const hourDaySummary = useMemo(() => {
     let peakMins = 0, peakHour = -1
     for (let h = 0; h < 24; h++) {
-      const t = hourDayRaw.reduce((s, row) => s + row[h], 0)
+      const t = hourDayRaw.reduce((s, row) => s + (row[h] ?? 0), 0)
       if (t > peakMins) { peakMins = t; peakHour = h }
     }
 
     const dayTotals = hourDayRaw.map((row, i) => ({
-      day:   DAY_LABELS[i],
+      day:   DAY_LABELS[i] ?? '',
       total: row.reduce((a, b) => a + b, 0),
     }))
-    const bestDay = [...dayTotals].sort((a, b) => b.total - a.total)[0]
+    const bestDay = [...dayTotals].sort((a, b) => b.total - a.total)[0] ?? null
 
     // Fix B4: hour 23 → "23:00 – 0:00", not "23:00 – 24:00"
     const nextHour = peakHour >= 0 ? (peakHour + 1) % 24 : -1
     return {
       peakHour: peakHour >= 0 ? `${peakHour}:00 – ${nextHour}:00` : '—',
-      bestDay:  bestDay?.total > 0 ? bestDay.day : '—',
+      bestDay:  bestDay !== null && bestDay.total > 0 ? bestDay.day : '—',
     }
   }, [hourDayRaw])
 
   // ── session length histogram ───────────────────────────────────────────────
   const histData = useMemo(() => {
     const counts = HIST_BUCKETS.map((b, i) => {
-      const prev = i > 0 ? HIST_BUCKETS[i - 1].max : 0
+      const prev = i > 0 ? (HIST_BUCKETS[i - 1]?.max ?? 0) : 0
       return {
         label: b.label,
         count: workSessions.filter(s => {
@@ -631,16 +631,16 @@ export default function StatsPage() {
       }
     })
     const maxCount = Math.max(1, ...counts.map(c => c.count))
-    const peakIdx  = counts.reduce((best, c, i) => c.count > counts[best].count ? i : best, 0)
+    const peakIdx  = counts.reduce((best, c, i) => c.count > (counts[best]?.count ?? 0) ? i : best, 0)
     return counts.map((c, i) => ({ ...c, height: Math.max(2, (c.count / maxCount) * 100), isPeak: i === peakIdx }))
   }, [workSessions])
 
   const histStats = useMemo(() => {
     if (workSessions.length === 0) return { median: 0, mean: 0, longest: 0, completed: 0 }
     const sorted = [...workSessions].map(sessionMins).sort((a, b) => a - b)
-    const median = sorted[Math.floor(sorted.length / 2)]
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0
     const mean   = sorted.reduce((s, v) => s + v, 0) / sorted.length
-    const longest = sorted[sorted.length - 1]
+    const longest = sorted[sorted.length - 1] ?? 0
     const completed = workSessions.filter(s => s.durationSecs !== null && s.durationSecs > 0).length
     return { median, mean: Math.round(mean * 10) / 10, longest, completed }
   }, [workSessions])
@@ -665,7 +665,9 @@ export default function StatsPage() {
     const sortedDates = [...minsPerDay.keys()].sort()
     let bestWeekMins = 0, bestWeekStart = ''
     for (let i = 0; i < sortedDates.length; i++) {
-      const windowStart = new Date(sortedDates[i])
+      const dateStr = sortedDates[i]
+      if (!dateStr) continue
+      const windowStart = new Date(dateStr)
       const windowEnd   = new Date(windowStart)
       windowEnd.setDate(windowStart.getDate() + 7)
       let weekMins = 0
@@ -673,7 +675,7 @@ export default function StatsPage() {
         const d = new Date(ds)
         if (d >= windowStart && d < windowEnd) weekMins += mins
       }
-      if (weekMins > bestWeekMins) { bestWeekMins = weekMins; bestWeekStart = sortedDates[i] }
+      if (weekMins > bestWeekMins) { bestWeekMins = weekMins; bestWeekStart = dateStr }
     }
 
     return { bestDayMins, bestDayStr, bestWeekMins, bestWeekStart }
@@ -953,7 +955,7 @@ export default function StatsPage() {
                     : n <= 30 ? [0, Math.floor(n / 3), Math.floor(2 * n / 3), n - 1]
                     : [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor(3 * n / 4), n - 1]
                   return ticks.map(i => (
-                    <span key={i}>{chartBars[i].label.toUpperCase()}</span>
+                    <span key={i}>{chartBars[i]?.label.toUpperCase()}</span>
                   ))
                 })()}
               </div>

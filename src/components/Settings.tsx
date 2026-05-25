@@ -7,7 +7,7 @@ import useXPStore      from '../store/useXPStore'
 import useSubjectStore from '../store/useSubjectStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import { supabase } from '../lib/supabase'
-import type { Theme, Density, FontScale } from '../types'
+import type { Theme, Density, FontScale, TimeFormat, WeekStart } from '../types'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -192,7 +192,7 @@ interface ToastFn {
 function AccountSection({ onToast }: { onToast: ToastFn }) {
   const { user, signOut } = useAuthStore()
   const email  = user?.email ?? ''
-  const handle = email.split('@')[0]
+  const handle = email.split('@')[0] ?? ''
 
   const [displayName,      setDisplayName]      = useState<string>(user?.user_metadata?.display_name ?? handle)
   const [avatarIdx,        setAvatarIdx]        = useState<number>(user?.user_metadata?.avatar_color_idx ?? 0)
@@ -201,7 +201,8 @@ function AccountSection({ onToast }: { onToast: ToastFn }) {
   const [deleteInput,      setDeleteInput]      = useState('')
 
   const initials = (displayName || handle).slice(0, 2).toUpperCase()
-  const [c1, c2] = AVATAR_COLORS[avatarIdx] ?? AVATAR_COLORS[0]
+  const avatarPair = AVATAR_COLORS[avatarIdx] ?? AVATAR_COLORS[0] ?? ['#c97b5b', '#5d4a82'] as [string, string]
+  const [c1, c2] = avatarPair
 
   async function saveName() {
     if (saving) return
@@ -487,7 +488,7 @@ function InterfaceSection({ onToast: _onToast }: { onToast?: ToastFn }) {
               { value: '12h', label: '12 h' },
             ]}
             value={s.timeFormat}
-            onChange={v => s.setField('timeFormat', v as Theme)}
+            onChange={v => s.setField('timeFormat', v as TimeFormat)}
           />
         </Row>
         <Row label="First day of week">
@@ -497,7 +498,7 @@ function InterfaceSection({ onToast: _onToast }: { onToast?: ToastFn }) {
               { value: 'sunday', label: 'Sunday' },
             ]}
             value={s.weekStart}
-            onChange={v => s.setField('weekStart', v as Theme)}
+            onChange={v => s.setField('weekStart', v as WeekStart)}
           />
         </Row>
       </Group>

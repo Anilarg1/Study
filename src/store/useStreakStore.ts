@@ -48,7 +48,10 @@ function calcLongestStreak(dates: string[]): number {
   const sorted = [...new Set(dates)].sort()
   let longest = 1, run = 1
   for (let i = 1; i < sorted.length; i++) {
-    const diff = (new Date(sorted[i]).getTime() - new Date(sorted[i - 1]).getTime()) / 86_400_000
+    const cur  = sorted[i]
+    const prev = sorted[i - 1]
+    if (!cur || !prev) continue
+    const diff = (new Date(cur).getTime() - new Date(prev).getTime()) / 86_400_000
     if      (diff === 1) { run++; if (run > longest) longest = run }
     else if (diff  > 1) { run = 1 }
     // diff === 0 → duplicate date, skip
