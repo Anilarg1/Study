@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import useSettingsStore, {
   applyTheme, applyDensity, applyFontScale, applyContrast,
 } from '../store/useSettingsStore'
-import useAuthStore from '../store/useAuthStore'
+import useAuthStore    from '../store/useAuthStore'
+import useXPStore      from '../store/useXPStore'
+import useSubjectStore from '../store/useSubjectStore'
+import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import { supabase } from '../lib/supabase'
 import type { Theme, Density, FontScale } from '../types'
 
@@ -76,6 +79,14 @@ function IcMonitor() {
     </svg>
   )
 }
+function IcStar() {
+  return (
+    <svg className="sni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m12 2 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>
+    </svg>
+  )
+}
 
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
@@ -83,6 +94,7 @@ const SECTIONS: Array<{ id: string; label: string; Icon: React.ComponentType }> 
   { id: 'account',       label: 'Account & Profile', Icon: IcUser },
   { id: 'interface',     label: 'Interface',          Icon: IcPalette },
   { id: 'notifications', label: 'Notifications',      Icon: IcBell },
+  { id: 'milestones',    label: 'Milestones',          Icon: IcStar },
 ]
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
@@ -584,6 +596,110 @@ function NotificationsSection({ onToast: _onToast }: { onToast?: ToastFn }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MILESTONES SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+function MilestonesSection() {
+  const sessions      = useXPStore(s => s.sessions)
+  const subjects      = useSubjectStore(s => s.subjects)
+  const totalXP       = useXPStore(s => s.totalXP)
+  const loginDates    = useStreakStore(s => s.loginDates)
+  const longestStreak = useStreakStore(s => s.longestStreak)
+  const loginDateSet  = useMemo(() => new Set(loginDates), [loginDates])
+  const currentStreak = useMemo(() => calcCurrentStreak(loginDateSet), [loginDateSet])
+
+  const milestones = useMemo(() => {
+    const workSessions = [...sessions].filter(s => s.type === 'work')
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+
+    const events: { icon: 'time' | 'streak' | 'subject' | 'xp'; title: string; when: string; xp: number }[] = []
+
+    // Total time milestones
+    const totalMins = workSessions.reduce((sum, s) => sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0)
+    const timeMilestones = [6000, 3000, 1500, 600, 300, 60]
+    for (const m of timeMilestones) {
+      if (totalMins >= m) {
+        const h = Math.round(m / 60)
+        events.push({ icon: 'time', title: `${h}h focused total`, when: 'milestone', xp: h >= 50 ? 100 : h >= 25 ? 50 : 25 })
+        break
+      }
+    }
+
+    // Streak milestone
+    if (longestStreak >= 10) {
+      events.push({ icon: 'streak', title: `${longestStreak}-day streak`, when: 'best', xp: longestStreak >= 30 ? 200 : longestStreak >= 15 ? 100 : 50 })
+    } else if (currentStreak >= 3) {
+      events.push({ icon: 'streak', title: `${currentStreak}-day streak`, when: 'current', xp: 25 })
+    }
+
+    // Subject milestone
+    const subjectMins = new Map<string, number>()
+    for (const s of workSessions) {
+      if (s.subjectId) subjectMins.set(s.subjectId, (subjectMins.get(s.subjectId) ?? 0) + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25))
+    }
+    let topSubj: { id: string; mins: number } | null = null
+    for (const [id, mins] of subjectMins) {
+      if (!topSubj || mins > topSubj.mins) topSubj = { id, mins }
+    }
+    if (topSubj && topSubj.mins >= 60) {
+      const subj = subjects.find(s => s.id === topSubj!.id)
+      const h    = Math.floor(topSubj.mins / 60)
+      events.push({ icon: 'subject', title: `${h}h on ${subj?.name ?? 'a subject'}`, when: 'reached', xp: h >= 20 ? 50 : 25 })
+    }
+
+    // XP milestone
+    const xpMilestones = [5000, 2000, 1000, 500, 250, 100]
+    for (const m of xpMilestones) {
+      if (totalXP >= m) {
+        events.push({ icon: 'xp', title: `${m.toLocaleString()} XP earned`, when: 'total', xp: 0 })
+        break
+      }
+    }
+
+    return events.slice(0, 4)
+  }, [sessions, subjects, longestStreak, currentStreak, totalXP])
+
+  return (
+    <div>
+      <div className="s-header">
+        <h2 className="s-h2">Milestones</h2>
+        <p className="s-subhead">Your study achievements and progress milestones.</p>
+      </div>
+
+      {milestones.length === 0 ? (
+        <Group>
+          <div style={{ padding: '16px 8px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>
+            Complete more sessions to unlock milestones.
+          </div>
+        </Group>
+      ) : (
+        <Group title="Achievements">
+          {milestones.map((m, i) => (
+            <div key={i} className="s-mile">
+              <div className="badge" style={{
+                background: `linear-gradient(160deg, color-mix(in oklab, var(--xp) 22%, var(--surface-3)), var(--surface-3))`,
+                border: `1px solid color-mix(in oklab, var(--xp) 26%, var(--hairline-2))`,
+                color: 'var(--xp)',
+              }}>
+                {m.icon === 'time'    && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>}
+                {m.icon === 'streak'  && <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4 4 8a4 4 0 0 1-1.5 3c.5-.7.5-1.8 0-2.5-1-1.5-2.5-1-2.5-3 0 2-2 2.5-3 4.5a4 4 0 1 0 7.5 2C16.5 18 12 22 12 22s-7-3-7-9c0-7 7-11 7-11z"/></svg>}
+                {m.icon === 'subject' && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="m4 7 8-5 8 5v10l-8 5-8-5z"/></svg>}
+                {m.icon === 'xp'      && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>}
+              </div>
+              <div className="meta">
+                <div className="t">{m.title}</div>
+                <div className="s">{m.when.toUpperCase()}</div>
+              </div>
+              {m.xp > 0 && <span className="xp-badge">+{m.xp} XP</span>}
+            </div>
+          ))}
+        </Group>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN EXPORT
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -633,6 +749,7 @@ export default function Settings({ onBack }: SettingsProps) {
         {section === 'account'       && <AccountSection       onToast={showToast} />}
         {section === 'interface'     && <InterfaceSection     onToast={showToast} />}
         {section === 'notifications' && <NotificationsSection onToast={showToast} />}
+        {section === 'milestones'    && <MilestonesSection />}
       </div>
 
       {toast && (
