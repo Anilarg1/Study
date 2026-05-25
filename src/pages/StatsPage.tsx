@@ -7,6 +7,7 @@ import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
+import { bestWeek } from '../utils/stats'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -642,22 +643,8 @@ export default function StatsPage() {
       if (mins > bestDayMins) { bestDayMins = mins; bestDayStr = ds }
     }
 
-    // Best week (rolling 7-day windows)
-    const sortedDates = [...minsPerDay.keys()].sort()
-    let bestWeekMins = 0, bestWeekStart = ''
-    for (let i = 0; i < sortedDates.length; i++) {
-      const dateStr = sortedDates[i]
-      if (!dateStr) continue
-      const windowStart = new Date(dateStr)
-      const windowEnd   = new Date(windowStart)
-      windowEnd.setDate(windowStart.getDate() + 7)
-      let weekMins = 0
-      for (const [ds, mins] of minsPerDay) {
-        const d = new Date(ds)
-        if (d >= windowStart && d < windowEnd) weekMins += mins
-      }
-      if (weekMins > bestWeekMins) { bestWeekMins = weekMins; bestWeekStart = dateStr }
-    }
+    // Best week (rolling 7-day windows) — O(d log d) sliding window
+    const { bestWeekMins, bestWeekStart } = bestWeek(minsPerDay)
 
     return { bestDayMins, bestDayStr, bestWeekMins, bestWeekStart }
   }, [sessions])
