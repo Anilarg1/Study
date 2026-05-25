@@ -2,16 +2,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { upsertDailyLogin } from '../lib/supabase'
 import { getCurrentUserId } from '../lib/currentUser'
+import { toLocalDateStr } from '../utils/date'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-/** 'YYYY-MM-DD' in the user's local timezone (avoids UTC-offset surprises) */
-export function toLocalDateStr(date: Date = new Date()): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+export { toLocalDateStr } from '../utils/date'
 
 /**
  * Consecutive-day streak ending on today (if clocked in) or yesterday

@@ -1,35 +1,21 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import useXPStore      from '../store/useXPStore'
-import { toLocalDateStr } from '../store/useStreakStore'
+import { dateOf, fmtMins as fmtDuration, sessionMins, toLocalDateStr } from '../utils/date'
 import useSubjectStore from '../store/useSubjectStore'
 import useTagStore     from '../store/useTagStore'
 import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
-
 function todayStr(): string { return toLocalDateStr() }
-
-function dateOf(iso: string): string { return toLocalDateStr(new Date(iso)) }
-
-function fmtDuration(totalMins: number): string {
-  if (totalMins === 0) return '0m'
-  const h = Math.floor(totalMins / 60)
-  const m = totalMins % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
 
 // ── today stats ───────────────────────────────────────────────────────────
 
 function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
   const today    = todayStr()
   const todaySes = sessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === today)
-  const totalMin = todaySes.reduce((sum, s) =>
-    sum + (s.durationSecs ? Math.round(s.durationSecs / 60) : 25), 0
-  )
+  const totalMin = todaySes.reduce((sum, s) => sum + sessionMins(s), 0)
 
   const hourCounts = Array(24).fill(0) as number[]
   todaySes.forEach(s => {
@@ -126,7 +112,7 @@ function RecentSessions({ sessions }: { sessions: SessionEntry[] }) {
               </span>
             )}
             <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
-              {entry.durationSecs ? `${Math.round(entry.durationSecs / 60)}m` : '25m'}
+              {fmtDuration(sessionMins(entry))}
             </span>
           </div>
         )

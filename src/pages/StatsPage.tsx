@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react'
 import useXPStore         from '../store/useXPStore'
 import useSubjectStore    from '../store/useSubjectStore'
-import useStreakStore, { toLocalDateStr } from '../store/useStreakStore'
+import useStreakStore from '../store/useStreakStore'
+import { dateOf, fmtMins, fmtMinsShort, sessionMins, toLocalDateStr } from '../utils/date'
 import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
-import type { SessionEntry } from '../types'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -36,28 +36,6 @@ function getPrevStart(range: Range): Date {
   return new Date(start.getTime() - spanMs)
 }
 
-function sessionMins(s: SessionEntry): number {
-  return s.durationSecs ? Math.round(s.durationSecs / 60) : 25
-}
-
-function fmtMins(mins: number): string {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${String(m).padStart(2, '0')}m`
-}
-
-function fmtMinsShort(mins: number): string {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  if (h === 0) return `${m}m`
-  return `${h}h ${String(m).padStart(2, '0')}m`
-}
-
-function dateOf(iso: string): string {
-  return toLocalDateStr(new Date(iso))
-}
 
 function isWeekendDate(d: Date): boolean {
   const day = d.getDay()
