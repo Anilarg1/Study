@@ -5,7 +5,6 @@ import Sidebar         from './components/Sidebar'
 import RightRail       from './components/RightRail'
 import NewSessionModal from './components/NewSessionModal'
 import CommandPalette  from './components/CommandPalette'
-import BottomTabBar    from './components/BottomTabBar'
 
 const TimerPage      = lazy(() => import('./pages/TimerPage'))
 const SettingsPage   = lazy(() => import('./pages/SettingsPage'))
@@ -243,11 +242,20 @@ export default function App() {
       {/* ── RAIL (hidden on non-timer routes) ── */}
       {showRail && <RightRail />}
 
-      {/* ── BOTTOM TAB BAR (mobile only, shown via CSS) ── */}
-      <BottomTabBar
-        onNewSession={handleNewSession}
-        onMoreOpen={() => setMobileNavOpen(true)}
-      />
+      {/* ── MOBILE FAB (mobile only, hidden when timer banner is up) ── */}
+      {!showBanner && (
+        <button
+          type="button"
+          className="mobile-fab"
+          onClick={handleNewSession}
+          aria-label="New session"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      )}
 
       {/* ── MOBILE TIMER BANNER ── */}
       {showBanner && (

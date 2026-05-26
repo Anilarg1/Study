@@ -757,8 +757,42 @@
   .s-spark { width: 80px; }
 }
 @media (max-width: 900px) {
+  /* ── Prevent horizontal overflow ────────────────────────────────────────── */
+  /* Don't set overflow: hidden on stats-page — iOS blocks child touch-scroll */
+  .s-scroll { overflow-x: hidden; }
+
+  /* Filter bar: explicit horizontal-only touch action for iOS */
+  .s-filter-bar {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  /* ── Column layouts collapse to single column ───────────────────────────── */
   .s-row-2, .s-row-2-narrow { grid-template-columns: 1fr; }
-  .s-kpi-row { grid-template-columns: 1fr 1fr; }
-  .s-radar-card { grid-column: 1 / -1; }
-  .s-filter-bar { gap: 4px; }
+  .s-kpi-row                { grid-template-columns: 1fr 1fr; }
+  .s-radar-card             { grid-column: 1 / -1; }
+  .s-filter-bar             { gap: 4px; }
+
+  /* ── Hour×day heatmap: wrap the 24-col grid in a horizontal scroller ─────── */
+  .s-hh-grid {
+    display: block;          /* drop the 22px + 1fr outer grid */
+    overflow-x: auto;
+  }
+  .s-hh-days { display: none; }  /* day labels hidden — too cramped */
+  .s-hh-rows { min-width: 340px; }
+  .s-hh-x    { margin-left: 0; min-width: 340px; }
+
+  /* ── Year heatmap: already overflow-x:auto, just ensure no bleed ─────────── */
+  .s-heatmap-months { overflow: hidden; }
+  .s-heatmap-wrap   { overflow: hidden; }
+
+  /* ── Bar chart: ensure y-axis + plot don't overflow ─────────────────────── */
+  .s-chart-wrap { grid-template-columns: 28px 1fr; }
+
+  /* ── Subject row: drop % column on tiny screens ─────────────────────────── */
+  .s-subj-row { grid-template-columns: 12px 1fr 54px; }
+  .s-subj-row .pct { display: none; }
+
+  /* ── Records strip ───────────────────────────────────────────────────────── */
+  .s-records { gap: 0; }
 }
