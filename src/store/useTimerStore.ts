@@ -19,6 +19,7 @@ interface TimerState {
   mode:            TimerMode
   remaining:       number
   running:         boolean
+  hasStarted:      boolean
   completedWork:   number
   expiresAt:       string | null
   subjectId:       string | null
@@ -44,6 +45,7 @@ const useTimerStore = create<TimerState>()(
       mode:            'work',
       remaining:       DEFAULT_DURATIONS.work,
       running:         false,
+      hasStarted:      false,
       completedWork:   0,
       expiresAt:       null,
       subjectId:       null,
@@ -53,8 +55,9 @@ const useTimerStore = create<TimerState>()(
       start() {
         const { remaining } = get()
         set({
-          running:   true,
-          expiresAt: new Date(Date.now() + remaining * 1000).toISOString(),
+          running:    true,
+          hasStarted: true,
+          expiresAt:  new Date(Date.now() + remaining * 1000).toISOString(),
         })
       },
 
@@ -65,7 +68,7 @@ const useTimerStore = create<TimerState>()(
 
       reset() {
         const { mode, customDurations } = get()
-        set({ running: false, remaining: customDurations[mode], expiresAt: null })
+        set({ running: false, hasStarted: false, remaining: customDurations[mode], expiresAt: null })
       },
 
       setMode(mode) {
@@ -145,6 +148,7 @@ const useTimerStore = create<TimerState>()(
         mode:            state.mode,
         remaining:       state.running ? state._calcRemaining() : state.remaining,
         running:         state.running,
+        hasStarted:      state.hasStarted,
         completedWork:   state.completedWork,
         expiresAt:       state.expiresAt,
         subjectId:       state.subjectId,

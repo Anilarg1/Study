@@ -309,12 +309,16 @@ export default function RightRail() {
   const isTimerPage = location.pathname === '/'
   const sessions  = useXPStore(s => s.sessions)
 
-  // Widget visibility — show when timer is in progress on any non-timer page
+  // Widget visibility — show when timer is in progress on any non-timer page.
+  // hasStarted guards against phantom widget when duration is increased in settings
+  // before the timer has ever been started (remaining < customDurations[mode] would
+  // otherwise be true even though the timer was never running).
   const running         = useTimerStore(s => s.running)
   const remaining       = useTimerStore(s => s.remaining)
   const mode            = useTimerStore(s => s.mode)
   const customDurations = useTimerStore(s => s.customDurations)
-  const isInProgress    = running || remaining < customDurations[mode]
+  const hasStarted      = useTimerStore(s => s.hasStarted)
+  const isInProgress    = running || (hasStarted && remaining < customDurations[mode])
   const showWidget      = !isTimerPage && isInProgress
 
   // ── stats rail ────────────────────────────────────────────────────────────
