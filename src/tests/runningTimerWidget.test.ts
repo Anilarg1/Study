@@ -18,6 +18,14 @@ describe('formatMMSS', () => {
   it('handles 59:59 without overflow', () => {
     expect(formatMMSS(3599)).toBe('59:59')
   })
+
+  it('guards against float inputs by rounding', () => {
+    expect(formatMMSS(90.7)).toBe('01:31')
+  })
+
+  it('guards against negative inputs by clamping to zero', () => {
+    expect(formatMMSS(-1)).toBe('00:00')
+  })
 })
 
 describe('calcProgress', () => {
@@ -40,5 +48,13 @@ describe('calcProgress', () => {
   it('clamps to 0 when remaining exceeds total', () => {
     // e.g. duration was changed after the timer started
     expect(calcProgress(1600, 1500)).toBe(0)
+  })
+
+  it('guards against NaN total by returning 0', () => {
+    expect(calcProgress(750, NaN)).toBe(0)
+  })
+
+  it('guards against Infinity total by returning 0', () => {
+    expect(calcProgress(750, Infinity)).toBe(0)
   })
 })
