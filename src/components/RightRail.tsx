@@ -72,7 +72,7 @@ function RunningTimerWidget() {
   const progress = calcProgress(remaining, total)
 
   return (
-    <div style={{ paddingBottom: 10, marginBottom: 2 }}>
+    <div style={{ paddingTop: 10, paddingBottom: 10, marginBottom: 2 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
 
         {/* ── Left column ── */}
