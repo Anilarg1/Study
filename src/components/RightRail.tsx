@@ -8,6 +8,19 @@ import type { SessionEntry } from '../types'
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
+// ── timer widget helpers ──────────────────────────────────────────────────
+
+export function formatMMSS(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+export function calcProgress(remaining: number, total: number): number {
+  if (total === 0) return 0
+  return Math.max(0, Math.min(1, 1 - remaining / total))
+}
+
 function todayStr(): string { return toLocalDateStr() }
 
 // ── today stats ───────────────────────────────────────────────────────────
