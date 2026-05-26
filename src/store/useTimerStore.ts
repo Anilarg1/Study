@@ -73,7 +73,7 @@ const useTimerStore = create<TimerState>()(
 
       setMode(mode) {
         const { customDurations } = get()
-        set({ mode, running: false, remaining: customDurations[mode], expiresAt: null })
+        set({ mode, running: false, hasStarted: false, remaining: customDurations[mode], expiresAt: null })
       },
 
       setSubjectId(id) {
@@ -86,10 +86,10 @@ const useTimerStore = create<TimerState>()(
 
       setDuration(mode, minutes) {
         const secs = Math.max(1, Math.round(minutes)) * 60
-        const { mode: currentMode, running, customDurations } = get()
+        const { mode: currentMode, running, hasStarted, customDurations } = get()
         const newDurations = { ...customDurations, [mode]: secs }
         const updates: Partial<TimerState> = { customDurations: newDurations }
-        if (mode === currentMode && !running) {
+        if (mode === currentMode && !running && !hasStarted) {
           updates.remaining = secs
           updates.expiresAt = null
         }
