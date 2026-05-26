@@ -56,8 +56,31 @@
 
 /* ── Mobile overrides (< 900px) ──────────────────────────────────────────── */
 @media (max-width: 900px) {
-  /*
-   * Mobile work goes here when the mobile UI task begins.
-   * At 900px: hide right rail, collapse sidebar, show bottom tab bar.
-   */
+  /* Stats page: tighter padding */
+  .stats-page { padding: 16px 16px 72px; }
+
+  /* Notes: two-pane → single scrollable pane */
+  .notes-page {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  /* Settings: show as stacked layout */
+  .settings-view           { grid-template-columns: 1fr; overflow-y: auto; }
+  .settings-content        { padding: 20px 20px 72px; }
+  .settings-sidenav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+    padding: 8px 8px 6px;
+    height: auto;
+    flex-shrink: 0;
+    gap: 2px;
+    scrollbar-width: none;
+  }
+  .settings-sidenav::-webkit-scrollbar { display: none; }
+  .s-back-btn  { display: none; }
+  .s-nav-label { display: none; }
+  .settings-nav-item { white-space: nowrap; }
 }

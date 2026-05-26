@@ -5,6 +5,7 @@ import Sidebar         from './components/Sidebar'
 import RightRail       from './components/RightRail'
 import NewSessionModal from './components/NewSessionModal'
 import CommandPalette  from './components/CommandPalette'
+import BottomTabBar    from './components/BottomTabBar'
 
 const TimerPage      = lazy(() => import('./pages/TimerPage'))
 const SettingsPage   = lazy(() => import('./pages/SettingsPage'))
@@ -34,13 +35,35 @@ export default function App() {
   const setTimerSubject  = useTimerStore(s => s.setSubjectId)
   const setTimerTagId    = useTimerStore(s => s.setTagId)
   const setActiveId      = useSubjectStore(s => s.setActiveId)
+  const timerRemaining  = useTimerStore(s => s.remaining)
+  const timerHasStarted = useTimerStore(s => s.hasStarted)
+  const timerExpiresAt  = useTimerStore(s => s.expiresAt)
+  const customDurations = useTimerStore(s => s.customDurations)
+  const pauseTimer      = useTimerStore(s => s.pause)
   const dataMode         = DATA_MODE[timerMode] ?? 'focus'
+
+  const MOBILE_MODE_LABELS: Record<string, string> = {
+    work: 'Focus', shortBreak: 'Short Break', longBreak: 'Long Break',
+  }
+
+  const isTimerPage  = location.pathname === '/'
+  const isInProgress = running || (timerHasStarted && timerRemaining < (customDurations[timerMode] ?? 0))
+  const showBanner   = !isTimerPage && isInProgress
+
+  const bannerRemaining = running && timerExpiresAt
+    ? Math.max(0, Math.round((new Date(timerExpiresAt).getTime() - Date.now()) / 1000))
+    : timerRemaining
+  const bannerMins = Math.floor(bannerRemaining / 60)
+  const bannerSecs = bannerRemaining % 60
+  const bannerTime = `${String(bannerMins).padStart(2, '0')}:${String(bannerSecs).padStart(2, '0')}`
+  const bannerLabel = MOBILE_MODE_LABELS[timerMode] ?? 'Focus'
 
   const sidebarCollapsed = useSettingsStore(s => s.sidebarCollapsed)
   const toggleSidebar    = useSettingsStore(s => s.toggle)
 
   const [showNewSession, setShowNewSession] = useState(false)
   const [showCmdPalette, setShowCmdPalette] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const handleNewSession = useCallback(() => {
     setShowNewSession(true)
@@ -126,6 +149,18 @@ export default function App() {
 
       {/* ── TOPBAR ── */}
       <div className="topbar">
+        {/* ── HAMBURGER (mobile only, shown via CSS) ── */}
+        <button
+          type="button"
+          className="icon-btn topbar-hamburger"
+          onClick={() => setMobileNavOpen(true)}
+          title="Menu"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 6h18M3 12h18M3 18h18"/>
+          </svg>
+        </button>
         {isSettings ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
             <GearIcon size={14} className={undefined} />
@@ -182,6 +217,8 @@ export default function App() {
         onSignOut={signOut}
         collapsed={sidebarCollapsed}
         onToggle={() => toggleSidebar('sidebarCollapsed')}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
 
       {/* ── MAIN ── */}
@@ -205,6 +242,44 @@ export default function App() {
 
       {/* ── RAIL (hidden on non-timer routes) ── */}
       {showRail && <RightRail />}
+
+      {/* ── BOTTOM TAB BAR (mobile only, shown via CSS) ── */}
+      <BottomTabBar
+        onNewSession={handleNewSession}
+        onMoreOpen={() => setMobileNavOpen(true)}
+      />
+
+      {/* ── MOBILE TIMER BANNER ── */}
+      {showBanner && (
+        <div
+          className="mobile-timer-banner"
+          onClick={() => navigate('/')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter') navigate('/') }}
+        >
+          <span className="mobile-timer-banner-dot" />
+          <span className="mobile-timer-banner-time">{bannerTime}</span>
+          <span className="mobile-timer-banner-label">{bannerLabel}</span>
+          <button
+            type="button"
+            className="mobile-timer-banner-pause"
+            onClick={e => { e.stopPropagation(); running ? pauseTimer() : startTimer() }}
+            aria-label={running ? 'Pause' : 'Resume'}
+          >
+            {running ? (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="5" width="4" height="14" rx="1"/>
+                <rect x="14" y="5" width="4" height="14" rx="1"/>
+              </svg>
+            ) : (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21"/>
+              </svg>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ── OVERLAYS ── */}
       {showNewSession && (

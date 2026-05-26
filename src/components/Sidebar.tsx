@@ -19,20 +19,29 @@ import {
 // ── component ─────────────────────────────────────────────────────────────
 
 interface SidebarProps {
-  user:        User
-  initials:    string
-  email:       string
-  displayName: string
-  onSignOut:   () => void
-  collapsed:   boolean
-  onToggle:    () => void
+  user:          User
+  initials:      string
+  email:         string
+  displayName:   string
+  onSignOut:     () => void
+  collapsed:     boolean
+  onToggle:      () => void
+  mobileOpen?:   boolean
+  onMobileClose?: () => void
 }
 
 export default function Sidebar({
-  user: _user, initials, email, displayName, onSignOut, collapsed, onToggle,
+  user: _user, initials, email, displayName, onSignOut,
+  collapsed, onToggle,
+  mobileOpen = false, onMobileClose,
 }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
+
+  function go(path: string) {
+    navigate(path)
+    onMobileClose?.()
+  }
 
   const subjects      = useSubjectStore(s => s.subjects)
   const addSubject    = useSubjectStore(s => s.addSubject)
@@ -102,7 +111,15 @@ export default function Sidebar({
   }
 
   return (
-    <nav className="v2-nav">
+    <>
+      {mobileOpen && (
+        <div
+          className="mobile-drawer-backdrop"
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
+      )}
+      <nav className={`v2-nav${mobileOpen ? ' mobile-open' : ''}`}>
 
       {/* ── Collapse toggle ── */}
       <div className="nav-toggle">
@@ -125,7 +142,7 @@ export default function Sidebar({
       <button
         className={`nav-item${location.pathname === '/' ? ' active' : ''}`}
         title="Timer"
-        onClick={() => navigate('/')}
+        onClick={() => go('/')}
       >
         <IcTimer />
         <span className="nav-label">Timer</span>
@@ -149,7 +166,7 @@ export default function Sidebar({
       <button
         className={`nav-item${location.pathname === '/stats' ? ' active' : ''}`}
         title="Stats"
-        onClick={() => navigate('/stats')}
+        onClick={() => go('/stats')}
       >
         <IcStats />
         <span className="nav-label">Stats</span>
@@ -277,7 +294,7 @@ export default function Sidebar({
       {/* ── Settings ── */}
       <button
         className={`nav-item${location.pathname === '/settings' ? ' active' : ''}`}
-        onClick={() => navigate('/settings')}
+        onClick={() => go('/settings')}
         title="Settings"
       >
         <IcSettings />
@@ -325,11 +342,12 @@ export default function Sidebar({
             {email}
           </span>
         </div>
-        <button className="nav-signout" onClick={onSignOut} title="Sign out">
+        <button className="nav-signout" onClick={() => { onSignOut(); onMobileClose?.() }} title="Sign out">
           <IcSignOut />
         </button>
       </div>
 
-    </nav>
+      </nav>
+    </>
   )
 }

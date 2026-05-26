@@ -2095,3 +2095,221 @@
   font-size: 13px;
 }
 .page-placeholder span { font-size: 28px; }
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* MOBILE  (≤ 900px)                                                           */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Bottom tab bar & hamburger: hidden on desktop ───────────────────────── */
+.bottom-tab-bar   { display: none; }
+.topbar-hamburger { display: none; }
+
+@media (max-width: 900px) {
+
+  /* ── Shell: collapse to single column ─────────────────────────────────── */
+  .app-shell {
+    grid-template-rows: 44px 1fr;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+  .app-shell[data-view="settings"] {
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+
+  .brand-corner { display: none; }
+  .v2-nav       { display: none; }
+  .v2-rail      { display: none; }
+
+  /* ── Sidebar as drawer ────────────────────────────────────────────────── */
+  .v2-nav.mobile-open {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 85vw);
+    z-index: 300;
+    background: var(--bg);
+    border-right: 1px solid var(--hairline);
+    overflow-y: auto;
+    animation: drawer-slide-in 220ms cubic-bezier(.2,.8,.4,1);
+    padding: 8px 8px 72px;
+  }
+  /* Force expanded appearance inside drawer even if desktop is collapsed */
+  .v2-nav.mobile-open .nav-section-hd               { display: flex; }
+  .v2-nav.mobile-open .nav-item                     { justify-content: flex-start; padding: 5px 8px; gap: 10px; }
+  .v2-nav.mobile-open .nav-item .nav-label          { display: block; }
+  .v2-nav.mobile-open .nav-item .ni-count           { display: block; }
+  .v2-nav.mobile-open .nav-item .ni-icon            { width: 15px; height: 15px; flex: 0 0 15px; }
+  .v2-nav.mobile-open .nav-item .subj-dot           { display: inline-block; }
+  .v2-nav.mobile-open .nav-toggle                   { display: none; }
+  .v2-nav.mobile-open .nav-user                     { display: flex; padding: 8px; }
+  .v2-nav.mobile-open .nav-user .nav-user-info      { display: flex; }
+  .v2-nav.mobile-open .nav-user .nav-signout        { display: grid; }
+
+  @keyframes drawer-slide-in {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
+  }
+
+  /* ── Drawer backdrop ──────────────────────────────────────────────────── */
+  .mobile-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 299;
+    backdrop-filter: blur(2px);
+    animation: mobile-fade-in 180ms ease;
+  }
+  @keyframes mobile-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Topbar: show hamburger, shrink cmd-palette ───────────────────────── */
+  .topbar-hamburger { display: grid !important; }
+
+  .cmd-palette {
+    min-width: 0;
+    flex: 1;
+    max-width: 200px;
+  }
+  /* Hide text label and keyboard badge inside cmd-palette */
+  .topbar .cmd-palette > span:not(:first-child) { display: none; }
+
+  /* ── Timer ring: scale down for mobile ───────────────────────────────── */
+  .timer-wrap     { width: 270px; height: 270px; }
+  .time-display   { font-size: 58px; }
+  .timer-subtitle { font-size: 11.5px; }
+  .controls-row   { margin-top: 18px; }
+  .kbd-hint-bar   { display: none; }
+  .chips-row      { max-width: 90vw; }
+
+  /* ── Bottom tab bar ───────────────────────────────────────────────────── */
+  .bottom-tab-bar {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    padding: 0 4px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--hairline);
+    z-index: 200;
+  }
+
+  .btb-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-mute);
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 140ms;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btb-btn.active { color: var(--accent); transition: color 700ms; }
+  .btb-btn:active { opacity: 0.65; }
+
+  .btb-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .btb-fab {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 14px -4px var(--accent-glow);
+    transition: background 700ms, box-shadow 400ms, transform 120ms;
+    margin: 0 4px;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btb-fab:active { transform: scale(0.91); }
+
+  /* ── Main content: pad bottom so content clears the tab bar ──────────── */
+  .v2-main          { padding-bottom: 60px; }
+  .stats-page       { padding-bottom: 72px; }
+  .notes-page       { padding-bottom: 60px; }
+  .flashcards-page  { padding-bottom: 60px; }
+  .timetable-page   { padding-bottom: 60px; }
+  .past-papers-page { padding-bottom: 60px; }
+  .settings-view    { padding-bottom: 60px; }
+  .page-placeholder { padding-bottom: 60px; }
+  .timer-stage      { padding-bottom: 12px; }
+
+  /* ── Mobile timer banner (shown above bottom tab bar when timer runs) ─── */
+  .mobile-timer-banner {
+    position: fixed;
+    bottom: 52px;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: color-mix(in oklab, var(--accent) 14%, var(--surface));
+    border-top: 1px solid color-mix(in oklab, var(--accent) 28%, var(--hairline));
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    z-index: 199;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-timer-banner-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+  .mobile-timer-banner-time {
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .mobile-timer-banner-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    flex: 1;
+  }
+  .mobile-timer-banner-pause {
+    background: transparent;
+    border: 1px solid var(--hairline-2);
+    border-radius: 6px;
+    width: 28px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .mobile-timer-banner-pause:active { opacity: 0.6; }
+
+}
