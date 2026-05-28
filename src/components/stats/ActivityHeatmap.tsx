@@ -1,4 +1,5 @@
 import { fmtMinsShort } from '../../utils/date'
+import Skeleton from '../Skeleton'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ interface ActivityHeatmapProps {
   longestHeatStreak: number
   filterDate?:       string | null
   onCellClick?:      (date: string) => void
+  isLoading?:        boolean
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -29,6 +31,7 @@ export function ActivityHeatmap({
   longestHeatStreak,
   filterDate,
   onCellClick,
+  isLoading,
 }: ActivityHeatmapProps) {
   return (
     <section className="sc" style={{ marginBottom: 12 }}>
@@ -45,14 +48,26 @@ export function ActivityHeatmap({
         </span>
       </div>
 
-      {activeDays === 0 && (
+      {isLoading && (
+        <div style={{ display: 'flex', gap: 3, padding: '12px 0' }}>
+          {Array.from({ length: 12 }, (_, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {Array.from({ length: 7 }, (_, j) => (
+                <Skeleton key={j} width={12} height={12} radius={2} />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && activeDays === 0 && (
         <div className="s-empty" style={{ textAlign: 'center', padding: '24px 0' }}>
           No sessions yet — complete your first timer session to see activity
         </div>
       )}
 
       {/* Month labels */}
-      {activeDays > 0 && (
+      {!isLoading && activeDays > 0 && (
         <>
           <div className="s-heatmap-months">
             {heatMonthLabels.map((m, i) => (

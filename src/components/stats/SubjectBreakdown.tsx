@@ -1,4 +1,5 @@
 import { fmtMins } from '../../utils/date'
+import Skeleton from '../Skeleton'
 
 // ─── props ────────────────────────────────────────────────────────────────────
 
@@ -8,6 +9,7 @@ interface SubjectBreakdownProps {
   totalMins:        number
   subjectFilter:    string | null
   onFilterChange:   (id: string | null) => void
+  isLoading?:       boolean
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -18,6 +20,7 @@ export function SubjectBreakdown({
   totalMins,
   subjectFilter,
   onFilterChange,
+  isLoading,
 }: SubjectBreakdownProps) {
   return (
     <div className="sc">
@@ -32,7 +35,17 @@ export function SubjectBreakdown({
         <span className="sc-meta"><b>{fmtMins(totalMins)}</b> total</span>
       </div>
 
-      {subjectStats.length === 0 ? (
+      {isLoading && subjectStats.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
+          {[70, 50, 35].map((w, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Skeleton width={8} height={8} radius={4} />
+              <Skeleton width={w} height={12} />
+              <Skeleton width={30} height={8} className="ml-auto" />
+            </div>
+          ))}
+        </div>
+      ) : subjectStats.length === 0 ? (
         <div className="s-empty">No sessions with subjects yet</div>
       ) : (
         <>

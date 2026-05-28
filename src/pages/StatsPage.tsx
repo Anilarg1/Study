@@ -16,6 +16,7 @@ import { ActivityHeatmap }                  from '../components/stats/ActivityHe
 import { SubjectBreakdown }                 from '../components/stats/SubjectBreakdown'
 import { SessionHistogram, HIST_BUCKETS }   from '../components/stats/SessionHistogram'
 import { Records }                          from '../components/stats/Records'
+import Skeleton                             from '../components/Skeleton'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ const ProgressionCard = memo(function ProgressionCard() {
 
 export default function StatsPage() {
   const sessions      = useXPStore(s => s.sessions)
+  const isLoading     = useXPStore(s => s.isLoading)
   const subjects      = useSubjectStore(s => s.subjects)
   const longestStreak = useStreakStore(s => s.longestStreak)
 
@@ -666,13 +668,18 @@ export default function StatsPage() {
               Focused time
             </div>
             <div className="s-kpi-value">
-              {totalMins >= 60
-                ? <><span>{Math.floor(totalMins / 60)}</span><sup>h</sup><span style={{ marginLeft: 6 }}>{String(totalMins % 60).padStart(2,'0')}</span><sup>m</sup></>
-                : <><span>{totalMins}</span><sup>m</sup></>
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={80} height={36} />
+                : totalMins >= 60
+                  ? <><span>{Math.floor(totalMins / 60)}</span><sup>h</sup><span style={{ marginLeft: 6 }}>{String(totalMins % 60).padStart(2,'0')}</span><sup>m</sup></>
+                  : <><span>{totalMins}</span><sup>m</sup></>
               }
             </div>
             <div className="s-kpi-foot">
-              <Delta pct={timePct} />
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={60} height={14} />
+                : <Delta pct={timePct} />
+              }
               <Sparkline data={sparkTime} />
             </div>
           </div>
@@ -687,10 +694,16 @@ export default function StatsPage() {
               Sessions
             </div>
             <div className="s-kpi-value">
-              <span>{workSessions.length}</span>
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={48} height={36} />
+                : <span>{workSessions.length}</span>
+              }
             </div>
             <div className="s-kpi-foot">
-              <Delta pct={sessionPct} />
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={60} height={14} />
+                : <Delta pct={sessionPct} />
+              }
               <Sparkline data={sparkSessions} />
             </div>
           </div>
@@ -717,6 +730,7 @@ export default function StatsPage() {
           longestHeatStreak={longestHeatStreak}
           filterDate={filterDate}
           onCellClick={toggleFilterDate}
+          isLoading={isLoading && sessions.length === 0}
         />
 
         {/* ── ROW: SUBJECTS + HOUR×DAY ── */}
@@ -729,6 +743,7 @@ export default function StatsPage() {
             totalMins={totalMins}
             subjectFilter={subjectFilter}
             onFilterChange={setSubjectFilter}
+            isLoading={isLoading && sessions.length === 0}
           />
 
           {/* Hour × Day heatmap */}

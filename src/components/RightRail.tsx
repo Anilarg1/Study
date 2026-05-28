@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import EmptyState from './EmptyState'
+import Skeleton   from './Skeleton'
 import useXPStore      from '../store/useXPStore'
 import useTimerStore   from '../store/useTimerStore'
 import useSubjectStore from '../store/useSubjectStore'
@@ -192,6 +193,7 @@ function todayStr(): string { return toLocalDateStr() }
 // ── today stats ───────────────────────────────────────────────────────────
 
 function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
+  const isLoading = useXPStore(s => s.isLoading)
   const today    = todayStr()
   const todaySes = sessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === today)
   const totalMin = todaySes.reduce((sum, s) => sum + sessionMins(s), 0)
@@ -232,9 +234,13 @@ function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 12 }}>
-        <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 24, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-          {totalMin === 0 ? '—' : fmtDuration(totalMin)}
-        </span>
+        {isLoading && sessions.length === 0 ? (
+          <Skeleton width={72} height={28} />
+        ) : (
+          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 24, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {totalMin === 0 ? '—' : fmtDuration(totalMin)}
+          </span>
+        )}
         {todaySes.length > 0 && (
           <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--short)', fontFamily: 'Geist Mono, monospace', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
             <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2 2 8h8z"/></svg>
