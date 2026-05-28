@@ -33,12 +33,6 @@ export const usePlannerStore = create<PlannerState>()((set, get) => ({
     set({ tasks, isLoading: false })
   },
 
-  createTask: async (t) => {
-    const saved = await createTaskDb(t)
-    if (!saved) return
-    set((s) => ({ tasks: [...s.tasks, saved] }))
-  },
-
   updateTask: async (id, updates) => {
     const prev = get().tasks
     set({ tasks: prev.map((t) => (t.id === id ? { ...t, ...updates } : t)) })
@@ -86,9 +80,19 @@ export const usePlannerStore = create<PlannerState>()((set, get) => ({
         recurrence:   task.recurrence,
         completed_at: null,
       }
-      const saved = await createTaskDb(next)
-      if (saved) set((s) => ({ tasks: [...s.tasks, saved] }))
+      try {
+        const saved = await createTaskDb(next)
+        if (saved) set((s) => ({ tasks: [...s.tasks, saved] }))
+      } catch (e) {
+        console.error('[planner] failed to spawn next recurrence', e)
+      }
     }
+  },
+
+  createTask: async (t) => {
+    const saved = await createTaskDb(t)
+    if (!saved) { console.error('[planner] createTask: insert failed'); return }
+    set((s) => ({ tasks: [...s.tasks, saved] }))
   },
 
   setWeekStart: (date) => set({ weekStart: getMonday(date) }),
