@@ -4,7 +4,7 @@ import useXPStore       from '../store/useXPStore'
 import useSubjectStore  from '../store/useSubjectStore'
 import useTagStore      from '../store/useTagStore'
 import useSettingsStore from '../store/useSettingsStore'
-import { playChime }    from '../lib/chime'
+import { playChime, setChimeVolume } from '../lib/chime'
 import type { TimerMode, TimerDurations, Subject } from '../types'
 import { useTagPicker, AddTagForm } from './TagPicker'
 import RankUpToast, { type RankUpEvent } from './RankUpToast'
@@ -251,8 +251,10 @@ export default function PomodoroTimer() {
   const setTagId        = useTimerStore(s => s.setTagId)
   const skip            = useTimerStore(s => s.skip)
 
-  const awardXP      = useXPStore(s => s.awardXP)
-  const soundEnabled = useSettingsStore(s => s.soundEnabled)
+  const awardXP       = useXPStore(s => s.awardXP)
+  const soundEnabled  = useSettingsStore(s => s.soundEnabled)
+  const soundVolume   = useSettingsStore(s => (s as unknown as { soundVolume?: number }).soundVolume ?? 80)
+  const desktopAlerts = useSettingsStore(s => s.desktopAlerts)
 
   const subjects      = useSubjectStore(s => s.subjects)
   const activeId      = useSubjectStore(s => s.activeId)
@@ -275,11 +277,17 @@ export default function PomodoroTimer() {
   } = useTagPicker(tagId => setTagId(tagId))
   const tickRef       = useRef<ReturnType<typeof setInterval> | null>(null)
   const handleTickRef = useRef<() => void>(() => {})
+  const warningPlayed = useRef(false)
   const chipsRef      = useRef<HTMLDivElement>(null)
   const settingsRef  = useRef<HTMLDivElement>(null)
   const tagPickerRef = useRef<HTMLDivElement>(null)
 
   const [showTagPicker, setShowTagPicker] = useState(false)
+
+  // ── sync volume to GainNode ───────────────────────────────────────────────
+  useEffect(() => {
+    setChimeVolume(soundEnabled ? soundVolume : 0)
+  }, [soundVolume, soundEnabled])
 
   // ── close settings on outside click ──────────────────────────────────────
   useEffect(() => {
@@ -308,10 +316,26 @@ export default function PomodoroTimer() {
 
   // ── ticker ────────────────────────────────────────────────────────────────
   const handleTick = useCallback(() => {
+    if (remaining === 5 && running && soundEnabled && !warningPlayed.current) {
+      playChime('warning')
+      warningPlayed.current = true
+    }
+    if (remaining > 5) warningPlayed.current = false
+
     const finished = tick()
     if (finished) {
       const result = awardXP(mode, subjectId, customDurations[mode], tagId)
       if (soundEnabled) playChime(mode)
+      if (
+        desktopAlerts &&
+        Notification.permission === 'granted' &&
+        document.visibilityState === 'hidden'
+      ) {
+        new Notification('Session complete', {
+          body: mode === 'work' ? `+${result.xp} XP earned` : 'Break time over',
+          icon: '/favicon.ico',
+        })
+      }
       const msg = `+${result.xp} XP`
       setToast({ msg, key: Date.now() })
       setTimeout(() => setToast(null), 3000)
@@ -319,7 +343,7 @@ export default function PomodoroTimer() {
         setRankUpEvent({ ...result.rankUp, key: Date.now() })
       }
     }
-  }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled])
+  }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled, desktopAlerts, remaining, running])
   // Keep ref in sync so the interval always calls the latest closure
   handleTickRef.current = handleTick
 
@@ -359,21 +383,21 @@ export default function PomodoroTimer() {
   // ── keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.target as HTMLElement).matches('input, textarea')) return
-      if (e.code === 'Space') {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === ' ') {
         e.preventDefault()
         running ? pause() : start()
-      } else if (e.key.toLowerCase() === 'r') {
-        reset()
-      } else if (e.key === 'ArrowRight') {
+      }
+      if (e.key === 's' || e.key === 'S') {
         skip()
-      } else if (e.key === '1') requestModeChange('work')
-      else if (e.key === '2') requestModeChange('shortBreak')
-      else if (e.key === '3') requestModeChange('longBreak')
+      }
+      if (e.key === '1') setMode('work')
+      if (e.key === '2') setMode('shortBreak')
+      if (e.key === '3') setMode('longBreak')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [running, start, pause, reset, setMode, skip, requestModeChange])
+  }, [running, start, pause, skip, setMode])
 
   // ── ring ──────────────────────────────────────────────────────────────────
   const total      = customDurations[mode]
