@@ -1,0 +1,251 @@
+<h2>Subject Hub Page — Layout</h2>
+<p class="subtitle">How <code>/subjects/:id</code> looks. Click a tab to preview its section.</p>
+
+<style>
+  .hub-wrap { max-width: 820px; margin: 0 auto; font-family: -apple-system, sans-serif; }
+
+  /* ── header ── */
+  .hub-header {
+    background: #141420;
+    border: 1px solid #252535;
+    border-radius: 12px;
+    padding: 20px 24px 18px;
+    margin-bottom: 4px;
+  }
+  .hub-header-top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    margin-bottom: 12px;
+  }
+  .hub-title-row { display: flex; align-items: center; gap: 10px; }
+  .hub-dot { width: 14px; height: 14px; border-radius: 50%; background: #7c6af0; flex-shrink: 0; }
+  .hub-name { font-size: 22px; font-weight: 700; color: #e8e8f0; letter-spacing: -0.02em; }
+  .hub-badge {
+    font-size: 10.5px; padding: 2px 8px; border-radius: 4px; font-weight: 500;
+    border: 1px solid; display: inline-block;
+  }
+  .hub-badge-board { color: #a78bfa; border-color: color-mix(in srgb,#a78bfa 35%,transparent); background: color-mix(in srgb,#a78bfa 10%,transparent); }
+  .hub-badge-grade { color: #f97316; border-color: color-mix(in srgb,#f97316 35%,transparent); background: color-mix(in srgb,#f97316 10%,transparent); }
+  .hub-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .hub-label-chip {
+    font-size: 10px; padding: 1px 8px; border-radius: 20px;
+    border: 1px solid #303048; color: #888; background: #1a1a2a;
+  }
+  .hub-mastery {
+    text-align: right; flex-shrink: 0;
+  }
+  .hub-mastery-flame { font-size: 22px; }
+  .hub-mastery-label { font-size: 10px; color: #666; margin-top: 1px; }
+
+  /* ── kpi row ── */
+  .hub-kpi-row {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px;
+  }
+  .hub-kpi {
+    background: #1a1a2a; border: 1px solid #252535; border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .hub-kpi-val { font-family: 'Geist Mono', monospace; font-size: 19px; font-weight: 600; color: #e8e8f0; letter-spacing: -0.03em; }
+  .hub-kpi-label { font-size: 10px; color: #666; margin-top: 2px; }
+
+  /* ── tabs ── */
+  .hub-tabs {
+    display: flex; gap: 0; border-bottom: 1px solid #252535;
+    margin-top: 20px; margin-bottom: 0;
+  }
+  .hub-tab {
+    padding: 9px 18px; font-size: 12.5px; color: #666;
+    border-bottom: 2px solid transparent; cursor: pointer;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+  }
+  .hub-tab:hover { color: #aaa; }
+  .hub-tab.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+
+  /* ── tab panels ── */
+  .hub-panel { display: none; padding: 18px 0 0; }
+  .hub-panel.active { display: block; }
+
+  /* stats panel */
+  .stats-chart-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .stats-bar-chart {
+    flex: 1; background: #141420; border: 1px solid #252535; border-radius: 8px; padding: 14px 16px;
+  }
+  .stats-bar-chart-label { font-size: 10px; color: #555; margin-bottom: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .bar-day { font-size: 10px; color: #555; width: 24px; }
+  .bar-track { flex: 1; height: 7px; background: #1e1e2e; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #7c6af0; border-radius: 4px; opacity: .85; }
+  .bar-val { font-size: 9.5px; color: #666; font-family: monospace; width: 28px; text-align: right; }
+  .stats-mini-kpis { display: flex; flex-direction: column; gap: 10px; min-width: 130px; }
+  .mini-kpi { background: #141420; border: 1px solid #252535; border-radius: 8px; padding: 10px 14px; }
+  .mini-kpi-val { font-family: monospace; font-size: 16px; color: #e8e8f0; font-weight: 600; }
+  .mini-kpi-label { font-size: 10px; color: #555; margin-top: 2px; }
+  .target-row {
+    background: #141420; border: 1px solid #252535; border-radius: 8px;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .target-label { font-size: 11.5px; color: #888; }
+  .target-val { font-size: 13px; font-weight: 600; color: #f97316; }
+  .target-bar-wrap { flex: 1; margin: 0 16px; height: 6px; background: #1e1e2e; border-radius: 4px; overflow: hidden; }
+  .target-bar-fill { height: 100%; width: 62%; background: linear-gradient(90deg,#7c6af0,#a78bfa); border-radius: 4px; }
+
+  /* notes / decks / papers stubs */
+  .stub-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 10px; }
+  .stub-card {
+    background: #141420; border: 1px solid #252535; border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stub-card-title { font-size: 13px; font-weight: 500; color: #ccc; margin-bottom: 4px; }
+  .stub-card-meta { font-size: 11px; color: #555; }
+  .stub-empty {
+    grid-column: 1/-1; text-align: center; padding: 32px;
+    border: 1px dashed #252535; border-radius: 8px; color: #444; font-size: 12px;
+  }
+  .add-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; color: #7c6af0; border: 1px solid color-mix(in srgb,#7c6af0 30%,transparent);
+    background: color-mix(in srgb,#7c6af0 8%,transparent); border-radius: 6px;
+    padding: 5px 12px; cursor: pointer; margin-bottom: 14px;
+  }
+</style>
+
+<div class="hub-wrap">
+
+  <!-- Header -->
+  <div class="hub-header">
+    <div class="hub-header-top">
+      <div>
+        <div class="hub-title-row">
+          <div class="hub-dot"></div>
+          <div class="hub-name">Physics</div>
+          <span class="hub-badge hub-badge-board">Edexcel IAL</span>
+          <span class="hub-badge hub-badge-grade">Target: A*</span>
+        </div>
+        <div class="hub-meta" style="margin-top:8px">
+          <span class="hub-label-chip">A-Level</span>
+          <span class="hub-label-chip">Exam Term</span>
+          <span class="hub-label-chip" style="color:#555;border-color:#252535;cursor:pointer">+ label</span>
+        </div>
+      </div>
+      <div class="hub-mastery">
+        <div class="hub-mastery-flame">🔥🔥🔥</div>
+        <div class="hub-mastery-label">Blaze (tier 3)</div>
+      </div>
+    </div>
+
+    <div class="hub-kpi-row">
+      <div class="hub-kpi">
+        <div class="hub-kpi-val">38h 20m</div>
+        <div class="hub-kpi-label">total time</div>
+      </div>
+      <div class="hub-kpi">
+        <div class="hub-kpi-val">1,240 XP</div>
+        <div class="hub-kpi-label">subject XP</div>
+      </div>
+      <div class="hub-kpi">
+        <div class="hub-kpi-val">47</div>
+        <div class="hub-kpi-label">sessions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="hub-tabs" id="hubTabs">
+    <div class="hub-tab active" data-panel="stats">Stats</div>
+    <div class="hub-tab" data-panel="notes">Notes</div>
+    <div class="hub-tab" data-panel="decks">Flashcard Decks</div>
+    <div class="hub-tab" data-panel="papers">Past Papers</div>
+  </div>
+
+  <!-- Stats panel -->
+  <div class="hub-panel active" id="panel-stats">
+    <div class="stats-chart-row">
+      <div class="stats-bar-chart">
+        <div class="stats-bar-chart-label">TIME THIS WEEK</div>
+        <div class="bar-row"><div class="bar-day">Mon</div><div class="bar-track"><div class="bar-fill" style="width:80%"></div></div><div class="bar-val">1h 40m</div></div>
+        <div class="bar-row"><div class="bar-day">Tue</div><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><div class="bar-val">1h 8m</div></div>
+        <div class="bar-row"><div class="bar-day">Wed</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-val">2h 5m</div></div>
+        <div class="bar-row"><div class="bar-day">Thu</div><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><div class="bar-val">38m</div></div>
+        <div class="bar-row"><div class="bar-day">Fri</div><div class="bar-track"><div class="bar-fill" style="width:0%"></div></div><div class="bar-val">—</div></div>
+        <div class="bar-row"><div class="bar-day">Sat</div><div class="bar-track"><div class="bar-fill" style="width:0%"></div></div><div class="bar-val">—</div></div>
+        <div class="bar-row"><div class="bar-day">Sun</div><div class="bar-track"><div class="bar-fill" style="width:0%"></div></div><div class="bar-val">—</div></div>
+      </div>
+      <div class="stats-mini-kpis">
+        <div class="mini-kpi"><div class="mini-kpi-val">5h 31m</div><div class="mini-kpi-label">this week</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-val">52m</div><div class="mini-kpi-label">avg session</div></div>
+        <div class="mini-kpi"><div class="mini-kpi-val">6</div><div class="mini-kpi-label">sessions this week</div></div>
+      </div>
+    </div>
+    <div class="target-row">
+      <div class="target-label">Progress to <strong style="color:#e8e8f0">A*</strong></div>
+      <div class="target-bar-wrap"><div class="target-bar-fill"></div></div>
+      <div class="target-val">1,240 / 2,000 XP</div>
+    </div>
+  </div>
+
+  <!-- Notes panel -->
+  <div class="hub-panel" id="panel-notes">
+    <button class="add-btn">+ New note</button>
+    <div class="stub-grid">
+      <div class="stub-card">
+        <div class="stub-card-title">Mechanics — Newton's Laws</div>
+        <div class="stub-card-meta">Updated 2 days ago · 3 min read</div>
+      </div>
+      <div class="stub-card">
+        <div class="stub-card-title">Waves &amp; Superposition</div>
+        <div class="stub-card-meta">Updated 5 days ago · 6 min read</div>
+      </div>
+      <div class="stub-card">
+        <div class="stub-card-title">Electric Fields</div>
+        <div class="stub-card-meta">Updated 1 week ago · 4 min read</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decks panel -->
+  <div class="hub-panel" id="panel-decks">
+    <button class="add-btn">+ New deck</button>
+    <div class="stub-grid">
+      <div class="stub-card">
+        <div class="stub-card-title">Mechanics Definitions</div>
+        <div class="stub-card-meta">42 cards · 8 due today</div>
+      </div>
+      <div class="stub-card">
+        <div class="stub-card-title">Equations to memorise</div>
+        <div class="stub-card-meta">18 cards · 0 due</div>
+      </div>
+      <div class="stub-empty">No more decks yet — <span style="color:#7c6af0;cursor:pointer">create one</span></div>
+    </div>
+  </div>
+
+  <!-- Past Papers panel -->
+  <div class="hub-panel" id="panel-papers">
+    <button class="add-btn">+ Add paper</button>
+    <div class="stub-grid">
+      <div class="stub-card">
+        <div class="stub-card-title">2024 — Unit 3 — QP</div>
+        <div class="stub-card-meta">Edexcel IAL · Jan series</div>
+      </div>
+      <div class="stub-card">
+        <div class="stub-card-title">2024 — Unit 3 — MS</div>
+        <div class="stub-card-meta">Edexcel IAL · Jan series</div>
+      </div>
+      <div class="stub-card">
+        <div class="stub-card-title">2023 — Unit 4 — QP</div>
+        <div class="stub-card-meta">Edexcel IAL · Oct series</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('hubTabs').addEventListener('click', function(e) {
+    const tab = e.target.closest('.hub-tab');
+    if (!tab) return;
+    document.querySelectorAll('.hub-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.hub-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+</script>

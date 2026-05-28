@@ -1,0 +1,214 @@
+<h2>Session Picker — Prompt on Start</h2>
+<p class="subtitle">Appears every time you press Start. Pick a subject, then the timer begins.</p>
+
+<style>
+  body { margin: 0; }
+  .wrap { max-width: 720px; margin: 0 auto; font-family: -apple-system, sans-serif; }
+
+  .split { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .col-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+  /* ── timer mockup ── */
+  .timer-mock {
+    flex: 0 0 260px;
+    background: #0e0e1a;
+    border: 1px solid #252535;
+    border-radius: 14px;
+    padding: 28px 24px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+  .timer-mode-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: #555; margin-bottom: 16px;
+  }
+  .timer-ring {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    border: 6px solid #1e1e2e;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin-bottom: 20px;
+  }
+  .timer-ring-fill {
+    position: absolute; inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(#7c6af0 0deg, transparent 0deg);
+    /* full = 360deg; show idle = 0deg */
+  }
+  .timer-digits {
+    font-family: 'Geist Mono', monospace;
+    font-size: 38px; font-weight: 800; color: #e8e8f0;
+    letter-spacing: -0.04em; position: relative; z-index: 1;
+  }
+  .timer-start-btn {
+    width: 100%; padding: 10px 0; border-radius: 8px; border: none;
+    background: #7c6af0; color: #fff; font-size: 14px; font-weight: 600;
+    font-family: inherit; cursor: pointer; letter-spacing: .01em;
+  }
+  .timer-start-btn:hover { background: #6b5ce0; }
+
+  /* ── picker overlay (inside timer mock) ── */
+  .picker-overlay {
+    position: absolute; inset: 0;
+    background: rgba(10, 10, 20, 0.94);
+    border-radius: 14px;
+    display: flex; flex-direction: column;
+    padding: 20px 18px 18px;
+    backdrop-filter: blur(4px);
+  }
+  .picker-question {
+    font-size: 13px; font-weight: 600; color: #e8e8f0;
+    margin-bottom: 14px; text-align: center;
+  }
+  .picker-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 7px;
+    flex: 1;
+  }
+  .picker-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: #141420; border: 1px solid #252535;
+    border-radius: 8px; padding: 8px 11px; cursor: pointer;
+    transition: border-color .1s, background .1s;
+    font-size: 12.5px; color: #ccc; font-weight: 500;
+  }
+  .picker-chip:hover { border-color: #7c6af0; background: color-mix(in srgb,#7c6af0 8%,transparent); color: #e8e8f0; }
+  .picker-chip.selected { border-color: #7c6af0; background: color-mix(in srgb,#7c6af0 15%,transparent); color: #fff; }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .picker-skip {
+    text-align: center; margin-top: 10px;
+    font-size: 11px; color: #444; cursor: pointer;
+  }
+  .picker-skip:hover { color: #666; }
+  .picker-confirm {
+    width: 100%; padding: 9px 0; border-radius: 7px; border: none;
+    background: #7c6af0; color: #fff; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; margin-top: 10px;
+    opacity: 0.4; transition: opacity .15s;
+  }
+  .picker-confirm.ready { opacity: 1; }
+  .picker-confirm:hover.ready { background: #6b5ce0; }
+
+  /* ── selected state ── */
+  .timer-subject-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: #141420; border: 1px solid #252535; border-radius: 20px;
+    padding: 4px 12px; font-size: 12px; color: #ccc; margin-bottom: 16px;
+    cursor: pointer;
+  }
+  .timer-subject-badge:hover { border-color: #303048; }
+  .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #7c6af0; }
+  .badge-change { font-size: 10px; color: #555; margin-left: 4px; }
+</style>
+
+<div class="wrap">
+  <div class="split">
+
+    <!-- State 1: Idle, start pressed → picker appears -->
+    <div>
+      <div class="col-label">1 — Start pressed → picker appears</div>
+      <div class="timer-mock">
+        <div class="timer-mode-label">Focus · 25 min</div>
+        <div class="timer-ring">
+          <div class="timer-ring-fill"></div>
+          <div class="timer-digits">25:00</div>
+        </div>
+        <button class="timer-start-btn">▶ Start</button>
+
+        <!-- Overlay -->
+        <div class="picker-overlay">
+          <div class="picker-question">What are you studying?</div>
+          <div class="picker-grid">
+            <div class="picker-chip" onclick="selectChip(this, 'p1')">
+              <div class="chip-dot" style="background:#7c6af0"></div> Physics
+            </div>
+            <div class="picker-chip" onclick="selectChip(this, 'p1')">
+              <div class="chip-dot" style="background:#f97316"></div> Maths
+            </div>
+            <div class="picker-chip" onclick="selectChip(this, 'p1')">
+              <div class="chip-dot" style="background:#22c55e"></div> Chemistry
+            </div>
+            <div class="picker-chip" onclick="selectChip(this, 'p1')">
+              <div class="chip-dot" style="background:#38bdf8"></div> Further Maths
+            </div>
+          </div>
+          <button class="picker-confirm" id="confirm-p1" disabled>Start session →</button>
+          <div class="picker-skip" onclick="skipPick('p1')">skip — no subject</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 2: Subject selected, ready to start -->
+    <div>
+      <div class="col-label">2 — Subject selected → button activates</div>
+      <div class="timer-mock">
+        <div class="timer-mode-label">Focus · 25 min</div>
+        <div class="timer-ring">
+          <div class="timer-ring-fill"></div>
+          <div class="timer-digits">25:00</div>
+        </div>
+        <button class="timer-start-btn">▶ Start</button>
+
+        <!-- Overlay: Physics selected -->
+        <div class="picker-overlay">
+          <div class="picker-question">What are you studying?</div>
+          <div class="picker-grid">
+            <div class="picker-chip selected">
+              <div class="chip-dot" style="background:#7c6af0"></div> Physics
+            </div>
+            <div class="picker-chip">
+              <div class="chip-dot" style="background:#f97316"></div> Maths
+            </div>
+            <div class="picker-chip">
+              <div class="chip-dot" style="background:#22c55e"></div> Chemistry
+            </div>
+            <div class="picker-chip">
+              <div class="chip-dot" style="background:#38bdf8"></div> Further Maths
+            </div>
+          </div>
+          <button class="picker-confirm ready">Start session →</button>
+          <div class="picker-skip">skip — no subject</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 3: Timer running, subject shown as badge -->
+    <div>
+      <div class="col-label">3 — Timer running with subject attached</div>
+      <div class="timer-mock">
+        <div class="timer-mode-label">Focus · 25 min</div>
+        <div class="timer-subject-badge">
+          <div class="badge-dot" style="background:#7c6af0"></div>
+          Physics
+          <span class="badge-change">· tap to change</span>
+        </div>
+        <div class="timer-ring" style="border-color: color-mix(in srgb,#7c6af0 30%,#1e1e2e)">
+          <div class="timer-ring-fill" style="background: conic-gradient(#7c6af0 140deg, transparent 140deg)"></div>
+          <div class="timer-digits">18:23</div>
+        </div>
+        <button class="timer-start-btn" style="background:#1e1e2e;color:#7c6af0;border:1px solid color-mix(in srgb,#7c6af0 30%,transparent)">
+          ⏸ Pause
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function selectChip(el, group) {
+    el.closest('.picker-grid').querySelectorAll('.picker-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const btn = document.getElementById('confirm-' + group);
+    btn.classList.add('ready');
+    btn.disabled = false;
+  }
+  function skipPick(group) {
+    const btn = document.getElementById('confirm-' + group);
+    btn.classList.add('ready');
+    btn.disabled = false;
+    btn.textContent = 'Start without subject →';
+  }
+</script>

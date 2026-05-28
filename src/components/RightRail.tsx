@@ -75,12 +75,15 @@ function RunningTimerWidget() {
   const progress = calcProgress(remaining, total)
 
   return (
-    <button
+    <div
       className="running-timer-widget-btn"
       onClick={() => navigate('/')}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate('/') }}
+      role="button"
+      tabIndex={0}
       title="Back to timer"
       aria-label="Return to timer"
-      style={{ paddingTop: 10, paddingBottom: 10, marginBottom: 2, width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+      style={{ paddingTop: 10, paddingBottom: 10, marginBottom: 2, width: '100%', cursor: 'pointer', textAlign: 'left' }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
 
@@ -184,7 +187,7 @@ function RunningTimerWidget() {
 
       {/* Hairline divider before next rail section */}
       <div style={{ borderBottom: '1px solid var(--hairline)', marginTop: 10 }} />
-    </button>
+    </div>
   )
 }
 

@@ -1,0 +1,80 @@
+<h2>Data Model Changes</h2>
+<p class="subtitle">New fields, new tables, and how they connect</p>
+
+<div class="section">
+  <div class="label">Existing table — subjects</div>
+  <div style="background:var(--surface-2,#1e1e2e);border:1px solid var(--border,#2a2a3a);border-radius:10px;padding:16px 20px;font-family:monospace;font-size:13px;line-height:2;">
+    <div style="color:var(--text-muted,#888);font-size:11px;margin-bottom:8px;font-family:sans-serif;letter-spacing:.05em;text-transform:uppercase;">subjects</div>
+    <div><span style="color:#6c6cff">id</span> <span style="color:#888">uuid PK</span></div>
+    <div><span style="color:#6c6cff">user_id</span> <span style="color:#888">uuid FK</span></div>
+    <div><span style="color:#6c6cff">name</span> <span style="color:#888">text</span></div>
+    <div><span style="color:#6c6cff">color</span> <span style="color:#888">text</span></div>
+    <div><span style="color:#6c6cff">created_at</span> <span style="color:#888">timestamptz</span></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a2a3a">
+      <span style="background:color-mix(in srgb,#22c55e 15%,transparent);color:#22c55e;border:1px solid color-mix(in srgb,#22c55e 30%,transparent);border-radius:4px;padding:1px 7px;font-size:11px;font-family:sans-serif;margin-right:8px;">+ exam_board</span>
+      <span style="color:#888;font-size:12px">text nullable — e.g. "Edexcel IAL", "OCR A"</span>
+    </div>
+    <div style="margin-top:6px">
+      <span style="background:color-mix(in srgb,#22c55e 15%,transparent);color:#22c55e;border:1px solid color-mix(in srgb,#22c55e 30%,transparent);border-radius:4px;padding:1px 7px;font-size:11px;font-family:sans-serif;margin-right:8px;">+ target_grade</span>
+      <span style="color:#888;font-size:12px">text nullable — e.g. "A*", "90%", "7"</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">New tables — subject labels (grouping tags)</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:220px;background:var(--surface-2,#1e1e2e);border:1px solid color-mix(in srgb,#a78bfa 40%,transparent);border-radius:10px;padding:16px 20px;font-family:monospace;font-size:13px;line-height:2;">
+      <div style="color:var(--text-muted,#888);font-size:11px;margin-bottom:8px;font-family:sans-serif;letter-spacing:.05em;text-transform:uppercase;">subject_labels</div>
+      <div><span style="color:#a78bfa">id</span> <span style="color:#888">uuid PK</span></div>
+      <div><span style="color:#a78bfa">user_id</span> <span style="color:#888">uuid FK</span></div>
+      <div><span style="color:#a78bfa">name</span> <span style="color:#888">text</span></div>
+    </div>
+    <div style="display:flex;align-items:center;color:#555;font-size:22px;padding:0 4px;">⟷</div>
+    <div style="flex:1;min-width:220px;background:var(--surface-2,#1e1e2e);border:1px solid color-mix(in srgb,#a78bfa 40%,transparent);border-radius:10px;padding:16px 20px;font-family:monospace;font-size:13px;line-height:2;">
+      <div style="color:var(--text-muted,#888);font-size:11px;margin-bottom:8px;font-family:sans-serif;letter-spacing:.05em;text-transform:uppercase;">subject_label_map</div>
+      <div><span style="color:#a78bfa">subject_id</span> <span style="color:#888">uuid FK</span></div>
+      <div><span style="color:#a78bfa">label_id</span> <span style="color:#888">uuid FK</span></div>
+      <div style="color:#555;font-size:11px;font-family:sans-serif;margin-top:6px">PK: (subject_id, label_id)</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text-muted,#888);margin-top:10px">
+    Labels are reusable across subjects. "A-Level" defined once, applied to Physics, Maths, Chemistry, etc. This is a separate concept from session tags.
+  </p>
+</div>
+
+<div class="section">
+  <div class="label">New route</div>
+  <div style="background:var(--surface-2,#1e1e2e);border:1px solid var(--border,#2a2a3a);border-radius:10px;padding:14px 20px;font-family:monospace;font-size:13px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+      <span style="color:#888">/</span>
+      <span style="color:#f97316">timer</span>
+      <span style="color:#888;margin:0 12px">·</span>
+      <span style="color:#888">/</span>
+      <span style="color:#f97316">stats</span>
+      <span style="color:#888;margin:0 12px">·</span>
+      <span style="color:#888">/</span>
+      <span style="color:#f97316">notes</span>
+      <span style="color:#888;margin:0 12px">·</span>
+      <span style="background:color-mix(in srgb,#22c55e 15%,transparent);color:#22c55e;border:1px solid color-mix(in srgb,#22c55e 30%,transparent);border-radius:4px;padding:1px 7px;font-size:11px;font-family:sans-serif;margin-right:4px;">new</span>
+      <span style="color:#888">/</span>
+      <span style="color:#22c55e">subjects</span>
+      <span style="color:#888">/</span>
+      <span style="color:#a78bfa">:id</span>
+    </div>
+    <span style="font-family:sans-serif;font-size:12px;color:#888">— hub page for a single subject</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Example — Physics subject object (after migration)</div>
+  <div style="background:var(--surface-2,#1e1e2e);border:1px solid var(--border,#2a2a3a);border-radius:10px;padding:16px 20px;font-family:monospace;font-size:12.5px;line-height:1.9;white-space:pre-wrap;">{
+  <span style="color:#a78bfa">"id"</span>:            <span style="color:#f1fa8c">"abc-123"</span>,
+  <span style="color:#a78bfa">"name"</span>:          <span style="color:#f1fa8c">"Physics"</span>,
+  <span style="color:#a78bfa">"color"</span>:         <span style="color:#f1fa8c">"#7c6af0"</span>,
+  <span style="color:#22c55e">"exam_board"</span>:    <span style="color:#f1fa8c">"Edexcel IAL"</span>,      <span style="color:#555">// new</span>
+  <span style="color:#22c55e">"target_grade"</span>: <span style="color:#f1fa8c">"A*"</span>,               <span style="color:#555">// new</span>
+  <span style="color:#a78bfa">"labels"</span>:        <span style="color:#888">[{ "name": "A-Level" }, { "name": "Exam Term" }]</span>,
+  <span style="color:#a78bfa">"created_at"</span>:    <span style="color:#f1fa8c">"2026-01-15T..."</span>
+}</div>
+</div>

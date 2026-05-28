@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Picker prompt — real design</title>
+<style>
+  :root {
+    --bg:         #08090a;
+    --surface:    #101114;
+    --surface-2:  #16171c;
+    --surface-3:  #1c1d23;
+    --hairline:   rgba(255,255,255,0.055);
+    --hairline-2: rgba(255,255,255,0.085);
+    --hairline-3: rgba(255,255,255,0.13);
+    --text:       #f4f5f8;
+    --text-dim:   #8a8f98;
+    --text-mute:  #5e636c;
+    --text-faint: #3e424a;
+    --accent:     #8b85ff;
+    --accent-soft: color-mix(in oklab, #8b85ff 18%, transparent);
+    --accent-glow: color-mix(in oklab, #8b85ff 38%, transparent);
+    --accent-fade: color-mix(in oklab, #8b85ff 6%, transparent);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 24px;
+  }
+
+  h2 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: var(--text-mute); margin-bottom: 32px; }
+
+  .states { display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start; }
+  .state-block { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .state-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .07em; }
+
+  /* ── timer mock ── */
+  .timer-stage {
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 20px 28px 18px;
+    width: 300px;
+  }
+
+  /* mode tabs */
+  .mode-tabs {
+    display: flex; gap: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 16px;
+  }
+  .mode-tab {
+    padding: 4px 10px; border-radius: 5px; font-size: 11px;
+    color: var(--text-mute); cursor: pointer; border: none;
+    background: transparent; font-family: inherit; transition: all .12s;
+  }
+  .mode-tab.active { background: var(--surface-3); color: var(--text); }
+
+  /* ring */
+  .timer-wrap { position: relative; width: 160px; height: 160px; margin-bottom: 10px; }
+  .timer-glow {
+    position: absolute; inset: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity .5s;
+  }
+  .timer-glow.on { opacity: 1; }
+  .timer-ring { position: absolute; inset: 0; }
+  .ring-track { fill: none; stroke: var(--surface-3); stroke-width: 6; }
+  .ring-progress { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset .5s; transform: rotate(-90deg); transform-origin: center; }
+  .timer-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .timer-ctx { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-mute); }
+  .ctx-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .time-display { font-size: 36px; font-weight: 800; letter-spacing: -0.04em; color: var(--text); line-height: 1; font-feature-settings: 'tnum'; }
+  .time-sep { color: var(--text-mute); }
+  .timer-subtitle { font-size: 11px; color: var(--text-mute); text-align: center; }
+  .timer-subtitle.prompt { color: var(--accent); }
+
+  /* pips */
+  .pips-row { display: flex; align-items: center; gap: 5px; margin: 8px 0 4px; }
+  .pip { width: 20px; height: 4px; border-radius: 2px; background: var(--surface-3); }
+  .pip.done { background: var(--accent); opacity: .5; }
+  .pip.now { background: var(--accent); }
+
+  /* chips row */
+  .chips-row {
+    margin-top: 14px;
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap; justify-content: center;
+    max-width: 260px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 4px 10px 4px 9px; height: 26px;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 999px; font-size: 12px; color: var(--text-dim);
+    cursor: pointer; transition: background 140ms, color 140ms, border-color 140ms;
+    font-family: inherit;
+  }
+  .chip:hover { color: var(--text); background: var(--surface-2); border-color: var(--hairline-2); }
+  .chip.selected {
+    background: color-mix(in oklab, var(--accent) 12%, var(--surface));
+    border-color: color-mix(in oklab, var(--accent) 36%, var(--hairline));
+    color: var(--text);
+  }
+  .chip-swatch { width: 8px; height: 8px; border-radius: 3px; background: var(--text-mute); flex-shrink: 0; }
+  .chip.selected .chip-swatch { background: var(--accent); }
+  .chip.chip-add { color: var(--text-mute); border-style: dashed; }
+
+  /* prompt highlight state — chips-row pulses border */
+  @keyframes prompt-pulse {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 40%, transparent); }
+    60%  { box-shadow: 0 0 0 6px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .chips-row.prompting .chip:not(.selected):not(.chip-add) {
+    border-color: color-mix(in oklab, var(--accent) 25%, var(--hairline));
+    animation: prompt-pulse 1.2s ease 0s 2;
+  }
+  .prompt-hint {
+    font-size: 10.5px; color: var(--accent);
+    margin-top: 4px; text-align: center;
+    animation: fadeIn .2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; } }
+
+  /* controls */
+  .controls-row { margin-top: 14px; display: flex; align-items: center; gap: 14px; }
+  .ctrl {
+    width: 38px; height: 38px; display: grid; place-items: center;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 50%; color: var(--text-dim); cursor: pointer;
+    transition: all .14s; font-family: inherit;
+  }
+  .ctrl:hover { border-color: var(--hairline-2); color: var(--text); }
+  .ctrl.primary {
+    width: 52px; height: 52px;
+    background: color-mix(in oklab, var(--accent) 14%, var(--surface));
+    border-color: color-mix(in oklab, var(--accent) 36%, transparent);
+    color: var(--accent);
+  }
+  .ctrl.primary:hover {
+    background: color-mix(in oklab, var(--accent) 22%, var(--surface));
+  }
+  .ctrl.primary.running {
+    background: color-mix(in oklab, var(--accent) 14%, var(--surface));
+    border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+    color: var(--accent);
+    box-shadow: 0 0 16px var(--accent-soft);
+  }
+
+  /* state description */
+  .desc {
+    max-width: 300px; font-size: 11.5px; color: var(--text-dim);
+    line-height: 1.5; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h2>Session Subject Prompt — matching real design</h2>
+<p class="subtitle">The chips-row is already in the app. The change is behavioural: subject clears after each session,<br>and pressing Start without picking triggers a prompt pulse on the chips. Try clicking Start below.</p>
+
+<div class="states">
+
+  <!-- State A: idle, no subject -->
+  <div class="state-block">
+    <div class="state-label">A — idle, no subject yet</div>
+    <div class="timer-stage">
+      <div class="mode-tabs">
+        <button class="mode-tab active">Focus</button>
+        <button class="mode-tab">Short break</button>
+        <button class="mode-tab">Long break</button>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-glow"></div>
+        <svg class="timer-ring" viewBox="0 0 200 200">
+          <circle class="ring-track" cx="100" cy="100" r="88"/>
+          <circle class="ring-progress" cx="100" cy="100" r="88" stroke-dasharray="553" stroke-dashoffset="553"/>
+        </svg>
+        <div class="timer-content">
+          <div class="timer-ctx"><span class="ctx-dot"></span> Focus · Sess 1 / 4</div>
+          <div class="time-display">25<span class="time-sep">:</span>00</div>
+          <div class="timer-subtitle">Select a subject below</div>
+        </div>
+      </div>
+      <div class="pips-row">
+        <div class="pip now"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+      </div>
+      <div class="chips-row" id="chips-a">
+        <button class="chip"><span class="chip-swatch" style="background:#8b85ff"></span>Physics</button>
+        <button class="chip"><span class="chip-swatch" style="background:#f97316"></span>Maths</button>
+        <button class="chip"><span class="chip-swatch" style="background:#4cb782"></span>Chemistry</button>
+        <button class="chip"><span class="chip-swatch" style="background:#38bdf8"></span>Further Maths</button>
+        <button class="chip"><span class="chip-swatch" style="background:#f87171"></span>Biology</button>
+        <button class="chip chip-add">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Subject
+        </button>
+      </div>
+      <div class="controls-row">
+        <button class="ctrl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+        </button>
+        <button class="ctrl primary" onclick="pressStart('a')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="desc">Chips wrap naturally for any number of subjects.<br>Press Start → chips pulse, prompt hint appears.</p>
+  </div>
+
+  <!-- State B: subject selected, ready -->
+  <div class="state-block">
+    <div class="state-label">B — subject selected, ready</div>
+    <div class="timer-stage">
+      <div class="mode-tabs">
+        <button class="mode-tab active">Focus</button>
+        <button class="mode-tab">Short break</button>
+        <button class="mode-tab">Long break</button>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-glow"></div>
+        <svg class="timer-ring" viewBox="0 0 200 200">
+          <circle class="ring-track" cx="100" cy="100" r="88"/>
+          <circle class="ring-progress" cx="100" cy="100" r="88" stroke-dasharray="553" stroke-dashoffset="553"/>
+        </svg>
+        <div class="timer-content">
+          <div class="timer-ctx"><span class="ctx-dot"></span> Focus · Sess 1 / 4</div>
+          <div class="time-display">25<span class="time-sep">:</span>00</div>
+          <div class="timer-subtitle"><b>Physics</b> <span style="color:var(--text-dim)">· Focus session</span></div>
+        </div>
+      </div>
+      <div class="pips-row">
+        <div class="pip now"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+      </div>
+      <div class="chips-row">
+        <button class="chip selected"><span class="chip-swatch"></span>Physics</button>
+        <button class="chip"><span class="chip-swatch" style="background:#f97316"></span>Maths</button>
+        <button class="chip"><span class="chip-swatch" style="background:#4cb782"></span>Chemistry</button>
+        <button class="chip"><span class="chip-swatch" style="background:#38bdf8"></span>Further Maths</button>
+        <button class="chip"><span class="chip-swatch" style="background:#f87171"></span>Biology</button>
+        <button class="chip chip-add">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Subject
+        </button>
+      </div>
+      <div class="controls-row">
+        <button class="ctrl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+        </button>
+        <button class="ctrl primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="desc">Chip is selected. Start works normally.<br>After session ends, selection clears automatically.</p>
+  </div>
+
+</div>
+
+<script>
+  function pressStart(id) {
+    const row = document.getElementById('chips-' + id);
+    // No subject selected — prompt the chips row
+    row.classList.add('prompting');
+    // Add hint text
+    let hint = row.nextElementSibling;
+    if (!hint || !hint.classList.contains('prompt-hint')) {
+      hint = document.createElement('div');
+      hint.className = 'prompt-hint';
+      hint.textContent = '↑ Pick a subject to start';
+      row.after(hint);
+    }
+    setTimeout(() => {
+      row.classList.remove('prompting');
+    }, 2800);
+  }
+</script>
+</body>
+</html>
