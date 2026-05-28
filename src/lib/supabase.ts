@@ -4,7 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase-js'
-import type { Subject, Tag, SessionEntry, TimerMode, SubjectLabel, Assessment, GradeBoundary } from '../types'
+import type { Subject, Tag, SessionEntry, TimerMode, SubjectLabel, Assessment, GradeBoundary, Task } from '../types'
 
 const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -371,4 +371,38 @@ export async function upsertSubjectXP(
       { onConflict: 'user_id,subject_id' },
     )
   return error
+}
+
+// ─── Tasks ────────────────────────────────────────────────────
+
+export async function fetchTasks(userId: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .order('due_date', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createTask(
+  task: Omit<Task, 'id' | 'created_at'>,
+): Promise<Task | null> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert(task)
+    .select()
+    .single()
+  if (error) { console.error(error); return null }
+  return data
+}
+
+export async function updateTask(id: string, updates: Partial<Task>): Promise<void> {
+  const { error } = await supabase.from('tasks').update(updates).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase.from('tasks').delete().eq('id', id)
+  if (error) throw error
 }
