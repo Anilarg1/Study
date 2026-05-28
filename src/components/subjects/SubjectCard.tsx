@@ -99,7 +99,7 @@ export default function SubjectCard({
           </span>
 
           <span className="s-mastery" title={mastery.name}>
-            {'🔥'.repeat(Math.max(1, masteryIdx + 1)).slice(0, 1)}
+            {'🔥'.repeat(masteryIdx + 1)}
           </span>
         </>
       )}
