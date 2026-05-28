@@ -754,6 +754,22 @@
 .sg-fill  { height: 100%; border-radius: 1px; transition: width 600ms ease; }
 .sg-val   { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text-dim); text-align: right; white-space: nowrap; }
 
+.s-date-input {
+  font-family: 'Geist Mono', monospace;
+  font-size:   11px;
+  color:       var(--text-dim);
+  background:  var(--surface-2);
+  border:      1px solid var(--hairline);
+  border-radius: 4px;
+  padding:     3px 7px;
+  outline:     none;
+  cursor:      pointer;
+}
+
+.s-date-input:focus {
+  border-color: var(--accent);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 1320px) {
   .s-kpi-row { grid-template-columns: repeat(2, 1fr); }

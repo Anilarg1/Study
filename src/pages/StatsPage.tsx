@@ -1,4 +1,5 @@
 import { useState, useMemo, memo, useDeferredValue } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import useXPStore         from '../store/useXPStore'
 import useSubjectStore    from '../store/useSubjectStore'
 import useStreakStore from '../store/useStreakStore'
@@ -18,30 +19,33 @@ import { Records }                          from '../components/stats/Records'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
-type Range = 'week' | 'month' | 'quarter' | 'year' | 'all'
+type Range = 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
-function getRangeStart(range: Range): Date {
-  const now = new Date()
+function getRangeStart(range: Range, customFrom?: string): Date {
+  if (range === 'custom' && customFrom) {
+    const d = new Date(customFrom)
+    if (!isNaN(d.getTime())) return d
+  }
   switch (range) {
-    case 'week':    return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
-    case 'month':   return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate() + 1)
-    case 'quarter': return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 89)
-    case 'year':    return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate() + 1)
+    case 'week':    return new Date(new Date().setDate(new Date().getDate() - 6))
+    case 'month':   return new Date(new Date().setMonth(new Date().getMonth() - 1))
+    case 'quarter': return new Date(new Date().setDate(new Date().getDate() - 89))
+    case 'year':    return new Date(new Date().setFullYear(new Date().getFullYear() - 1))
     case 'all':     return new Date(0)
+    default:        return new Date(new Date().setMonth(new Date().getMonth() - 1))
   }
 }
 
-function getPrevStart(range: Range): Date {
-  if (range === 'all') return new Date(0)
-  const start = getRangeStart(range)
-  const now   = new Date()
-  const spanMs = now.getTime() - start.getTime()
-  return new Date(start.getTime() - spanMs)
+function getPrevStart(range: Range, rangeStart: Date): Date {
+  if (range === 'all' || range === 'custom') return new Date(0)
+  const now    = new Date()
+  const spanMs = now.getTime() - rangeStart.getTime()
+  return new Date(rangeStart.getTime() - spanMs)
 }
 
 
@@ -133,16 +137,38 @@ export default function StatsPage() {
   const subjects      = useSubjectStore(s => s.subjects)
   const longestStreak = useStreakStore(s => s.longestStreak)
 
-  const [range, setRange]               = useState<Range>('month')
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null)
   const [filterDate, setFilterDate]     = useState<string | null>(null)
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const range: Range = (() => {
+    const r = searchParams.get('range')
+    if (r === 'week' || r === 'month' || r === 'quarter' || r === 'year' || r === 'all' || r === 'custom') return r
+    return 'month'
+  })()
+
+  const customFrom = searchParams.get('from') ?? ''
+  const customTo   = searchParams.get('to')   ?? ''
+
+  function setRange(r: Range) {
+    if (r === 'custom') {
+      setSearchParams({ range: 'custom' })
+    } else {
+      setSearchParams({ range: r })
+    }
+  }
+
+  function setCustomDates(from: string, to: string) {
+    setSearchParams({ range: 'custom', from, to })
+  }
 
   const deferredRange         = useDeferredValue(range)
   const deferredSubjectFilter = useDeferredValue(subjectFilter)
 
   // ── date range boundaries ──────────────────────────────────────────────────
-  const rangeStart = useMemo(() => getRangeStart(deferredRange), [deferredRange])
-  const prevStart  = useMemo(() => getPrevStart(deferredRange), [deferredRange])
+  const rangeStart = useMemo(() => getRangeStart(deferredRange, customFrom), [deferredRange, customFrom])
+  const prevStart  = useMemo(() => getPrevStart(deferredRange, rangeStart), [deferredRange, rangeStart])
 
   // ── filtered sessions ──────────────────────────────────────────────────────
   const workSessions = useMemo(() =>
@@ -444,11 +470,15 @@ export default function StatsPage() {
   // ── range label ────────────────────────────────────────────────────────────
   const rangeLabel = useMemo(() => {
     const now = new Date()
-    const start = getRangeStart(deferredRange)
+    const start = getRangeStart(deferredRange, customFrom)
     const fmt = (d: Date) => `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`
     if (deferredRange === 'all') return 'All time'
+    if (deferredRange === 'custom') {
+      if (customFrom && customTo) return `${customFrom} – ${customTo}`
+      return 'Custom range'
+    }
     return `${fmt(start)} – ${fmt(now)}, ${now.getFullYear()}`
-  }, [deferredRange])
+  }, [deferredRange, customFrom, customTo])
 
   // ── last session ───────────────────────────────────────────────────────────
   const lastSession = useMemo(() => {
@@ -502,6 +532,7 @@ export default function StatsPage() {
     quarter: '90 days',
     year:    'Year',
     all:     'All time',
+    custom:  'Custom',
   }
 
   return (
@@ -510,7 +541,7 @@ export default function StatsPage() {
       {/* ── FILTER BAR ── */}
       <div className="s-filter-bar">
         <div className="s-seg">
-          {(['week', 'month', 'quarter', 'year', 'all'] as Range[]).map(r => (
+          {(['week', 'month', 'quarter', 'year', 'all', 'custom'] as Range[]).map(r => (
             <button
               key={r}
               className={range === r ? 'active' : ''}
@@ -520,6 +551,27 @@ export default function StatsPage() {
             </button>
           ))}
         </div>
+
+        {range === 'custom' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || new Date().toISOString().slice(0, 10)}
+              onChange={e => setCustomDates(e.target.value, customTo)}
+              className="s-date-input"
+            />
+            <span style={{ color: 'var(--text-mute)', fontSize: 11 }}>–</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={e => setCustomDates(customFrom, e.target.value)}
+              className="s-date-input"
+            />
+          </div>
+        )}
 
         <span className="s-pill">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
