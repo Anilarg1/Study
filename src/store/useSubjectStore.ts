@@ -9,8 +9,8 @@ interface SubjectState {
   activeId: string | null
 
   setActiveId(id: string | null): void
-  addSubject(name: string, color: string): Promise<Subject | null>
-  editSubject(id: string, updates: Partial<Pick<Subject, 'name' | 'color'>>): Promise<void>
+  addSubject(name: string, color: string, opts?: { exam_board?: string | null; target_grade?: string | null }): Promise<Subject | null>
+  editSubject(id: string, updates: Partial<Pick<Subject, 'name' | 'color' | 'exam_board' | 'target_grade'>>): Promise<void>
   deleteSubject(id: string): Promise<void>
   _importFromSupabase(subjects: Subject[]): void
   _reset(): void
@@ -26,11 +26,11 @@ const useSubjectStore = create<SubjectState>()(
         set({ activeId: id })
       },
 
-      async addSubject(name, color) {
+      async addSubject(name, color, opts) {
         const userId = getCurrentUserId()
         if (!userId) return null
 
-        const { data, error } = await createSubject(userId, { name, color })
+        const { data, error } = await createSubject(userId, { name, color, ...opts })
         if (error || !data) { console.error(error); return null }
 
         set(state => ({ subjects: [...state.subjects, data] }))
