@@ -1,0 +1,72 @@
+.task-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.task-modal {
+  background: var(--surface, #fff);
+  color: var(--text, #111);
+  width: min(440px, 92vw);
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.task-modal-title { margin: 0 0 16px; font-size: 1.1rem; }
+.task-modal-form { display: flex; flex-direction: column; gap: 14px; }
+.task-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+.task-field > span { color: var(--text-muted, #666); }
+.task-field input, .task-field select {
+  padding: 8px 10px;
+  border: 1px solid var(--border, #d8d8d8);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--surface, #fff);
+  color: inherit;
+}
+.task-field-row { display: flex; gap: 12px; }
+.task-field-row .task-field { flex: 1; }
+
+.task-priority-row, .task-recurrence-row { display: flex; gap: 8px; }
+.task-priority-btn, .task-recurrence-btn {
+  flex: 1;
+  padding: 7px 0;
+  border: 1px solid var(--border, #d8d8d8);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.task-priority-btn.active, .task-recurrence-btn.active {
+  border-color: var(--accent, #6c5ce7);
+  background: color-mix(in srgb, var(--accent, #6c5ce7) 14%, transparent);
+}
+.task-priority-btn.p1.active { border-color: #e74c3c; background: color-mix(in srgb, #e74c3c 14%, transparent); }
+.task-priority-btn.p2.active { border-color: #f39c12; background: color-mix(in srgb, #f39c12 14%, transparent); }
+.task-priority-btn.p3.active { border-color: #3498db; background: color-mix(in srgb, #3498db 14%, transparent); }
+
+.task-checkbox { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
+
+.task-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.task-btn-primary {
+  padding: 8px 16px; border: none; border-radius: 8px;
+  background: var(--accent, #6c5ce7); color: #fff; cursor: pointer; font: inherit;
+}
+.task-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.task-btn-ghost {
+  padding: 8px 16px; border: 1px solid var(--border, #d8d8d8);
+  border-radius: 8px; background: transparent; cursor: pointer; font: inherit; color: inherit;
+}
+.task-btn-danger {
+  padding: 8px 16px; border: none; border-radius: 8px;
+  background: #e74c3c; color: #fff; cursor: pointer; font: inherit;
+}
+.task-delete-link {
+  align-self: flex-start; background: none; border: none; color: #e74c3c;
+  cursor: pointer; font: inherit; padding: 0; text-decoration: underline;
+}
+.task-delete-confirm { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
