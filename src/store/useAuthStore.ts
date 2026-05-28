@@ -137,7 +137,8 @@ const useAuthStore = create<AuthState>()((set, get) => ({
       useTagStore.getState()._importFromSupabase(tagsResult.data)
     }
     if (sessionsResult.data.length > 0) {
-      useXPStore.getState()._importSessionsFromSupabase(sessionsResult.data)
+      useXPStore.getState()._setLoading(true)
+      await useXPStore.getState()._importSessionsFromSupabase(sessionsResult.data)
     }
     if (subjectXPResult.data.length > 0) {
       useSubjectMasteryStore.getState()._importFromSupabase(subjectXPResult.data)

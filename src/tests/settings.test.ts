@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // vi.hoisted runs before any imports are processed — this ensures localStorage
 // exists when zustand's persist middleware calls createJSONStorage(() => localStorage)
-const _lsData = vi.hoisted(() => {
+vi.hoisted(() => {
   const store: Record<string, string> = {}
   const ls = {
     getItem:    (k: string) => store[k] ?? null,
@@ -12,7 +12,6 @@ const _lsData = vi.hoisted(() => {
   }
   // @ts-expect-error – global may not be typed
   globalThis.localStorage = ls
-  return store
 })
 
 import useSettingsStore from '../store/useSettingsStore'

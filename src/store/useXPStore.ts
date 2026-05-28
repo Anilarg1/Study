@@ -35,6 +35,8 @@ interface XPState {
   _importSessionsFromSupabase(sessions: SessionEntry[]): void
   _mergeSession(session: SessionEntry): void
   _reset(): void
+  isLoading: boolean
+  _setLoading(v: boolean): void
 }
 
 const useXPStore = create<XPState>()(
@@ -42,6 +44,7 @@ const useXPStore = create<XPState>()(
     (set, get) => ({
       totalXP:  0,
       sessions: [],
+      isLoading: false,
 
       awardXP(sessionType, subjectId = null, durationSecs = null, tagId = null) {
         // ── Calculate XP ──────────────────────────────────────────────────
@@ -105,11 +108,13 @@ const useXPStore = create<XPState>()(
         set(state => ({ totalXP: Math.max(state.totalXP, xp) }))
       },
 
+      _setLoading(v) { set({ isLoading: v }) },
+
       _importSessionsFromSupabase(sessions) {
         // sessions arrive newest-first from Supabase; reverse to oldest-first to match
         // the append order used by awardXP, then cap at MAX_LOCAL_SESSIONS
         const toStore = [...sessions].reverse().slice(0, MAX_LOCAL_SESSIONS)
-        set({ sessions: toStore })
+        set({ sessions: toStore, isLoading: false })
       },
 
       _mergeSession(incoming) {
