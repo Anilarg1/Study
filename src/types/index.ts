@@ -61,3 +61,22 @@ export interface GradeBoundary {
   min_pct: number
   max_pct: number
 }
+
+export type TaskPriority = 1 | 2 | 3 | 4   // 1=urgent 2=high 3=medium 4=none
+
+export type RecurrenceRule = 'daily' | 'weekly' | 'monthly'
+
+export interface Task {
+  id:           string
+  user_id:      string
+  subject_id:   string | null
+  title:        string
+  notes:        string | null
+  due_date:     string                 // ISO date 'YYYY-MM-DD'
+  due_time:     string | null          // 'HH:MM' 24h storage; displayed as 12h
+  priority:     TaskPriority
+  is_recurring: boolean
+  recurrence:   RecurrenceRule | null
+  completed_at: string | null          // ISO timestamp
+  created_at:   string
+}
