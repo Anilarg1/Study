@@ -1,0 +1,69 @@
+.week-calendar { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.week-toolbar { display: flex; gap: 8px; align-items: center; padding: 10px 12px; }
+.week-toolbar button {
+  border: 1px solid var(--border, #d8d8d8); background: transparent; cursor: pointer;
+  border-radius: 8px; padding: 4px 10px; font: inherit; color: inherit;
+}
+.week-today-btn { margin-left: auto; }
+
+.week-grid {
+  flex: 1; display: grid;
+  grid-template-columns: 56px repeat(7, 1fr);
+  overflow: auto; min-height: 0;
+}
+
+.week-gutter { display: flex; flex-direction: column; }
+.week-corner { height: 44px; }
+.week-allday-gutter {
+  height: 40px; display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 6px; font-size: 0.65rem; color: var(--text-muted, #aaa);
+  border-bottom: 1px solid var(--border, #eee);
+}
+.week-hours { position: relative; }
+.week-hour-label {
+  font-size: 0.65rem; color: var(--text-muted, #aaa);
+  text-align: right; padding-right: 6px;
+  border-top: 1px solid var(--border, #f0f0f0);
+  transform: translateY(-0.5em);
+}
+
+.week-col { display: flex; flex-direction: column; border-left: 1px solid var(--border, #eee); }
+.week-col.today { background: color-mix(in srgb, var(--accent, #6c5ce7) 5%, transparent); }
+.week-col-head {
+  height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-bottom: 1px solid var(--border, #eee);
+}
+.week-dow { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted, #999); }
+.week-date { font-size: 0.95rem; font-weight: 600; }
+.week-col.today .week-date {
+  background: var(--accent, #6c5ce7); color: #fff; border-radius: 50%;
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+}
+
+.week-allday {
+  min-height: 40px; display: flex; flex-wrap: wrap; gap: 3px; padding: 3px;
+  border-bottom: 1px solid var(--border, #eee); align-content: flex-start;
+}
+
+.week-day-body { position: relative; }
+.week-slot { border-top: 1px solid var(--border, #f3f3f3); cursor: pointer; }
+.week-slot:hover { background: color-mix(in srgb, var(--accent, #6c5ce7) 6%, transparent); }
+
+.task-block {
+  position: absolute; left: 2px; right: 2px;
+  border: none; border-left: 3px solid;
+  border-radius: 5px; padding: 3px 5px; cursor: pointer;
+  text-align: left; overflow: hidden; font: inherit; color: inherit;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.task-block-title { font-size: 0.72rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-block-time { font-size: 0.62rem; color: var(--text-muted, #777); }
+.task-block.done .task-block-title { text-decoration: line-through; opacity: 0.6; }
+
+.task-chip {
+  border: 1px solid; border-radius: 5px; padding: 1px 6px;
+  font-size: 0.68rem; cursor: pointer; max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit;
+}
+.task-chip.done { text-decoration: line-through; opacity: 0.6; }
