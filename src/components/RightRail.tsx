@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import EmptyState from './EmptyState'
 import useXPStore      from '../store/useXPStore'
 import useTimerStore   from '../store/useTimerStore'
 import useSubjectStore from '../store/useSubjectStore'
@@ -34,6 +35,7 @@ const MODE_COLORS: Record<TimerMode, string> = {
 }
 
 function RunningTimerWidget() {
+  const navigate        = useNavigate()
   const running         = useTimerStore(s => s.running)
   const storedRemaining = useTimerStore(s => s.remaining)   // re-renders on each tick
   const expiresAt       = useTimerStore(s => s.expiresAt)
@@ -72,7 +74,13 @@ function RunningTimerWidget() {
   const progress = calcProgress(remaining, total)
 
   return (
-    <div style={{ paddingTop: 10, paddingBottom: 10, marginBottom: 2 }}>
+    <button
+      className="running-timer-widget-btn"
+      onClick={() => navigate('/')}
+      title="Back to timer"
+      aria-label="Return to timer"
+      style={{ paddingTop: 10, paddingBottom: 10, marginBottom: 2, width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
 
         {/* ── Left column ── */}
@@ -144,7 +152,7 @@ function RunningTimerWidget() {
             {formatMMSS(remaining)}
           </div>
           <button
-            onClick={running ? pause : start}
+            onClick={e => { e.stopPropagation(); running ? pause() : start() }}
             style={{
               marginTop: 6,
               fontSize: 9.5,
@@ -175,7 +183,7 @@ function RunningTimerWidget() {
 
       {/* Hairline divider before next rail section */}
       <div style={{ borderBottom: '1px solid var(--hairline)', marginTop: 10 }} />
-    </div>
+    </button>
   )
 }
 
@@ -235,14 +243,26 @@ function TodayCard({ sessions }: { sessions: SessionEntry[] }) {
         )}
       </div>
 
-      <div className="today-bar">
-        {hourCounts.map((_, i) => (
-          <div key={i} className={hClass(i)} />
-        ))}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 9.5, color: 'var(--text-faint)' }}>
-        <span>6 AM</span><span>NOON</span><span>6 PM</span><span>12</span>
-      </div>
+      {todaySes.length === 0 && (
+        <EmptyState
+          icon="⏱"
+          title="Nothing yet today"
+          subtitle="Start a session to track your progress"
+        />
+      )}
+
+      {todaySes.length > 0 && (
+        <>
+          <div className="today-bar">
+            {hourCounts.map((_, i) => (
+              <div key={i} className={hClass(i)} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Geist Mono, monospace', fontSize: 9.5, color: 'var(--text-faint)' }}>
+            <span>6 AM</span><span>NOON</span><span>6 PM</span><span>12</span>
+          </div>
+        </>
+      )}
     </div>
   )
 }
