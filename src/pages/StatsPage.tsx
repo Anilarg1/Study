@@ -135,6 +135,7 @@ export default function StatsPage() {
 
   const [range, setRange]               = useState<Range>('month')
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null)
+  const [filterDate, setFilterDate]     = useState<string | null>(null)
 
   const deferredRange         = useDeferredValue(range)
   const deferredSubjectFilter = useDeferredValue(subjectFilter)
@@ -489,6 +490,10 @@ export default function StatsPage() {
     URL.revokeObjectURL(url)
   }
 
+  function toggleFilterDate(date: string) {
+    setFilterDate(prev => prev === date ? null : date)
+  }
+
   // ─── render ───────────────────────────────────────────────────────────────
 
   const rangeLabelMap: Record<Range, string> = {
@@ -548,6 +553,16 @@ export default function StatsPage() {
           </svg>
           Export
         </span>
+
+        {filterDate && (
+          <button
+            className="s-pill"
+            style={{ cursor: 'pointer', color: 'var(--accent)' }}
+            onClick={() => setFilterDate(null)}
+          >
+            {filterDate} ×
+          </button>
+        )}
       </div>
 
       {/* ── SCROLL AREA ── */}
@@ -648,6 +663,8 @@ export default function StatsPage() {
           heatMonthLabels={heatMonthLabels}
           activeDays={activeDays}
           longestHeatStreak={longestHeatStreak}
+          filterDate={filterDate}
+          onCellClick={toggleFilterDate}
         />
 
         {/* ── ROW: SUBJECTS + HOUR×DAY ── */}

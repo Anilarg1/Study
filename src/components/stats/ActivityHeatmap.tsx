@@ -16,6 +16,8 @@ interface ActivityHeatmapProps {
   heatMonthLabels:   { label: string; width: number }[]
   activeDays:        number
   longestHeatStreak: number
+  filterDate?:       string | null
+  onCellClick?:      (date: string) => void
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -25,6 +27,8 @@ export function ActivityHeatmap({
   heatMonthLabels,
   activeDays,
   longestHeatStreak,
+  filterDate,
+  onCellClick,
 }: ActivityHeatmapProps) {
   return (
     <section className="sc" style={{ marginBottom: 12 }}>
@@ -41,31 +45,43 @@ export function ActivityHeatmap({
         </span>
       </div>
 
-      {/* Month labels */}
-      <div className="s-heatmap-months">
-        {heatMonthLabels.map((m, i) => (
-          <span key={i} style={{ width: `${m.width * 14}px` }}>{m.label}</span>
-        ))}
-      </div>
-
-      <div className="s-heatmap-wrap">
-        <div className="s-heatmap-days">
-          <span/><span>Mon</span><span/><span>Wed</span><span/><span>Fri</span><span/>
+      {activeDays === 0 && (
+        <div className="s-empty" style={{ textAlign: 'center', padding: '24px 0' }}>
+          No sessions yet — complete your first timer session to see activity
         </div>
-        <div className="s-heatmap">
-          {heatWeeks.map((week, wi) => (
-            <div key={wi} className="s-week-col">
-              {week.map((cell, di) => (
-                <div
-                  key={di}
-                  className={`s-h-cell${cell.future ? ' empty' : cell.lvl ? ` l${cell.lvl}` : ''}`}
-                  title={cell.future ? '' : `${cell.ds}${cell.mins ? ` · ${fmtMinsShort(cell.mins)}` : ''}`}
-                />
+      )}
+
+      {/* Month labels */}
+      {activeDays > 0 && (
+        <>
+          <div className="s-heatmap-months">
+            {heatMonthLabels.map((m, i) => (
+              <span key={i} style={{ width: `${m.width * 14}px` }}>{m.label}</span>
+            ))}
+          </div>
+
+          <div className="s-heatmap-wrap">
+            <div className="s-heatmap-days">
+              <span/><span>Mon</span><span/><span>Wed</span><span/><span>Fri</span><span/>
+            </div>
+            <div className="s-heatmap">
+              {heatWeeks.map((week, wi) => (
+                <div key={wi} className="s-week-col">
+                  {week.map((cell, di) => (
+                    <div
+                      key={di}
+                      className={`s-h-cell${cell.future ? ' empty' : cell.lvl ? ` l${cell.lvl}` : ''}${filterDate === cell.ds ? ' selected' : ''}`}
+                      title={cell.future ? '' : `${cell.ds}${cell.mins ? ` · ${fmtMinsShort(cell.mins)}` : ''}`}
+                      onClick={cell.future || !onCellClick ? undefined : () => onCellClick(cell.ds)}
+                      style={onCellClick && !cell.future ? { cursor: 'pointer' } : undefined}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       <div className="s-heat-foot">
         <span>

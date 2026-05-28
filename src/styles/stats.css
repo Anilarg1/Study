@@ -443,6 +443,10 @@
 .s-h-cell.l2 { background: color-mix(in oklab, var(--accent) 45%, var(--surface-3)); }
 .s-h-cell.l3 { background: color-mix(in oklab, var(--accent) 70%, transparent); }
 .s-h-cell.l4 { background: var(--accent); box-shadow: 0 0 6px var(--accent-soft); }
+.s-h-cell.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .s-heat-foot {
   display: flex;
   align-items: center;
