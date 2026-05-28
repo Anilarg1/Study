@@ -1,15 +1,29 @@
-/**
- * chime.ts — synthesises timer-completion sounds via Web Audio API.
- * No external files or dependencies needed.
- */
-
 import type { TimerMode } from '../types'
 
-let ctx: AudioContext | null = null
+let ctx:      AudioContext | null = null
+let gainNode: GainNode     | null = null
 
 function getCtx(): AudioContext {
   if (!ctx) ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)()
   return ctx
+}
+
+function getGain(ac: AudioContext): GainNode {
+  if (!gainNode) {
+    gainNode = ac.createGain()
+    gainNode.gain.value = 0.8   // default matches soundVolume:80 / 100
+    gainNode.connect(ac.destination)
+  }
+  return gainNode
+}
+
+export function setChimeVolume(volume: number): void {
+  const gain = Math.max(0, Math.min(1, volume / 100))
+  if (gainNode) {
+    gainNode.gain.value = gain
+  } else if (ctx) {
+    getGain(ctx).gain.value = gain
+  }
 }
 
 function playNote(freq: number, startTime: number, duration: number, gainPeak = 0.25): void {
@@ -25,38 +39,40 @@ function playNote(freq: number, startTime: number, duration: number, gainPeak = 
   env.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
 
   osc.connect(env)
-  env.connect(ac.destination)
+  env.connect(getGain(ac))
   osc.start(startTime)
   osc.stop(startTime + duration)
 }
 
-/** Bright ascending 3-note chime — played when a work session completes. */
 function playWorkChime(): void {
   const ac = getCtx()
   if (ac.state === 'suspended') ac.resume()
   const t = ac.currentTime
-  playNote(523.25, t,        0.55)         // C5
-  playNote(659.26, t + 0.13, 0.55)         // E5
-  playNote(783.99, t + 0.26, 0.90, 0.28)  // G5
+  playNote(523.25, t,        0.55)
+  playNote(659.26, t + 0.13, 0.55)
+  playNote(783.99, t + 0.26, 0.90, 0.28)
 }
 
-/** Softer descending 2-note tone — played when a break session completes. */
 function playBreakChime(): void {
   const ac = getCtx()
   if (ac.state === 'suspended') ac.resume()
   const t = ac.currentTime
-  playNote(659.26, t,        0.50, 0.18)  // E5
-  playNote(523.25, t + 0.16, 0.65, 0.14) // C5
+  playNote(659.26, t,        0.50, 0.18)
+  playNote(523.25, t + 0.16, 0.65, 0.14)
 }
 
-/**
- * Play the chime appropriate for the given mode.
- * Silently swallows errors (headless / AudioContext blocked, etc.).
- */
-export function playChime(mode: TimerMode): void {
+function playWarningChime(): void {
+  const ac = getCtx()
+  if (ac.state === 'suspended') ac.resume()
+  const t = ac.currentTime
+  playNote(440, t, 0.18, 0.08)   // soft single pulse at low gain
+}
+
+export function playChime(mode: TimerMode | 'warning'): void {
   try {
-    if (mode === 'work') playWorkChime()
-    else                 playBreakChime()
+    if (mode === 'work')    playWorkChime()
+    else if (mode === 'warning') playWarningChime()
+    else                    playBreakChime()
   } catch {
     // AudioContext unavailable — ignore
   }
