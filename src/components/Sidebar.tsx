@@ -181,10 +181,13 @@ export default function Sidebar({
         <IcBook />
         <span className="nav-label">Subjects</span>
       </button>
-      <button className="nav-item muted" title="Timetable — coming soon">
+      <button
+        className={`nav-item${location.pathname === '/planner' ? ' active' : ''}`}
+        title="Planner"
+        onClick={() => go('/planner')}
+      >
         <IcTimetable />
-        <span className="nav-label">Timetable</span>
-        <span className="ni-count">SOON</span>
+        <span className="nav-label">Planner</span>
       </button>
 
       {/* ── Library section ── */}

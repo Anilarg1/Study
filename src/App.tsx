@@ -11,7 +11,7 @@ const SettingsPage   = lazy(() => import('./pages/SettingsPage'))
 const StatsPage      = lazy(() => import('./pages/StatsPage'))
 const NotesPage      = lazy(() => import('./pages/NotesPage'))
 const FlashcardsPage = lazy(() => import('./pages/FlashcardsPage'))
-const TimetablePage  = lazy(() => import('./pages/TimetablePage'))
+const PlannerPage    = lazy(() => import('./pages/PlannerPage').then(m => ({ default: m.PlannerPage })))
 const PastPapersPage    = lazy(() => import('./pages/PastPapersPage'))
 const SubjectsIndexPage = lazy(() => import('./pages/SubjectsIndexPage'))
 const SubjectHubPage    = lazy(() => import('./pages/SubjectHubPage'))
@@ -251,7 +251,7 @@ export default function App() {
           <Route path="/stats"       element={<StatsPage />} />
           <Route path="/notes"       element={<NotesPage />} />
           <Route path="/flashcards"  element={<FlashcardsPage />} />
-          <Route path="/timetable"   element={<TimetablePage />} />
+          <Route path="/planner"     element={<PlannerPage />} />
           <Route path="/past-papers" element={<PastPapersPage />} />
           <Route path="/subjects"     element={<SubjectsIndexPage />} />
           <Route path="/subjects/:id" element={<SubjectHubPage />} />
