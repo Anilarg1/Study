@@ -44,7 +44,7 @@ export function bootSettings(): void {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 // Keys excluded from Supabase sync (per-device preferences)
-const LOCAL_ONLY_KEYS = new Set<keyof SettingsData>(['sidebarCollapsed'])
+const LOCAL_ONLY_KEYS = new Set<keyof SettingsData>(['sidebarCollapsed', 'focusMode'])
 
 interface SettingsData {
   theme:             Theme
@@ -65,6 +65,8 @@ interface SettingsData {
   dndEnabled:        boolean
   dndStart:          string
   dndEnd:            string
+  focusMode:         boolean
+  soundVolume:       number
 }
 
 type BooleanSettingsKey = {
@@ -128,6 +130,8 @@ const useSettingsStore = create<SettingsState>()(
       dndEnabled:       false,
       dndStart:         '22:00',
       dndEnd:           '08:00',
+      focusMode:        false,
+      soundVolume:      80,
 
       // ── Actions ──────────────────────────────────────────────────────────
       setField: (key, value) => set({ [key]: value } as Partial<SettingsState>),
@@ -167,6 +171,8 @@ const useSettingsStore = create<SettingsState>()(
         desktopAlerts: state.desktopAlerts, notifyMentions: state.notifyMentions,
         notifyDueDates: state.notifyDueDates, notifyDailyRecap: state.notifyDailyRecap,
         dndEnabled: state.dndEnabled, dndStart: state.dndStart, dndEnd: state.dndEnd,
+        focusMode:   state.focusMode,
+        soundVolume: state.soundVolume,
       }),
     }
   )
