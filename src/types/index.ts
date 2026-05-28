@@ -11,8 +11,8 @@ export interface Subject {
   id:           string
   name:         string
   color:        string
-  exam_board:   string | null   // new
-  target_grade: string | null   // new
+  exam_board:   string | null
+  target_grade: string | null
   created_at:   string
 }
 

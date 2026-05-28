@@ -11,7 +11,7 @@ export const DEFAULT_BOUNDARIES: GradeBoundary[] = [
 
 export function calcProficiency(assessments: Assessment[]): number | null {
   const last5 = [...assessments]
-    .sort((a, b) => b.sat_on.localeCompare(a.sat_on))
+    .sort((a, b) => b.sat_on.localeCompare(a.sat_on))  // requires ISO 'YYYY-MM-DD' sat_on values
     .slice(0, 5)
   if (last5.length === 0) return null
   const avg = last5.reduce((sum, a) => sum + a.percentage, 0) / last5.length
