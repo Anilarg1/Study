@@ -37,6 +37,24 @@ function IcPlus() {
   )
 }
 
+// ── fuzzy search ──────────────────────────────────────────────────────────
+
+export function fuzzyScore(query: string, target: string): number {
+  const q = query.toLowerCase()
+  const t = target.toLowerCase()
+  let qi = 0, score = 0, consecutive = 0
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) {
+      score += 1 + consecutive * 2
+      consecutive++
+      qi++
+    } else {
+      consecutive = 0
+    }
+  }
+  return qi === q.length ? score : -1
+}
+
 // ── types ─────────────────────────────────────────────────────────────────
 
 interface CmdItem {
@@ -110,7 +128,11 @@ export default function CommandPalette({
   const q = deferredQuery.trim().toLowerCase()
   const allCmds  = [...actionCmds, ...subjectCmds]
   const filtered = q
-    ? allCmds.filter(c => c.label.toLowerCase().includes(q))
+    ? allCmds
+        .map(c => ({ cmd: c, score: fuzzyScore(q, c.label) }))
+        .filter(x => x.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .map(x => x.cmd)
     : allCmds
 
   // ── reset on open ────────────────────────────────────────────────────────
