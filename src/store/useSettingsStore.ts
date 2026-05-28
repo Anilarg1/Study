@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Theme, Density, TimeFormat, WeekStart, FontScale } from '../types'
+import { supabase } from '../lib/supabase'
 
 // ── DOM apply helpers (exported so Settings.tsx can import them) ──────────────
 
@@ -42,6 +43,9 @@ export function bootSettings(): void {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+// Keys excluded from Supabase sync (per-device preferences)
+const LOCAL_ONLY_KEYS = new Set<keyof SettingsData>(['sidebarCollapsed'])
+
 interface SettingsData {
   theme:             Theme
   density:           Density
@@ -70,13 +74,39 @@ type BooleanSettingsKey = {
 interface SettingsState extends SettingsData {
   setField<K extends keyof SettingsData>(key: K, value: SettingsData[K]): void
   toggle(key: BooleanSettingsKey): void
+  _importFromSupabase(prefs: Partial<SettingsData>): void
+  _syncToSupabase(userId: string): void
+}
+
+// ── Debounce helper ───────────────────────────────────────────────────────────
+
+let _syncTimer: ReturnType<typeof setTimeout> | null = null
+
+function debouncedSync(userId: string, getState: () => SettingsState) {
+  if (_syncTimer) clearTimeout(_syncTimer)
+  _syncTimer = setTimeout(() => {
+    _syncTimer = null
+    const s = getState()
+    const prefs: Partial<SettingsData> = {}
+    const keys = Object.keys(s) as (keyof SettingsData)[]
+    for (const k of keys) {
+      if (LOCAL_ONLY_KEYS.has(k)) continue
+      if (typeof s[k] === 'function') continue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(prefs as any)[k] = s[k]
+    }
+    supabase
+      .from('user_prefs')
+      .upsert({ user_id: userId, prefs, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.error('[settings] sync error', error) })
+  }, 1000)
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // ── Interface ───────────────────────────────────────────────────────
       theme:            'dark',
       density:          'comfortable',
@@ -102,6 +132,28 @@ const useSettingsStore = create<SettingsState>()(
       // ── Actions ──────────────────────────────────────────────────────────
       setField: (key, value) => set({ [key]: value } as Partial<SettingsState>),
       toggle:   (key)        => set(s => ({ [key]: !s[key] } as Partial<SettingsState>)),
+
+      // ── Supabase sync ─────────────────────────────────────────────────────
+      _importFromSupabase(prefs) {
+        // Remote wins for all synced fields; local-only keys are left untouched
+        const patch: Partial<SettingsData> = {}
+        for (const [k, v] of Object.entries(prefs) as [keyof SettingsData, unknown][]) {
+          if (!LOCAL_ONLY_KEYS.has(k) && v !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ;(patch as any)[k] = v
+          }
+        }
+        set(patch as Partial<SettingsState>)
+        // Apply visual side effects
+        if (patch.theme)       applyTheme(patch.theme as Theme)
+        if (patch.density)     applyDensity(patch.density as Density)
+        if (patch.fontScale)   applyFontScale(patch.fontScale as FontScale)
+        if (patch.highContrast !== undefined) applyContrast(patch.highContrast as boolean)
+      },
+
+      _syncToSupabase(userId) {
+        debouncedSync(userId, get)
+      },
     }),
     {
       name: 'notebook-settings',

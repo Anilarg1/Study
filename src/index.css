@@ -81,7 +81,7 @@
   grid-template-areas:
     "brand topbar topbar"
     "nav   main   rail";
-  height: 100vh;
+  height: 100dvh;
   background:
     radial-gradient(900px 600px at 56% 36%, var(--accent-fade), transparent 65%),
     var(--bg);
@@ -1667,7 +1667,7 @@
 .login-root {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   overflow: hidden;
   display: grid;
@@ -2128,7 +2128,7 @@
 
 @media (max-width: 900px) {
 
-  /* ── Shell: collapse to single column ─────────────────────────────────── */
+  /* ── App Shell ────────────────────────────────────────────────────────── */
   .app-shell {
     grid-template-rows: 44px 1fr;
     grid-template-columns: 1fr;
@@ -2148,7 +2148,7 @@
   .v2-nav       { display: none; }
   .v2-rail      { display: none; }
 
-  /* ── Sidebar as drawer ────────────────────────────────────────────────── */
+  /* ── Sidebar Drawer ──────────────────────────────────────────────────── */
   .v2-nav.mobile-open {
     display: flex !important;
     position: fixed;
@@ -2194,7 +2194,8 @@
     to   { opacity: 1; }
   }
 
-  /* ── Topbar: show hamburger, hide New Session (FAB covers it), shrink palette ── */
+  /* ── Topbar ───────────────────────────────────────────────────────────── */
+  /* Show hamburger, hide New Session (FAB covers it), shrink palette */
   .topbar-hamburger { display: grid !important; }
 
   /* Hide the "New session" CTA — the bottom bar FAB replaces it on mobile */
@@ -2212,13 +2213,17 @@
   /* Hide all spans (text + kbd badges) — use !important to beat inline styles */
   .cmd-palette > span { display: none !important; }
 
-  /* ── Timer ring: scale down for mobile ───────────────────────────────── */
+  /* ── Timer Page ──────────────────────────────────────────────────────── */
   .timer-wrap     { width: 270px; height: 270px; }
   .time-display   { font-size: 58px; }
   .timer-subtitle { font-size: 11.5px; }
   .controls-row   { margin-top: 18px; }
   .kbd-hint-bar   { display: none; }
   .chips-row      { max-width: 90vw; }
+
+  /* ── Stats Page ──────────────────────────────────────────────────────── */
+
+  /* ── Bottom Tab Bar ──────────────────────────────────────────────────── */
 
   /* ── Floating action button ──────────────────────────────────────────── */
   .mobile-fab {
@@ -2243,7 +2248,9 @@
   }
   .mobile-fab:active { transform: scale(0.91); }
 
-  /* ── Main content: pad bottom so content clears the FAB ──────────────── */
+  /* ── Settings ────────────────────────────────────────────────────────── */
+
+  /* ── Main content: pad bottom so content clears the tab bar ──────────── */
   .v2-main          { padding-bottom: 88px; }
   .stats-page       { padding-bottom: 88px; }
   .notes-page       { padding-bottom: 88px; }
@@ -2254,7 +2261,67 @@
   .page-placeholder { padding-bottom: 88px; }
   .timer-stage      { padding-bottom: 12px; }
 
-  /* ── Mobile timer banner (replaces FAB when timer is running off-page) ── */
+  /* ── Bottom Tab Bar ──────────────────────────────────────────────────── */
+  .bottom-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    background: var(--bg);
+    border-top: 1px solid var(--hairline);
+    z-index: 200;
+  }
+
+  .btb-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 0 0;
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 150ms;
+  }
+  .btb-btn.active { color: var(--accent); }
+  .btb-btn:active { opacity: 0.7; }
+
+  .btb-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .btb-fab {
+    flex: 0 0 56px;
+    width: 44px;
+    height: 44px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 3px 14px -2px var(--accent-glow);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 120ms;
+  }
+  .btb-fab:active { transform: scale(0.91); }
+
+  /* ── Mobile Timer Banner ─────────────────────────────────────────────── */
+  /* Replaces FAB when timer is running off-page */
   .mobile-timer-banner {
     position: fixed;
     bottom: 0;

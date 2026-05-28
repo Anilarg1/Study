@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
+import { useShallow } from 'zustand/react/shallow'
 import useSubjectStore from '../store/useSubjectStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import useXPStore from '../store/useXPStore'
@@ -43,7 +44,7 @@ export default function Sidebar({
     onMobileClose?.()
   }
 
-  const subjects      = useSubjectStore(s => s.subjects)
+  const subjects      = useSubjectStore(useShallow(s => s.subjects))
   const addSubject    = useSubjectStore(s => s.addSubject)
   const loginDates    = useStreakStore(s => s.loginDates)
   const currentStreak = useMemo(

@@ -7,7 +7,7 @@ import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
-import { bestWeek } from '../utils/stats'
+import { bestWeek, calcPeakHour, calcSubjectMins, calcSessionHistogram } from '../utils/stats'
 import { Delta, Sparkline, SubjectRadar }   from '../components/stats/KPIRow'
 import { FocusTimeChart }                   from '../components/stats/FocusTimeChart'
 import type { ChartBar }                    from '../components/stats/FocusTimeChart'
@@ -338,17 +338,13 @@ export default function StatsPage() {
 
   // ── subject breakdown ──────────────────────────────────────────────────────
   const subjectStats = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const s of workSessions) {
-      if (s.subjectId) map.set(s.subjectId, (map.get(s.subjectId) ?? 0) + sessionMins(s))
-    }
-    return [...map.entries()]
-      .map(([id, mins]) => {
-        const subj = subjects.find(s => s.id === id)
-        return { id, name: subj?.name ?? 'Unknown', color: subj?.color ?? '#666', mins }
+    return calcSubjectMins(workSessions, { from: rangeStart, to: new Date() })
+      .map(({ subjectId, mins }) => {
+        const subj = subjects.find(s => s.id === subjectId)
+        return { id: subjectId, name: subj?.name ?? 'Unknown', color: subj?.color ?? '#666', mins }
       })
       .sort((a, b) => b.mins - a.mins)
-  }, [workSessions, subjects])
+  }, [workSessions, subjects, rangeStart])
 
   const subjectTotalMins = useMemo(() => Math.max(1, subjectStats.reduce((s, x) => s + x.mins, 0)), [subjectStats])
 
@@ -388,11 +384,9 @@ export default function StatsPage() {
 
   // ── peak hour + best day summary ──────────────────────────────────────────
   const hourDaySummary = useMemo(() => {
-    let peakMins = 0, peakHour = -1
-    for (let h = 0; h < 24; h++) {
-      const t = hourDayRaw.reduce((s, row) => s + (row[h] ?? 0), 0)
-      if (t > peakMins) { peakMins = t; peakHour = h }
-    }
+    const peak = calcPeakHour(workSessions)
+    // Fix B4: hour 23 → "23:00 – 0:00", not "23:00 – 24:00"
+    const nextHour = peak.hour >= 0 ? (peak.hour + 1) % 24 : -1
 
     const dayTotals = hourDayRaw.map((row, i) => ({
       day:   DAY_LABELS[i] ?? '',
@@ -400,26 +394,15 @@ export default function StatsPage() {
     }))
     const bestDay = [...dayTotals].sort((a, b) => b.total - a.total)[0] ?? null
 
-    // Fix B4: hour 23 → "23:00 – 0:00", not "23:00 – 24:00"
-    const nextHour = peakHour >= 0 ? (peakHour + 1) % 24 : -1
     return {
-      peakHour: peakHour >= 0 ? `${peakHour}:00 – ${nextHour}:00` : '—',
+      peakHour: peak.hour >= 0 ? `${peak.hour}:00 – ${nextHour}:00` : '—',
       bestDay:  bestDay !== null && bestDay.total > 0 ? bestDay.day : '—',
     }
-  }, [hourDayRaw])
+  }, [hourDayRaw, workSessions])
 
   // ── session length histogram ───────────────────────────────────────────────
   const histData = useMemo(() => {
-    const counts = HIST_BUCKETS.map((b, i) => {
-      const prev = i > 0 ? (HIST_BUCKETS[i - 1]?.max ?? 0) : 0
-      return {
-        label: b.label,
-        count: workSessions.filter(s => {
-          const m = sessionMins(s)
-          return m > prev && (b.max === Infinity ? true : m <= b.max)
-        }).length
-      }
-    })
+    const counts = calcSessionHistogram(workSessions, HIST_BUCKETS)
     const maxCount = Math.max(1, ...counts.map(c => c.count))
     const peakIdx  = counts.reduce((best, c, i) => c.count > (counts[best]?.count ?? 0) ? i : best, 0)
     return counts.map((c, i) => ({ ...c, height: Math.max(2, (c.count / maxCount) * 100), isPeak: i === peakIdx }))

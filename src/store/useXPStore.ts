@@ -33,6 +33,7 @@ interface XPState {
   ): AwardResult
   _importFromSupabase(xp: number): void
   _importSessionsFromSupabase(sessions: SessionEntry[]): void
+  _mergeSession(session: SessionEntry): void
   _reset(): void
 }
 
@@ -109,6 +110,16 @@ const useXPStore = create<XPState>()(
         // the append order used by awardXP, then cap at MAX_LOCAL_SESSIONS
         const toStore = [...sessions].reverse().slice(0, MAX_LOCAL_SESSIONS)
         set({ sessions: toStore })
+      },
+
+      _mergeSession(incoming) {
+        // Deduplicate: the optimistic write already added this row locally
+        set(state => {
+          if (state.sessions.some(s => s.id === incoming.id)) return state
+          return {
+            sessions: [...state.sessions, incoming].slice(-MAX_LOCAL_SESSIONS),
+          }
+        })
       },
 
       _reset() {

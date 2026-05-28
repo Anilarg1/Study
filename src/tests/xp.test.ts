@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcSessionXP, getStreakMultiplier } from '../utils/xp'
+import { calcSessionXP, getStreakMultiplier, xpToLevel, levelToXp } from '../utils/xp'
 
 describe('calcSessionXP', () => {
   it('awards 1 XP/min for sessions under 25 min', () => {
@@ -23,6 +23,17 @@ describe('calcSessionXP', () => {
 
   it('floors to integer', () => {
     expect(Number.isInteger(calcSessionXP(1800))).toBe(true) // 30 min
+  })
+})
+
+describe('xpToLevel / levelToXp round-trip', () => {
+  it('levelToXp(xpToLevel(xp)) <= xp for levels 0–10', () => {
+    for (let level = 0; level <= 10; level++) {
+      const xp = levelToXp(level)
+      expect(xpToLevel(xp)).toBe(level)
+      // one XP below the threshold should still be the previous level
+      if (level > 0) expect(xpToLevel(xp - 1)).toBe(level - 1)
+    }
   })
 })
 

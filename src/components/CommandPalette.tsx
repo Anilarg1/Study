@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useDeferredValue } from 'react'
 import useSubjectStore from '../store/useSubjectStore'
 
 // ── icons ─────────────────────────────────────────────────────────────────
@@ -67,6 +67,7 @@ export default function CommandPalette({
 
   const [query,   setQuery]   = useState('')
   const [focused, setFocused] = useState(0)
+  const deferredQuery = useDeferredValue(query)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef  = useRef<HTMLDivElement>(null)
@@ -106,7 +107,7 @@ export default function CommandPalette({
 
   // ── filtered list ────────────────────────────────────────────────────────
 
-  const q = query.trim().toLowerCase()
+  const q = deferredQuery.trim().toLowerCase()
   const allCmds  = [...actionCmds, ...subjectCmds]
   const filtered = q
     ? allCmds.filter(c => c.label.toLowerCase().includes(q))
