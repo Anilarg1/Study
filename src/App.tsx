@@ -12,7 +12,9 @@ const StatsPage      = lazy(() => import('./pages/StatsPage'))
 const NotesPage      = lazy(() => import('./pages/NotesPage'))
 const FlashcardsPage = lazy(() => import('./pages/FlashcardsPage'))
 const TimetablePage  = lazy(() => import('./pages/TimetablePage'))
-const PastPapersPage = lazy(() => import('./pages/PastPapersPage'))
+const PastPapersPage    = lazy(() => import('./pages/PastPapersPage'))
+const SubjectsIndexPage = lazy(() => import('./pages/SubjectsIndexPage'))
+const SubjectHubPage    = lazy(() => import('./pages/SubjectHubPage'))
 import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
@@ -251,6 +253,8 @@ export default function App() {
           <Route path="/flashcards"  element={<FlashcardsPage />} />
           <Route path="/timetable"   element={<TimetablePage />} />
           <Route path="/past-papers" element={<PastPapersPage />} />
+          <Route path="/subjects"     element={<SubjectsIndexPage />} />
+          <Route path="/subjects/:id" element={<SubjectHubPage />} />
         </Routes>
       </Suspense>
 

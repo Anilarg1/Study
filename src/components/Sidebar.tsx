@@ -14,7 +14,7 @@ import StreakDots from './StreakDots'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
 import {
   IcTimer, IcStreak, IcToday, IcStats, IcTimetable, IcNotes,
-  IcFlash, IcPlus, IcSignOut, IcChevron, IcGear as IcSettings,
+  IcFlash, IcPlus, IcSignOut, IcChevron, IcGear as IcSettings, IcBook,
 } from './icons'
 
 // ── component ─────────────────────────────────────────────────────────────
@@ -172,6 +172,14 @@ export default function Sidebar({
         <IcStats />
         <span className="nav-label">Stats</span>
         <span className="ni-shortcut">G S</span>
+      </button>
+      <button
+        className={`nav-item${location.pathname.startsWith('/subjects') ? ' active' : ''}`}
+        title="Subjects"
+        onClick={() => go('/subjects')}
+      >
+        <IcBook />
+        <span className="nav-label">Subjects</span>
       </button>
       <button className="nav-item muted" title="Timetable — coming soon">
         <IcTimetable />
