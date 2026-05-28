@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   toISODate,
   parseISODate,
+  todayISO,
   getMonday,
   addDays,
   weekDays,
@@ -68,11 +69,20 @@ describe('formatTime12h', () => {
   })
 })
 
+describe('todayISO', () => {
+  it('returns a valid ISO date string that round-trips', () => {
+    const iso = todayISO()
+    expect(iso).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(toISODate(parseISODate(iso))).toBe(iso)
+  })
+})
+
 describe('nextOccurrence', () => {
   it('advances by the recurrence interval', () => {
     expect(nextOccurrence('2026-05-28', 'daily')).toBe('2026-05-29')
     expect(nextOccurrence('2026-05-28', 'weekly')).toBe('2026-06-04')
     expect(nextOccurrence('2026-01-31', 'monthly')).toBe('2026-03-03') // JS month rollover
+    expect(nextOccurrence('2026-05-15', 'monthly')).toBe('2026-06-15') // safe month
   })
 })
 
@@ -100,6 +110,12 @@ describe('groupTasks', () => {
     const g = groupTasks([t], today)
     expect(g.overdue).toHaveLength(0)
     expect(g.today).toHaveLength(0)
+  })
+
+  it('puts a same-week Sunday task in thisWeek when today is Friday', () => {
+    const t = makeTask({ due_date: '2026-05-31' }) // Sunday
+    const g = groupTasks([t], '2026-05-29')        // today = Friday
+    expect(g.thisWeek).toHaveLength(1)
   })
 
   it('keeps tasks completed today in the today bucket even if overdue', () => {
