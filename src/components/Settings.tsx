@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import useSettingsStore, {
   applyTheme, applyDensity, applyFontScale, applyContrast,
 } from '../store/useSettingsStore'
+import { setChimeVolume } from '../lib/chime'
 import useAuthStore    from '../store/useAuthStore'
 import useXPStore      from '../store/useXPStore'
 import useSubjectStore from '../store/useSubjectStore'
@@ -538,8 +539,27 @@ function NotificationsSection({ onToast: _onToast }: { onToast?: ToastFn }) {
       </div>
 
       <Group title="Sound">
-        <Row label="Sound alerts" description="Play a chime when each timer session completes">
-          <Toggle checked={s.soundEnabled} onChange={v => s.setField('soundEnabled', v)} />
+        <Row label="Sound volume" description="Play a chime when each timer session completes">
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: 'var(--text-dim)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={s.soundEnabled ? ((s as unknown as { soundVolume?: number }).soundVolume ?? 80) : 0}
+                onChange={e => {
+                  const v = Number(e.target.value)
+                  s.setField('soundEnabled', v > 0)
+                  ;(s.setField as (key: string, value: unknown) => void)('soundVolume', v)
+                  setChimeVolume(v)
+                }}
+                style={{ width: 90, accentColor: 'var(--accent)' }}
+              />
+              <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, minWidth: 28, textAlign: 'right' }}>
+                {s.soundEnabled ? ((s as unknown as { soundVolume?: number }).soundVolume ?? 80) : 0}%
+              </span>
+            </div>
+          </label>
         </Row>
       </Group>
 
