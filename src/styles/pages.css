@@ -101,3 +101,37 @@
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
+
+/* ── Focus mode ──────────────────────────────────────────────────────────── */
+[data-focus-mode] .v2-nav,
+[data-focus-mode] .v2-rail,
+[data-focus-mode] .topbar,
+[data-focus-mode] .brand-corner {
+  display: none !important;
+}
+
+[data-focus-mode] .app-shell {
+  grid-template-columns: 1fr;
+  grid-template-rows:    1fr;
+  grid-template-areas:   "main";
+}
+
+.focus-exit-btn {
+  position:   fixed;
+  top:        12px;
+  right:      16px;
+  z-index:    999;
+  font-size:  11px;
+  color:      var(--text-mute);
+  background: var(--surface-2);
+  border:     1px solid var(--hairline);
+  border-radius: 6px;
+  padding:    4px 10px;
+  cursor:     pointer;
+  font-family: inherit;
+}
+
+.focus-exit-btn:hover { color: var(--text); }
+
+/* ── Shortcuts modal width override ─────────────────────────────────────── */
+.shortcuts-modal { max-width: 380px; }

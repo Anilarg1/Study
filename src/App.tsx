@@ -17,6 +17,7 @@ import useAuthStore     from './store/useAuthStore'
 import useTimerStore    from './store/useTimerStore'
 import useSubjectStore  from './store/useSubjectStore'
 import useSettingsStore from './store/useSettingsStore'
+import ShortcutsModal   from './components/ShortcutsModal'
 import { IcTimer as TimerIcon, IcGear as GearIcon } from './components/icons'
 
 const DATA_MODE: Record<string, string> = { work: 'focus', shortBreak: 'short', longBreak: 'long' }
@@ -63,6 +64,9 @@ export default function App() {
   const [showNewSession, setShowNewSession] = useState(false)
   const [showCmdPalette, setShowCmdPalette] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const focusMode     = useSettingsStore(s => s.focusMode)
+  const toggleFocus   = useSettingsStore(s => s.toggle)
 
   const handleNewSession = useCallback(() => {
     setShowNewSession(true)
@@ -86,19 +90,30 @@ export default function App() {
   useEffect(() => { init() }, [init])
 
   useEffect(() => {
+    if (focusMode) {
+      document.documentElement.setAttribute('data-focus-mode', '')
+    } else {
+      document.documentElement.removeAttribute('data-focus-mode')
+    }
+  }, [focusMode])
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setShowCmdPalette(p => !p)
         return
       }
-      if ((e.target as HTMLElement).matches('input, textarea')) return
+      if ((e.target as HTMLElement).matches('input, textarea, [contenteditable]')) return
+      if (e.key === '?')            { setShowShortcuts(p => !p); return }
+      if (e.key === 'f' || e.key === 'F') { toggleFocus('focusMode'); return }
+      if (e.key === 'Escape')       { if (focusMode) toggleFocus('focusMode'); return }
       if (e.key.toLowerCase() === 'c') handleNewSession()
       if (e.key === '[') toggleSidebar('sidebarCollapsed')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [handleNewSession, toggleSidebar])
+  }, [handleNewSession, toggleSidebar, focusMode, toggleFocus])
 
   if (loading) {
     return (
@@ -304,6 +319,20 @@ export default function App() {
         onNavigate={path => navigate(path)}
         onNewSession={() => { setShowCmdPalette(false); setShowNewSession(true) }}
       />
+
+      {focusMode && (
+        <button
+          className="focus-exit-btn"
+          onClick={() => toggleFocus('focusMode')}
+          title="Exit focus mode"
+        >
+          Exit focus
+        </button>
+      )}
+
+      {showShortcuts && (
+        <ShortcutsModal onClose={() => setShowShortcuts(false)} />
+      )}
 
     </div>
   )
