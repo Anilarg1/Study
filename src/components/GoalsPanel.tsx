@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import useGoalsStore, { useGoalProgress } from '../store/useGoalsStore'
-import type { GoalEntry } from '../store/useGoalsStore'
 import useStreakStore, { calcCurrentStreak } from '../store/useStreakStore'
 import useXPStore from '../store/useXPStore'
 import { levelToXp } from '../utils/xp'
@@ -54,100 +54,6 @@ function GoalRow({ goalId, color }: { goalId: string; color: string }) {
   )
 }
 
-// ── GoalEditPanel ─────────────────────────────────────────────────────────────
-
-function GoalEditPanel({
-  goals,
-  onSave,
-  onClose,
-}: {
-  goals: GoalEntry[]
-  onSave: (g: Omit<GoalEntry, 'id'> & { id?: string }) => Promise<void>
-  onClose: () => void
-}) {
-  const monthlyHours = goals.find(g => g.type === 'monthly_hours')
-  const streak       = goals.find(g => g.type === 'streak')
-
-  const [hours,  setHours]  = useState(String(monthlyHours?.targetValue ?? 40))
-  const [streak_,setStreak] = useState(String(streak?.targetValue ?? 5))
-  const [saving, setSaving] = useState(false)
-
-  async function handleSave() {
-    setSaving(true)
-    if (monthlyHours) {
-      await onSave({ ...monthlyHours, targetValue: Math.max(1, Number(hours)) })
-    }
-    if (streak) {
-      await onSave({ ...streak, targetValue: Math.max(1, Number(streak_)) })
-    }
-    setSaving(false)
-    onClose()
-  }
-
-  return (
-    <div style={{
-      marginTop:    8,
-      padding:      '10px 12px',
-      background:   'var(--surface-2)',
-      borderRadius: 8,
-      border:       '1px solid var(--hairline)',
-      display:      'flex',
-      flexDirection: 'column',
-      gap:          10,
-    }}>
-      {monthlyHours && (
-        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12, color: 'var(--text-dim)' }}>
-          Monthly hours target
-          <input
-            type="number"
-            min={1}
-            max={720}
-            value={hours}
-            onChange={e => setHours(e.target.value)}
-            style={{
-              width: 56, fontSize: 12, textAlign: 'right',
-              background: 'var(--surface-3)', border: '1px solid var(--hairline)',
-              borderRadius: 4, color: 'var(--text)', padding: '2px 6px',
-            }}
-          />
-        </label>
-      )}
-      {streak && (
-        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12, color: 'var(--text-dim)' }}>
-          Streak target (days)
-          <input
-            type="number"
-            min={1}
-            max={3650}
-            value={streak_}
-            onChange={e => setStreak(e.target.value)}
-            style={{
-              width: 56, fontSize: 12, textAlign: 'right',
-              background: 'var(--surface-3)', border: '1px solid var(--hairline)',
-              borderRadius: 4, color: 'var(--text)', padding: '2px 6px',
-            }}
-          />
-        </label>
-      )}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-        <button
-          onClick={onClose}
-          style={{ fontSize: 11, color: 'var(--text-mute)', background: 'none', border: '1px solid var(--hairline)', borderRadius: 4, padding: '3px 10px', cursor: 'pointer' }}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{ fontSize: 11, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 4, padding: '3px 10px', cursor: 'pointer' }}
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // ── GoalsPanel ────────────────────────────────────────────────────────────────
 
 const GOAL_COLORS: Record<string, string> = {
@@ -160,33 +66,18 @@ const GOAL_COLORS: Record<string, string> = {
 export default function GoalsPanel() {
   const goals = useGoalsStore(s => s.goals)
   const now   = new Date()
-  const [editing, setEditing] = useState(false)
-  const upsertGoal = useGoalsStore(s => s.upsertGoal)
 
   if (goals.length === 0) return null
 
   return (
     <div className="sidebar-goals">
-      <div className="sidebar-goals-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          Goals
-          <span className="sidebar-goals-month">{MONTH_NAMES[now.getMonth()]}</span>
-        </div>
-        <button
-          onClick={() => setEditing(e => !e)}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: editing ? 'var(--accent)' : 'var(--text-mute)',
-            fontSize: 13, padding: 0, lineHeight: 1,
-          }}
-          title={editing ? 'Close edit' : 'Edit goals'}
-        >
-          ✎
-        </button>
+      <div className="sidebar-goals-head">
+        Goals
+        <span className="sidebar-goals-month">{MONTH_NAMES[now.getMonth()]}</span>
       </div>
 
       <div className="sg-list">
-        {goals.map(g => (
+        {goals.slice(0, 3).map(g => (
           <GoalRow
             key={g.id}
             goalId={g.id}
@@ -195,9 +86,7 @@ export default function GoalsPanel() {
         ))}
       </div>
 
-      {editing && (
-        <GoalEditPanel goals={goals} onSave={upsertGoal} onClose={() => setEditing(false)} />
-      )}
+      <Link to="/planner" className="goals-panel-link">Planner →</Link>
     </div>
   )
 }
