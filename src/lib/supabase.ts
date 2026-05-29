@@ -373,6 +373,102 @@ export async function upsertSubjectXP(
   return error
 }
 
+// ─── Settings helpers ─────────────────────────────────────────────────────────
+
+/** Fetch the user's saved prefs blob. Returns null if no row yet. */
+export async function fetchUserPrefs(
+  userId: string,
+): Promise<{ data: Record<string, unknown> | null; error: PostgrestError | null }> {
+  const { data, error } = await supabase
+    .from('user_prefs')
+    .select('prefs')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return { data: (data?.prefs as Record<string, unknown>) ?? null, error }
+}
+
+/** Upsert the user's prefs blob. Call fire-and-forget. */
+export async function upsertUserPrefs(
+  userId: string,
+  prefs: Record<string, unknown>,
+): Promise<PostgrestError | null> {
+  const { error } = await supabase
+    .from('user_prefs')
+    .upsert({ user_id: userId, prefs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+  return error
+}
+
+// ─── Goals helpers ────────────────────────────────────────────────────────────
+
+export interface GoalRow {
+  id:          string
+  type:        'monthly_hours' | 'streak' | 'xp_rank' | 'subject_hours'
+  targetValue: number
+  subjectId:   string | null
+  dueDate:     string | null
+}
+
+export async function fetchGoals(
+  userId: string,
+): Promise<{ data: GoalRow[]; error: PostgrestError | null }> {
+  const { data, error } = await supabase
+    .from('goals')
+    .select('id, type, target_value, subject_id, due_date')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+  if (error || !data) return { data: [], error }
+  return {
+    data: data.map(r => ({
+      id:          r.id           as string,
+      type:        r.type         as GoalRow['type'],
+      targetValue: r.target_value as number,
+      subjectId:   r.subject_id   as string | null,
+      dueDate:     r.due_date     as string | null,
+    })),
+    error: null,
+  }
+}
+
+export async function upsertGoal(
+  userId: string,
+  goal: Omit<GoalRow, 'id'> & { id?: string },
+): Promise<{ data: GoalRow | null; error: PostgrestError | null }> {
+  const payload = {
+    ...(goal.id ? { id: goal.id } : {}),
+    user_id:      userId,
+    type:         goal.type,
+    target_value: goal.targetValue,
+    subject_id:   goal.subjectId ?? null,
+    due_date:     goal.dueDate   ?? null,
+  }
+  const { data, error } = await supabase
+    .from('goals')
+    .upsert(payload, { onConflict: 'id' })
+    .select('id, type, target_value, subject_id, due_date')
+    .single()
+  if (error || !data) return { data: null, error }
+  return {
+    data: {
+      id:          data.id           as string,
+      type:        data.type         as GoalRow['type'],
+      targetValue: data.target_value as number,
+      subjectId:   data.subject_id   as string | null,
+      dueDate:     data.due_date     as string | null,
+    },
+    error: null,
+  }
+}
+
+/** Seed default goals for a new user if they have none. */
+export async function seedDefaultGoals(userId: string): Promise<void> {
+  const { data: existing } = await fetchGoals(userId)
+  if (existing.length > 0) return
+  await Promise.all([
+    upsertGoal(userId, { type: 'monthly_hours', targetValue: 40, subjectId: null, dueDate: null }),
+    upsertGoal(userId, { type: 'xp_rank',       targetValue: 1,  subjectId: null, dueDate: null }),
+  ])
+}
+
 // ─── Tasks ────────────────────────────────────────────────────
 
 export async function fetchTasks(userId: string): Promise<Task[]> {
