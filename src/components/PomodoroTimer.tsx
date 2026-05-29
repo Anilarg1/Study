@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import useTimerStore    from '../store/useTimerStore'
 import useXPStore       from '../store/useXPStore'
 import useSubjectStore  from '../store/useSubjectStore'
@@ -8,6 +8,7 @@ import { playChime, setChimeVolume } from '../lib/chime'
 import type { TimerMode, TimerDurations, Subject } from '../types'
 import { useTagPicker, AddTagForm } from './TagPicker'
 import RankUpToast, { type RankUpEvent } from './RankUpToast'
+import { dateOf, toLocalDateStr } from '../utils/date'
 
 // ── constants ─────────────────────────────────────────────────────────────
 
@@ -252,9 +253,13 @@ export default function PomodoroTimer() {
   const skip            = useTimerStore(s => s.skip)
 
   const awardXP       = useXPStore(s => s.awardXP)
-  const soundEnabled  = useSettingsStore(s => s.soundEnabled)
-  const soundVolume   = useSettingsStore(s => (s as unknown as { soundVolume?: number }).soundVolume ?? 80)
-  const desktopAlerts = useSettingsStore(s => s.desktopAlerts)
+  const soundEnabled    = useSettingsStore(s => s.soundEnabled)
+  const soundVolume     = useSettingsStore(s => (s as unknown as { soundVolume?: number }).soundVolume ?? 80)
+  const desktopAlerts   = useSettingsStore(s => s.desktopAlerts)
+  const autoStartBreaks = useSettingsStore(s => s.autoStartBreaks)
+  const autoStartFocus  = useSettingsStore(s => s.autoStartFocus)
+  const dailySessionGoal = useSettingsStore(s => s.dailySessionGoal)
+  const allSessions   = useXPStore(s => s.sessions)
 
   const subjects      = useSubjectStore(s => s.subjects)
   const activeId      = useSubjectStore(s => s.activeId)
@@ -342,8 +347,15 @@ export default function PomodoroTimer() {
       if (result.rankUp) {
         setRankUpEvent({ ...result.rankUp, key: Date.now() })
       }
+      // Auto-start next session if enabled
+      const nextMode = useTimerStore.getState().mode
+      if (nextMode !== 'work' && autoStartBreaks) {
+        setTimeout(() => useTimerStore.getState().start(), 300)
+      } else if (nextMode === 'work' && autoStartFocus) {
+        setTimeout(() => useTimerStore.getState().start(), 300)
+      }
     }
-  }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled, desktopAlerts, remaining, running])
+  }, [tick, awardXP, mode, subjectId, tagId, customDurations, soundEnabled, desktopAlerts, remaining, running, autoStartBreaks, autoStartFocus, start])
   // Keep ref in sync so the interval always calls the latest closure
   handleTickRef.current = handleTick
 
@@ -403,6 +415,12 @@ export default function PomodoroTimer() {
   const total      = customDurations[mode]
   const progress   = remaining / total
   const dashOffset = CIRC * (1 - (1 - progress))
+
+  // ── daily goal counter ───────────────────────────────────────────────────
+  const completedToday = useMemo(() => {
+    const today = toLocalDateStr()
+    return allSessions.filter(s => s.type === 'work' && dateOf(s.completedAt) === today).length
+  }, [allSessions])
 
   // ── pips ──────────────────────────────────────────────────────────────────
   const pips     = getPips(completedWork)
@@ -709,6 +727,16 @@ export default function PomodoroTimer() {
           <span className="pip-label">
             <b>{pipsDone + 1} / 4</b> · {nextLabel(completedWork)}
           </span>
+        </div>
+
+        {/* daily goal counter */}
+        <div className="daily-goal-row" aria-label="Daily session goal">
+          <span className="daily-goal-label">
+            Today: <b>{completedToday} / {dailySessionGoal}</b> sessions
+          </span>
+          {completedToday >= dailySessionGoal && (
+            <span className="daily-goal-done">Goal reached!</span>
+          )}
         </div>
 
         {/* subject chips */}

@@ -587,6 +587,29 @@ function NotificationsSection({ onToast: _onToast }: { onToast?: ToastFn }) {
         </Row>
       </Group>
 
+      <Group title="Timer Behaviour">
+        <Row label="Auto-start breaks" description="Automatically start break timers when a focus session ends">
+          <Toggle checked={s.autoStartBreaks} onChange={v => s.setField('autoStartBreaks', v)} />
+        </Row>
+        <Row label="Auto-start focus" description="Automatically start the next focus session when a break ends">
+          <Toggle checked={s.autoStartFocus} onChange={v => s.setField('autoStartFocus', v)} />
+        </Row>
+        <Row label="Daily session goal" description="Target number of focus sessions to complete each day">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="number"
+              className="s-input"
+              min={1}
+              max={20}
+              value={s.dailySessionGoal}
+              onChange={e => s.setField('dailySessionGoal', Math.max(1, Math.min(20, Number(e.target.value))))}
+              style={{ width: 64, textAlign: 'center' }}
+            />
+            <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>sessions / day</span>
+          </div>
+        </Row>
+      </Group>
+
       <Group title="Do Not Disturb">
         <Row label="Enable DND" description="Mute all notifications during quiet hours">
           <Toggle checked={s.dndEnabled} onChange={v => s.setField('dndEnabled', v)} />
