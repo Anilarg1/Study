@@ -8,7 +8,7 @@ import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
-import { bestWeek, calcPeakHour, calcSubjectMins, calcSessionHistogram } from '../utils/stats'
+import { bestWeek, calcPeakHour, calcSubjectMins, calcSessionHistogram, calcConsistency } from '../utils/stats'
 import { Delta, Sparkline, SubjectRadar }   from '../components/stats/KPIRow'
 import { FocusTimeChart }                   from '../components/stats/FocusTimeChart'
 import type { ChartBar }                    from '../components/stats/FocusTimeChart'
@@ -16,6 +16,7 @@ import { ActivityHeatmap }                  from '../components/stats/ActivityHe
 import { SubjectBreakdown }                 from '../components/stats/SubjectBreakdown'
 import { SessionHistogram, HIST_BUCKETS }   from '../components/stats/SessionHistogram'
 import { Records }                          from '../components/stats/Records'
+import { SessionTimeline }                  from '../components/stats/SessionTimeline'
 import Skeleton                             from '../components/Skeleton'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -57,6 +58,8 @@ function isWeekendDate(d: Date): boolean {
 
 // ─── progression card ─────────────────────────────────────────────────────────
 
+const XP_HISTORY_DAYS = 30
+
 const ProgressionCard = memo(function ProgressionCard() {
   const totalXP   = useXPStore(s => s.totalXP)
   const sessions  = useXPStore(s => s.sessions)
@@ -71,6 +74,28 @@ const ProgressionCard = memo(function ProgressionCard() {
   const totalHours = sessions
     .filter(s => s.type === 'work' && s.durationSecs != null)
     .reduce((sum, s) => sum + (s.durationSecs ?? 0) / 3600, 0)
+
+  // XP per day for the last 30 days
+  const xpHistory = useMemo(() => {
+    const byDate = new Map<string, number>()
+    for (const s of sessions) {
+      if (s.type !== 'work' || s.xp <= 0) continue
+      const d   = new Date(s.completedAt)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      byDate.set(key, (byDate.get(key) ?? 0) + s.xp)
+    }
+    const bars: number[] = []
+    const today = new Date()
+    for (let i = XP_HISTORY_DAYS - 1; i >= 0; i--) {
+      const d   = new Date(today)
+      d.setDate(today.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      bars.push(byDate.get(key) ?? 0)
+    }
+    return bars
+  }, [sessions])
+
+  const maxXP = useMemo(() => Math.max(1, ...xpHistory), [xpHistory])
 
   return (
     <div className="v2-card">
@@ -93,7 +118,7 @@ const ProgressionCard = memo(function ProgressionCard() {
       </div>
 
       {/* Rank progress bar */}
-      <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginBottom: 20 }}>
+      <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginBottom: 16 }}>
         <div style={{
           height: '100%',
           width:  `${pct}%`,
@@ -102,6 +127,39 @@ const ProgressionCard = memo(function ProgressionCard() {
           transition: 'width 600ms ease',
         }} />
       </div>
+
+      {/* XP history chart — 30-day bar chart */}
+      {xpHistory.some(v => v > 0) && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+            XP last {XP_HISTORY_DAYS} days
+          </div>
+          <div
+            style={{
+              display:     'flex',
+              alignItems:  'flex-end',
+              gap:         2,
+              height:      40,
+              width:       '100%',
+            }}
+          >
+            {xpHistory.map((xp, i) => (
+              <div
+                key={i}
+                title={xp > 0 ? `${xp} XP` : undefined}
+                style={{
+                  flex:         1,
+                  height:       xp > 0 ? `${Math.max(10, Math.round((xp / maxXP) * 100))}%` : 3,
+                  background:   xp > 0 ? rank.color : 'var(--surface-3)',
+                  borderRadius: 2,
+                  opacity:      i === XP_HISTORY_DAYS - 1 ? 1 : 0.7,
+                  transition:   'height 300ms ease',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Subject mastery table */}
       {subjects.length > 0 && (
@@ -205,6 +263,12 @@ export default function StatsPage() {
   const sessionPct = prevWorkSessions.length > 0
     ? Math.round((workSessions.length - prevWorkSessions.length) / prevWorkSessions.length * 100)
     : 0
+
+  // ── consistency (last 28 days) ────────────────────────────────────────────
+  const consistency = useMemo(
+    () => calcConsistency(sessions.filter(s => s.type === 'work')),
+    [sessions],
+  )
 
   // ── sparklines (14-day rolling) ────────────────────────────────────────────
   const { sparkTime, sparkSessions } = useMemo(() => {
@@ -377,6 +441,13 @@ export default function StatsPage() {
 
   const subjectTotalMins = useMemo(() => Math.max(1, subjectStats.reduce((s, x) => s + x.mins, 0)), [subjectStats])
 
+  // ── subject lookup map for SessionTimeline ─────────────────────────────────
+  const subjectMap = useMemo(() => {
+    const m = new Map<string, { name: string; color: string }>()
+    for (const s of subjects) m.set(s.id, { name: s.name, color: s.color })
+    return m
+  }, [subjects])
+
   const radarData = useMemo(() =>
     subjectStats.slice(0, 8).map(s => ({
       ...s,
@@ -413,29 +484,23 @@ export default function StatsPage() {
 
   // ── peak hour + best day summary ──────────────────────────────────────────
   const hourDaySummary = useMemo(() => {
-    const peak = calcPeakHour(workSessions)
-    // Fix B4: hour 23 → "23:00 – 0:00", not "23:00 – 24:00"
-    const nextHour = peak.hour >= 0 ? (peak.hour + 1) % 24 : -1
-
+    const { label } = calcPeakHour(workSessions)
     const dayTotals = hourDayRaw.map((row, i) => ({
       day:   DAY_LABELS[i] ?? '',
       total: row.reduce((a, b) => a + b, 0),
     }))
     const bestDay = [...dayTotals].sort((a, b) => b.total - a.total)[0] ?? null
-
     return {
-      peakHour: peak.hour >= 0 ? `${peak.hour}:00 – ${nextHour}:00` : '—',
+      peakHour: label,
       bestDay:  bestDay !== null && bestDay.total > 0 ? bestDay.day : '—',
     }
   }, [hourDayRaw, workSessions])
 
   // ── session length histogram ───────────────────────────────────────────────
-  const histData = useMemo(() => {
-    const counts = calcSessionHistogram(workSessions, HIST_BUCKETS)
-    const maxCount = Math.max(1, ...counts.map(c => c.count))
-    const peakIdx  = counts.reduce((best, c, i) => c.count > (counts[best]?.count ?? 0) ? i : best, 0)
-    return counts.map((c, i) => ({ ...c, height: Math.max(2, (c.count / maxCount) * 100), isPeak: i === peakIdx }))
-  }, [workSessions])
+  const histData = useMemo(
+    () => calcSessionHistogram(workSessions, HIST_BUCKETS),
+    [workSessions],
+  )
 
   const histStats = useMemo(() => {
     if (workSessions.length === 0) return { median: 0, mean: 0, longest: 0, completed: 0 }
@@ -707,6 +772,38 @@ export default function StatsPage() {
               <Sparkline data={sparkSessions} />
             </div>
           </div>
+
+          {/* Consistency */}
+          <div className="sc s-kpi">
+            <div className="s-kpi-label">
+              <svg className="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              Consistency
+              <span style={{ color: 'var(--text-faint)', fontSize: 10, marginLeft: 4 }}>28d</span>
+            </div>
+            <div className="s-kpi-value">
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={64} height={36} />
+                : <><span>{consistency.activeDays28}</span><sup style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-dim)' }}>/28d</sup></>
+              }
+            </div>
+            <div className="s-kpi-foot" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={60} height={14} />
+                : (
+                  <>
+                    <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{consistency.pct}% active</span>
+                    {consistency.longestRun > 1 && (
+                      <span style={{ color: 'var(--text-faint)', fontSize: 10 }}>
+                        best run: {consistency.longestRun}d
+                      </span>
+                    )}
+                  </>
+                )
+              }
+            </div>
+          </div>
         </section>
 
         {/* ── PROGRESSION CARD ── */}
@@ -807,6 +904,15 @@ export default function StatsPage() {
           <Records
             records={records}
             longestStreak={longestStreak}
+          />
+        </section>
+
+        {/* ── SESSION TIMELINE ── */}
+        <section className="s-row-full" style={{ marginTop: 12 }}>
+          <SessionTimeline
+            sessions={workSessions}
+            subjectMap={subjectMap}
+            isLoading={isLoading && sessions.length === 0}
           />
         </section>
 

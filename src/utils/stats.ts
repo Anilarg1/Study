@@ -58,7 +58,8 @@ export interface HeatmapCell {
 }
 
 export interface PeakHourResult {
-  hour:      number  // 0–23, or -1 if no data
+  hour:      number   // 0–23, or -1 if no data
+  label:     string   // '14:00 – 15:00' or '—'
   totalMins: number
 }
 
@@ -68,8 +69,10 @@ export interface SubjectMinutes {
 }
 
 export interface HistogramBucket {
-  label: string
-  count: number
+  label:   string
+  count:   number
+  height:  number   // 0–100 (percentage of tallest bar)
+  isPeak:  boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -138,7 +141,7 @@ export function calcKPIs(
 
 /**
  * Return the hour (0–23) with the highest total minutes across all sessions.
- * Returns hour -1 with totalMins 0 when there are no sessions.
+ * Returns hour -1 with label '—' and totalMins 0 when there are no sessions.
  */
 export function calcPeakHour(sessions: SessionEntry[]): PeakHourResult {
   const byHour = new Array<number>(24).fill(0)
@@ -153,7 +156,10 @@ export function calcPeakHour(sessions: SessionEntry[]): PeakHourResult {
     const m = byHour[h] ?? 0
     if (m > peakMins) { peakMins = m; peakHour = h }
   }
-  return { hour: peakHour, totalMins: peakMins }
+
+  if (peakHour === -1) return { hour: -1, label: '—', totalMins: 0 }
+  const nextHour = (peakHour + 1) % 24
+  return { hour: peakHour, label: `${peakHour}:00 – ${nextHour}:00`, totalMins: peakMins }
 }
 
 /**
@@ -176,7 +182,7 @@ export function calcSubjectMins(
 }
 
 /**
- * Count sessions that fall into each length bucket.
+ * Count sessions that fall into each length bucket and compute bar heights.
  * Each bucket is { label, max } where max is the upper bound in minutes
  * (Infinity for the last bucket).
  */
@@ -184,7 +190,7 @@ export function calcSessionHistogram(
   sessions: SessionEntry[],
   buckets: readonly { label: string; max: number }[],
 ): HistogramBucket[] {
-  return buckets.map((b, i) => {
+  const counts = buckets.map((b, i) => {
     const prev = i > 0 ? (buckets[i - 1]?.max ?? 0) : 0
     const count = sessions.filter(s => {
       if (s.type !== 'work') return false
@@ -193,4 +199,72 @@ export function calcSessionHistogram(
     }).length
     return { label: b.label, count }
   })
+
+  const maxCount = Math.max(1, ...counts.map(c => c.count))
+  const peakIdx  = counts.reduce(
+    (best, c, i) => c.count > (counts[best]?.count ?? 0) ? i : best,
+    0,
+  )
+
+  return counts.map((c, i) => ({
+    label:   c.label,
+    count:   c.count,
+    height:  Math.max(2, (c.count / maxCount) * 100),
+    isPeak:  i === peakIdx,
+  }))
+}
+
+// ── calcConsistency ───────────────────────────────────────────────────────────
+
+export interface ConsistencyResult {
+  /** Active days in the last 28 days (0–28). */
+  activeDays28: number
+  /** Percentage of the last 28 days that had at least one session (0–100). */
+  pct:          number
+  /** Longest consecutive active-day run in the last 28 days. */
+  longestRun:   number
+}
+
+/**
+ * Compute study consistency metrics over the last 28 days.
+ * Input: work sessions only (or all — non-work sessions are skipped).
+ * `today` defaults to `new Date()` — injectable for unit tests.
+ */
+export function calcConsistency(
+  sessions: SessionEntry[],
+  today: Date = new Date(),
+): ConsistencyResult {
+  const todayStr = localDateStr(today)
+
+  // Build a set of active date strings within the last 28 days
+  const activeDates = new Set<string>()
+  for (const s of sessions) {
+    if (s.type !== 'work') continue
+    const ds = localDateStr(new Date(s.completedAt))
+    activeDates.add(ds)
+  }
+
+  let activeDays28 = 0
+  let longestRun   = 0
+  let currentRun   = 0
+
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    const ds = localDateStr(d)
+    if (ds > todayStr) continue   // guard future dates
+    if (activeDates.has(ds)) {
+      activeDays28++
+      currentRun++
+      longestRun = Math.max(longestRun, currentRun)
+    } else {
+      currentRun = 0
+    }
+  }
+
+  return {
+    activeDays28,
+    pct:        Math.round((activeDays28 / 28) * 100),
+    longestRun,
+  }
 }
