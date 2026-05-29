@@ -67,6 +67,9 @@ interface SettingsData {
   dndEnd:            string
   focusMode:         boolean
   soundVolume:       number
+  autoStartBreaks:   boolean
+  autoStartFocus:    boolean
+  dailySessionGoal:  number
 }
 
 type BooleanSettingsKey = {
@@ -132,6 +135,9 @@ const useSettingsStore = create<SettingsState>()(
       dndEnd:           '08:00',
       focusMode:        false,
       soundVolume:      80,
+      autoStartBreaks:  false,
+      autoStartFocus:   false,
+      dailySessionGoal: 4,
 
       // ── Actions ──────────────────────────────────────────────────────────
       setField: (key, value) => set({ [key]: value } as Partial<SettingsState>),
@@ -171,8 +177,11 @@ const useSettingsStore = create<SettingsState>()(
         desktopAlerts: state.desktopAlerts, notifyMentions: state.notifyMentions,
         notifyDueDates: state.notifyDueDates, notifyDailyRecap: state.notifyDailyRecap,
         dndEnabled: state.dndEnabled, dndStart: state.dndStart, dndEnd: state.dndEnd,
-        focusMode:   state.focusMode,
-        soundVolume: state.soundVolume,
+        focusMode:        state.focusMode,
+        soundVolume:      state.soundVolume,
+        autoStartBreaks:  state.autoStartBreaks,
+        autoStartFocus:   state.autoStartFocus,
+        dailySessionGoal: state.dailySessionGoal,
       }),
     }
   )
