@@ -18,6 +18,7 @@ interface GoalsState {
   goals: GoalEntry[]
   fetchGoals(userId: string): Promise<void>
   upsertGoal(goal: Omit<GoalEntry, 'id'> & { id?: string }): Promise<void>
+  _reset(): void
 }
 
 // ── Default goals seeded on first sign-in ─────────────────────────────────────
@@ -124,6 +125,10 @@ const useGoalsStore = create<GoalsState>()((set) => ({
         ? state.goals.map(g => g.id === goal.id ? updated : g)
         : [...state.goals, updated],
     }))
+  },
+
+  _reset() {
+    set({ goals: [] })
   },
 }))
 

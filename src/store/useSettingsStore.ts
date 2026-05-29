@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Theme, Density, TimeFormat, WeekStart, FontScale } from '../types'
 import { supabase } from '../lib/supabase'
+import { getCurrentUserId } from '../lib/currentUser'
 
 // ── DOM apply helpers (exported so Settings.tsx can import them) ──────────────
 
@@ -134,8 +135,16 @@ const useSettingsStore = create<SettingsState>()(
       soundVolume:      80,
 
       // ── Actions ──────────────────────────────────────────────────────────
-      setField: (key, value) => set({ [key]: value } as Partial<SettingsState>),
-      toggle:   (key)        => set(s => ({ [key]: !s[key] } as Partial<SettingsState>)),
+      setField: (key, value) => {
+        set({ [key]: value } as Partial<SettingsState>)
+        const userId = getCurrentUserId()
+        if (userId) get()._syncToSupabase(userId)
+      },
+      toggle: (key) => {
+        set(s => ({ [key]: !s[key] } as Partial<SettingsState>))
+        const userId = getCurrentUserId()
+        if (userId) get()._syncToSupabase(userId)
+      },
 
       // ── Supabase sync ─────────────────────────────────────────────────────
       _importFromSupabase(prefs) {

@@ -110,6 +110,7 @@ const useAuthStore = create<AuthState>()((set, get) => ({
     useSubjectStore.getState()._reset()
     useTagStore.getState()._reset()
     useSubjectMasteryStore.getState()._reset()
+    useGoalsStore.getState()._reset()
     await supabase.auth.signOut()
   },
 
