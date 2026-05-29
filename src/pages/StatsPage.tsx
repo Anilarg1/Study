@@ -16,6 +16,7 @@ import { ActivityHeatmap }                  from '../components/stats/ActivityHe
 import { SubjectBreakdown }                 from '../components/stats/SubjectBreakdown'
 import { SessionHistogram, HIST_BUCKETS }   from '../components/stats/SessionHistogram'
 import { Records }                          from '../components/stats/Records'
+import { SessionTimeline }                  from '../components/stats/SessionTimeline'
 import Skeleton                             from '../components/Skeleton'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -57,6 +58,8 @@ function isWeekendDate(d: Date): boolean {
 
 // ─── progression card ─────────────────────────────────────────────────────────
 
+const XP_HISTORY_DAYS = 30
+
 const ProgressionCard = memo(function ProgressionCard() {
   const totalXP   = useXPStore(s => s.totalXP)
   const sessions  = useXPStore(s => s.sessions)
@@ -71,6 +74,28 @@ const ProgressionCard = memo(function ProgressionCard() {
   const totalHours = sessions
     .filter(s => s.type === 'work' && s.durationSecs != null)
     .reduce((sum, s) => sum + (s.durationSecs ?? 0) / 3600, 0)
+
+  // XP per day for the last 30 days
+  const xpHistory = useMemo(() => {
+    const byDate = new Map<string, number>()
+    for (const s of sessions) {
+      if (s.type !== 'work' || s.xp <= 0) continue
+      const d   = new Date(s.completedAt)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      byDate.set(key, (byDate.get(key) ?? 0) + s.xp)
+    }
+    const bars: number[] = []
+    const today = new Date()
+    for (let i = XP_HISTORY_DAYS - 1; i >= 0; i--) {
+      const d   = new Date(today)
+      d.setDate(today.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      bars.push(byDate.get(key) ?? 0)
+    }
+    return bars
+  }, [sessions])
+
+  const maxXP = useMemo(() => Math.max(1, ...xpHistory), [xpHistory])
 
   return (
     <div className="v2-card">
@@ -93,7 +118,7 @@ const ProgressionCard = memo(function ProgressionCard() {
       </div>
 
       {/* Rank progress bar */}
-      <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginBottom: 20 }}>
+      <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginBottom: 16 }}>
         <div style={{
           height: '100%',
           width:  `${pct}%`,
@@ -102,6 +127,39 @@ const ProgressionCard = memo(function ProgressionCard() {
           transition: 'width 600ms ease',
         }} />
       </div>
+
+      {/* XP history chart — 30-day bar chart */}
+      {xpHistory.some(v => v > 0) && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+            XP last {XP_HISTORY_DAYS} days
+          </div>
+          <div
+            style={{
+              display:     'flex',
+              alignItems:  'flex-end',
+              gap:         2,
+              height:      40,
+              width:       '100%',
+            }}
+          >
+            {xpHistory.map((xp, i) => (
+              <div
+                key={i}
+                title={xp > 0 ? `${xp} XP` : undefined}
+                style={{
+                  flex:         1,
+                  height:       xp > 0 ? `${Math.max(10, Math.round((xp / maxXP) * 100))}%` : 3,
+                  background:   xp > 0 ? rank.color : 'var(--surface-3)',
+                  borderRadius: 2,
+                  opacity:      i === XP_HISTORY_DAYS - 1 ? 1 : 0.7,
+                  transition:   'height 300ms ease',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Subject mastery table */}
       {subjects.length > 0 && (
@@ -382,6 +440,13 @@ export default function StatsPage() {
   }, [workSessions, subjects, rangeStart])
 
   const subjectTotalMins = useMemo(() => Math.max(1, subjectStats.reduce((s, x) => s + x.mins, 0)), [subjectStats])
+
+  // ── subject lookup map for SessionTimeline ─────────────────────────────────
+  const subjectMap = useMemo(() => {
+    const m = new Map<string, { name: string; color: string }>()
+    for (const s of subjects) m.set(s.id, { name: s.name, color: s.color })
+    return m
+  }, [subjects])
 
   const radarData = useMemo(() =>
     subjectStats.slice(0, 8).map(s => ({
@@ -839,6 +904,15 @@ export default function StatsPage() {
           <Records
             records={records}
             longestStreak={longestStreak}
+          />
+        </section>
+
+        {/* ── SESSION TIMELINE ── */}
+        <section className="s-row-full" style={{ marginTop: 12 }}>
+          <SessionTimeline
+            sessions={workSessions}
+            subjectMap={subjectMap}
+            isLoading={isLoading && sessions.length === 0}
           />
         </section>
 
