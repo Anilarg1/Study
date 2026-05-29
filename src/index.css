@@ -1238,8 +1238,9 @@
 /* SETTINGS VIEW                                                               */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-/* When in settings mode main spans both content columns */
-.app-shell[data-view="settings"] {
+/* When in settings or planner mode main spans both content columns */
+.app-shell[data-view="settings"],
+.app-shell[data-view="planner"] {
   grid-template-areas:
     "brand topbar topbar"
     "nav   main   main";

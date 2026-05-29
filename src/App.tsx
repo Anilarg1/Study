@@ -136,13 +136,14 @@ export default function App() {
   const initials    = handle.slice(0, 2).toUpperCase()
 
   const isSettings = location.pathname === '/settings'
-  const showRail   = !isSettings
+  const isPlanner  = location.pathname === '/planner'
+  const showRail   = !isSettings && !isPlanner
 
   return (
     <div
       className="app-shell"
       data-mode={dataMode}
-      data-view={isSettings ? 'settings' : 'timer'}
+      data-view={isSettings ? 'settings' : isPlanner ? 'planner' : 'timer'}
       {...(sidebarCollapsed ? { 'data-nav-collapsed': '' } : {})}
     >
 
@@ -181,6 +182,13 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
             <GearIcon size={14} className={undefined} />
             <span style={{ color: 'var(--text)', fontWeight: 500 }}>Settings</span>
+          </div>
+        ) : isPlanner ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            <span>Practice</span>
+            <span style={{ color: 'var(--text-faint)' }}>/</span>
+            <span style={{ color: 'var(--text)', fontWeight: 500 }}>Timetable</span>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-dim)' }}>
