@@ -8,7 +8,7 @@ import useSubjectMasteryStore from '../store/useSubjectMasteryStore'
 import RankBadge    from '../components/RankBadge'
 import MasteryBadge from '../components/MasteryBadge'
 import { getRankFromXP, getRankProgress, getXPToNextRank, getMasteryFromXP } from '../utils/progression'
-import { bestWeek, calcPeakHour, calcSubjectMins, calcSessionHistogram } from '../utils/stats'
+import { bestWeek, calcPeakHour, calcSubjectMins, calcSessionHistogram, calcConsistency } from '../utils/stats'
 import { Delta, Sparkline, SubjectRadar }   from '../components/stats/KPIRow'
 import { FocusTimeChart }                   from '../components/stats/FocusTimeChart'
 import type { ChartBar }                    from '../components/stats/FocusTimeChart'
@@ -205,6 +205,12 @@ export default function StatsPage() {
   const sessionPct = prevWorkSessions.length > 0
     ? Math.round((workSessions.length - prevWorkSessions.length) / prevWorkSessions.length * 100)
     : 0
+
+  // ── consistency (last 28 days) ────────────────────────────────────────────
+  const consistency = useMemo(
+    () => calcConsistency(sessions.filter(s => s.type === 'work')),
+    [sessions],
+  )
 
   // ── sparklines (14-day rolling) ────────────────────────────────────────────
   const { sparkTime, sparkSessions } = useMemo(() => {
@@ -413,29 +419,23 @@ export default function StatsPage() {
 
   // ── peak hour + best day summary ──────────────────────────────────────────
   const hourDaySummary = useMemo(() => {
-    const peak = calcPeakHour(workSessions)
-    // Fix B4: hour 23 → "23:00 – 0:00", not "23:00 – 24:00"
-    const nextHour = peak.hour >= 0 ? (peak.hour + 1) % 24 : -1
-
+    const { label } = calcPeakHour(workSessions)
     const dayTotals = hourDayRaw.map((row, i) => ({
       day:   DAY_LABELS[i] ?? '',
       total: row.reduce((a, b) => a + b, 0),
     }))
     const bestDay = [...dayTotals].sort((a, b) => b.total - a.total)[0] ?? null
-
     return {
-      peakHour: peak.hour >= 0 ? `${peak.hour}:00 – ${nextHour}:00` : '—',
+      peakHour: label,
       bestDay:  bestDay !== null && bestDay.total > 0 ? bestDay.day : '—',
     }
   }, [hourDayRaw, workSessions])
 
   // ── session length histogram ───────────────────────────────────────────────
-  const histData = useMemo(() => {
-    const counts = calcSessionHistogram(workSessions, HIST_BUCKETS)
-    const maxCount = Math.max(1, ...counts.map(c => c.count))
-    const peakIdx  = counts.reduce((best, c, i) => c.count > (counts[best]?.count ?? 0) ? i : best, 0)
-    return counts.map((c, i) => ({ ...c, height: Math.max(2, (c.count / maxCount) * 100), isPeak: i === peakIdx }))
-  }, [workSessions])
+  const histData = useMemo(
+    () => calcSessionHistogram(workSessions, HIST_BUCKETS),
+    [workSessions],
+  )
 
   const histStats = useMemo(() => {
     if (workSessions.length === 0) return { median: 0, mean: 0, longest: 0, completed: 0 }
@@ -705,6 +705,38 @@ export default function StatsPage() {
                 : <Delta pct={sessionPct} />
               }
               <Sparkline data={sparkSessions} />
+            </div>
+          </div>
+
+          {/* Consistency */}
+          <div className="sc s-kpi">
+            <div className="s-kpi-label">
+              <svg className="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              Consistency
+              <span style={{ color: 'var(--text-faint)', fontSize: 10, marginLeft: 4 }}>28d</span>
+            </div>
+            <div className="s-kpi-value">
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={64} height={36} />
+                : <><span>{consistency.activeDays28}</span><sup style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-dim)' }}>/28d</sup></>
+              }
+            </div>
+            <div className="s-kpi-foot" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+              {isLoading && sessions.length === 0
+                ? <Skeleton width={60} height={14} />
+                : (
+                  <>
+                    <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{consistency.pct}% active</span>
+                    {consistency.longestRun > 1 && (
+                      <span style={{ color: 'var(--text-faint)', fontSize: 10 }}>
+                        best run: {consistency.longestRun}d
+                      </span>
+                    )}
+                  </>
+                )
+              }
             </div>
           </div>
         </section>
